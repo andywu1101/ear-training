@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>和絃聽辨 — 聽力訓練</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="和絃聽辨">
+<meta name="theme-color" content="#33415c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vexflow@3.0.9/releases/vexflow-min.js"></script>
+<style>
+  :root{
+    --paper: #efeee6;
+    --panel: #fbfaf6;
+    --panel-border: #ddd8c9;
+    --hairline: #e2ddce;
+    --ink: #262420;
+    --ink-soft: #75705f;
+    --accent: #33415c;
+    --accent-soft: rgba(51,65,92,0.08);
+    --accent-line: rgba(51,65,92,0.35);
+    --correct: #4b7a5b;
+    --correct-soft: rgba(75,122,91,0.10);
+    --wrong: #a6493b;
+    --wrong-soft: rgba(166,73,59,0.09);
+    --radius: 14px;
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  *{ box-sizing: border-box; }
+  body{ margin:0; background: var(--paper); color: var(--ink); font-family: var(--font-body); min-height:100vh; padding: 36px 16px 72px; }
+  .wrap{ max-width: 720px; margin: 0 auto; }
+
+  .staff-header{ position: relative; height: 76px; margin-bottom: 30px; }
+  .staff-line{ position:absolute; left:0; right:0; height:1px; background: var(--hairline); }
+  .staff-line:nth-child(1){ top: 6px; } .staff-line:nth-child(2){ top: 22px; } .staff-line:nth-child(3){ top: 38px; }
+  .staff-line:nth-child(4){ top: 54px; } .staff-line:nth-child(5){ top: 70px; }
+  .playhead{ position:absolute; top:0; bottom:0; width:1.5px; background: var(--accent); left: 0%; opacity: 0; }
+  .playhead.active{ opacity: 0.55; transition: left linear; }
+  .clef-mark{ position:absolute; left: 8px; top: -14px; font-family: var(--font-display); font-size: 74px; font-weight: 400; color: var(--ink); opacity: 0.85; line-height: 1; user-select:none; }
+
+  h1{ font-family: var(--font-display); font-weight: 600; font-size: 32px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .subtitle{ color: var(--ink-soft); font-size: 14.5px; margin: 0 0 22px; line-height: 1.6; }
+
+  .switch-row{ display:flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+  .switch-group{ display:flex; flex-direction: column; gap: 6px; }
+  .switch-group-label{ font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-soft); letter-spacing: 0.04em; }
+  .switch-btns{ display:flex; gap: 8px; }
+  .mode-btn{ font-family: var(--font-body); font-size: 12.5px; font-weight: 700; padding: 9px 15px; border-radius: 10px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); cursor:pointer; transition: all 0.15s ease; }
+  .mode-btn:hover{ border-color: var(--accent-line); color: var(--ink); }
+  .mode-btn.active{ background: var(--ink); border-color: var(--ink); color: var(--panel); }
+
+  .toggle-switch{ display:flex; align-items:center; gap: 9px; cursor:pointer; padding: 9px 2px; height: 38px; box-sizing:border-box; }
+  .toggle-switch input{ display:none; }
+  .toggle-slider{ width:38px; height:22px; background: var(--panel-border); border-radius:999px; position:relative; transition: background .15s ease; flex-shrink:0; }
+  .toggle-slider::before{ content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; background:var(--panel); border-radius:50%; transition: transform .15s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .toggle-switch input:checked + .toggle-slider{ background: var(--accent); }
+  .toggle-switch input:checked + .toggle-slider::before{ transform: translateX(16px); }
+  .toggle-text{ font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+  .toggle-switch input:checked ~ .toggle-text{ color:var(--ink); }
+  .toggle-switch input:disabled ~ .toggle-slider{ opacity:0.45; cursor:not-allowed; }
+  .toggle-switch input:disabled ~ .toggle-text{ opacity:0.45; }
+
+  .top-row{ display:flex; justify-content: space-between; align-items:flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+  .score-box{ font-family: var(--font-mono); text-align:right; }
+  .score-box .num{ font-size: 19px; font-weight:700; color: var(--accent); }
+  .score-box .label{ font-size: 11px; color: var(--ink-soft); letter-spacing: 0.03em; }
+
+  .level-tabs{ display:flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+  .level-tab{ font-family: var(--font-body); font-size: 12.5px; font-weight: 600; padding: 8px 13px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); border-radius: 999px; cursor:pointer; transition: all 0.15s ease; }
+  .level-tab:hover{ border-color: var(--accent-line); color: var(--ink); }
+  .level-tab.active{ background: var(--accent); border-color: var(--accent); color: var(--panel); }
+  .level-tab.locked{ opacity: 0.45; pointer-events: none; }
+
+  .custom-chord-panel{ margin-bottom: 22px; padding: 18px 20px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; }
+  .custom-chord-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(128px,1fr)); gap: 8px; margin-top: 10px; }
+  .custom-chord-item{ display:flex; align-items:center; gap: 8px; padding: 9px 12px; border: 1px solid var(--panel-border); border-radius: 8px; font-size: 13px; color: var(--ink); cursor:pointer; transition: border-color 0.12s ease; }
+  .custom-chord-item:hover{ border-color: var(--accent-line); }
+  .custom-chord-item input{ cursor:pointer; accent-color: var(--accent); }
+  .custom-chord-hint{ font-size: 12px; color: var(--wrong); margin-top: 12px; display:none; }
+  .custom-chord-hint.show{ display:block; }
+
+  .card{ background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 34px 30px; margin-bottom: 26px; box-shadow: 0 1px 2px rgba(38,36,32,0.04), 0 10px 28px rgba(38,36,32,0.035); }
+
+  .play-area{ display:flex; flex-direction:column; align-items:center; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid var(--hairline); }
+  .play-btn{ font-family: var(--font-body); font-weight: 600; font-size: 14px; padding: 13px 26px; border-radius: 999px; background: var(--accent); color: var(--panel); border: none; cursor:pointer; display:flex; align-items:center; gap: 8px; transition: filter 0.12s ease, transform 0.1s ease; }
+  .play-btn:hover{ filter: brightness(1.12); }
+  .play-btn:active{ transform: scale(0.98); }
+  .play-btn:disabled{ opacity: 0.5; cursor: wait; }
+  .play-caption{ margin-top: 14px; font-size: 12.5px; color: var(--ink-soft); }
+  .question-count{ margin-top: 4px; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft); }
+
+  .answer-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 22px; }
+  .answer-btn{ font-family: var(--font-body); font-size: 14.5px; font-weight: 600; padding: 15px 12px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink); border-radius: 10px; cursor: pointer; transition: all 0.12s ease; }
+  .answer-btn:hover:not(:disabled){ border-color: var(--accent); background: var(--accent-soft); }
+  .answer-btn:active:not(:disabled){ transform: translateY(1px); }
+  .answer-btn:disabled{ cursor: default; }
+  .answer-btn.correct{ background: var(--correct-soft); border-color: var(--correct); color: var(--correct); }
+  .answer-btn.wrong{ background: var(--wrong-soft); border-color: var(--wrong); color: var(--wrong); }
+  .answer-btn:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .feedback-panel{ display:none; text-align:center; margin-bottom: 20px; padding-top: 18px; border-top: 1px solid var(--hairline); }
+  .feedback-panel.show{ display:block; }
+  .feedback-text{ font-size: 14px; margin-bottom: 10px; font-weight: 600; }
+  .feedback-text.correct{ color: var(--correct); }
+  .feedback-text.wrong{ color: var(--wrong); }
+  .staff-answer{ display:flex; justify-content:center; }
+  .chord-symbol-label{ font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 16px; text-align:center; color: var(--ink); margin-top: 2px; letter-spacing: 0.02em; }
+  .review-staff-mini .chord-symbol-label{ font-size: 13.5px; }
+
+  .next-btn{ display:block; margin: 0 auto; font-family: var(--font-body); font-weight: 600; font-size: 13.5px; padding: 11px 26px; background: transparent; color: var(--ink); border: 1px solid var(--ink); border-radius: 999px; cursor:pointer; opacity: 0; pointer-events: none; transition: all 0.15s ease; }
+  .next-btn.show{ opacity: 1; pointer-events: auto; }
+  .next-btn:hover{ background: var(--ink); color: var(--panel); }
+
+  .test-start, .test-summary{ text-align:center; padding: 12px 0; }
+  .test-start p, .test-summary p{ color: var(--ink-soft); font-size: 13.5px; line-height:1.7; margin: 0 0 18px; }
+  .test-start-btn, .test-again-btn, .test-back-btn{ font-family: var(--font-body); font-weight: 700; font-size: 14px; padding: 13px 30px; border-radius: 999px; cursor:pointer; margin: 4px 6px 10px; }
+  .test-start-btn, .test-again-btn{ background: var(--accent); color: var(--panel); border: none; }
+  .test-start-btn:disabled, .test-again-btn:disabled{ opacity: 0.4; cursor: not-allowed; filter: none; }
+  .test-start-btn:hover, .test-again-btn:hover{ filter: brightness(1.12); }
+  .test-back-btn{ background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+  .test-back-btn:hover{ background: var(--ink); color: var(--panel); }
+  .test-score-big{ font-family: var(--font-mono); font-size: 40px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+  .test-score-label{ font-size: 12.5px; color: var(--ink-soft); margin-bottom: 18px; }
+
+  .replay-select-row{ display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:16px; font-size:13px; color:var(--ink-soft); flex-wrap: wrap; }
+  select.replay-select{ font-family:var(--font-body); font-size:13px; padding:7px 10px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); }
+
+  .playback-style-row{ margin-bottom: 18px; text-align:left; max-width: 420px; margin-left:auto; margin-right:auto; }
+  .playback-style-row > .switch-group-label{ text-align:center; margin-bottom: 8px; }
+  .style-option{ display:flex; align-items:flex-start; gap: 8px; padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: 10px; margin-bottom: 8px; cursor:pointer; font-size: 12.5px; color: var(--ink-soft); }
+  .style-option:hover{ border-color: var(--accent-line); }
+  .style-option input{ margin-top: 2px; }
+  .style-option span.opt-title{ color: var(--ink); font-weight: 600; display:block; margin-bottom: 2px; }
+
+  /* ---------- 連續聽寫 ---------- */
+  .dictation-progress{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:18px; }
+  .dict-dot{ width:26px; height:26px; border-radius:50%; border:1px solid var(--panel-border); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); transition:all .15s ease; flex-shrink:0; }
+  .dict-dot.active{ background:var(--accent); border-color:var(--accent); color:var(--panel); }
+  .dictation-bank{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; padding:16px; margin: 18px 0; border:1px dashed var(--panel-border); border-radius:10px; min-height: 52px; }
+  .dict-tag{ font-family:var(--font-body); font-size:12.5px; font-weight:600; padding:9px 14px; background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent); border-radius:999px; cursor:grab; user-select:none; }
+  .dict-tag:active{ cursor:grabbing; }
+  .dictation-slots{ display:grid; grid-template-columns: repeat(auto-fit, minmax(96px,1fr)); gap:10px; margin-bottom: 22px; }
+  .dict-slot{ min-height:66px; border:1.5px dashed var(--panel-border); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:8px; text-align:center; }
+  .dict-slot-label{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-soft); }
+  .dict-slot.correct{ border-style:solid; border-color:var(--correct); background:var(--correct-soft); }
+  .dict-slot.wrong{ border-style:solid; border-color:var(--wrong); background:var(--wrong-soft); }
+  .dict-slot .dict-tag{ cursor:pointer; }
+  .dictation-hint{ text-align:center; font-size:12px; color:var(--ink-soft); margin-bottom:18px; }
+
+  /* ---------- 複習訂正 ---------- */
+  .review-section h2{ font-family: var(--font-display); font-size: 19px; font-weight: 600; margin: 0 0 4px; }
+  .review-section .hint{ color: var(--ink-soft); font-size: 12.5px; margin: 0 0 16px; }
+  .review-empty{ color: var(--ink-soft); font-size: 13.5px; padding: 22px; text-align:center; border: 1px dashed var(--panel-border); border-radius: 10px; }
+  .review-item{ display:flex; align-items:center; gap: 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .review-item.corrected{ border-color: var(--correct); }
+  .review-staff-mini{ flex-shrink: 0; }
+  .review-meta{ flex: 1; min-width: 160px; }
+  .review-answers{ font-size: 13.5px; }
+  .review-answers .wrong-ans{ color: var(--wrong); }
+  .review-answers .right-ans{ color: var(--correct); }
+  .review-actions{ display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+  .icon-btn{ background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); border-radius: 8px; padding: 7px 12px; font-size: 12.5px; cursor:pointer; }
+  .icon-btn:hover{ border-color: var(--accent); color: var(--accent); }
+  .corrected-tag{ font-size: 11.5px; color: var(--correct); font-family: var(--font-mono); }
+  .correction-grid{ width: 100%; display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
+  .correction-grid .answer-btn{ padding: 11px 10px; font-size: 13px; }
+
+  .loading-banner{ text-align:center; font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft); margin-bottom: 18px; }
+
+  @media (max-width: 480px){
+    h1{ font-size: 27px; } .card{ padding: 26px 18px; } .review-item{ flex-direction: column; align-items: flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce){ .playhead{ transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="staff-header">
+    <div class="clef-mark">𝄞</div>
+    <div class="staff-line"></div><div class="staff-line"></div><div class="staff-line"></div>
+    <div class="staff-line"></div><div class="staff-line"></div>
+    <div class="playhead" id="playhead"></div>
+  </div>
+
+  <a href="index.html" style="display:inline-block; margin-bottom:14px; font-family: var(--font-mono); font-size:12px; color: var(--ink-soft); text-decoration:none;">← 回選單</a>
+  <h1>和絃聽辨</h1>
+  <p class="subtitle">聽和絃，判斷它的性質。答案一律用大譜表＋和絃代號顯示，升降記號依樂理規則精確標示。</p>
+
+  <div class="loading-banner" id="loadingBanner">正在載入鋼琴音色…</div>
+
+  <div class="switch-row">
+    <div class="switch-group">
+      <div class="switch-group-label">模式</div>
+      <div class="switch-btns" id="modeSwitch">
+        <button class="mode-btn active" data-mode="practice">練習模式</button>
+        <button class="mode-btn" data-mode="test">測驗模式</button>
+      </div>
+    </div>
+    <div class="switch-group">
+      <div class="switch-group-label">題型</div>
+      <div class="switch-btns" id="qtypeSwitch">
+        <button class="mode-btn active" data-qtype="single">單題作答</button>
+        <button class="mode-btn" data-qtype="dictation">連續聽寫</button>
+      </div>
+    </div>
+    <div class="switch-group">
+      <div class="switch-group-label">聲位</div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="inversionToggle">
+        <span class="toggle-slider"></span>
+        <span class="toggle-text">包含轉位和絃</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="top-row">
+    <div class="level-tabs" id="levelTabs"></div>
+    <div class="score-box" id="scoreBoxWrap">
+      <div class="num" id="scoreNum">0 / 0</div>
+      <div class="label">正確 / 已作答　連續 <span id="streakNum">0</span></div>
+    </div>
+  </div>
+
+  <div class="custom-chord-panel" id="customChordPanel" style="display:none;">
+    <div class="switch-group-label">自訂和絃內容（至少選 2 種）</div>
+    <div class="custom-chord-grid" id="customChordGrid"></div>
+    <div class="custom-chord-hint" id="customChordHint">請至少選擇 2 種和絃性質才能開始練習</div>
+  </div>
+
+  <div class="card">
+
+    <!-- 單題：測驗開始畫面 -->
+    <div class="test-start" id="testStartPanel" style="display:none;">
+      <p id="testStartDesc">這次測驗共 10 題，結束後會顯示總成績。</p>
+      <div class="replay-select-row">
+        <label for="testReplaySelect">每題可重播次數：</label>
+        <select id="testReplaySelect" class="replay-select">
+          <option value="1">1 次</option>
+          <option value="2" selected>2 次</option>
+          <option value="3">3 次</option>
+          <option value="5">5 次</option>
+          <option value="inf">不限</option>
+        </select>
+      </div>
+      <button class="test-start-btn" id="testStartBtn">開始測驗</button>
+    </div>
+
+    <!-- 單題：測驗成績畫面 -->
+    <div class="test-summary" id="testSummaryPanel" style="display:none;">
+      <div class="test-score-big" id="testSummaryScore">0 / 10</div>
+      <div class="test-score-label">測驗結束</div>
+      <p>答錯的題目已收錄到下方「複習訂正」區，可以重播分解和絃再訂正一次。</p>
+      <button class="test-again-btn" id="testAgainBtn">🔁 再測一次</button>
+      <button class="test-back-btn" id="testBackBtn">↩ 回到練習模式</button>
+    </div>
+
+    <!-- 連續聽寫：開始畫面 -->
+    <div class="test-start" id="dictationStartPanel" style="display:none;">
+      <p id="dictationStartDesc">這個模式會依你設定的題數連續彈奏和絃。播放結束後，把下方的和絃名稱拖曳到正確的題號格子中。</p>
+
+      <div class="replay-select-row" id="dictationCountRow">
+        <label for="dictationCountInput">聽寫題數：</label>
+        <input type="number" id="dictationCountInput" class="replay-select" min="2" max="40" value="10" style="width:64px;">
+      </div>
+
+      <div class="playback-style-row" id="dictationRepeatRow">
+        <div class="switch-group-label">和絃是否重複</div>
+        <label class="style-option">
+          <input type="radio" name="dictationRepeatMode" value="allow" checked>
+          <span><span class="opt-title">可以重複</span>同一種和絃性質可能出現多次，題數依上方設定的數字</span>
+        </label>
+        <label class="style-option">
+          <input type="radio" name="dictationRepeatMode" value="unique">
+          <span><span class="opt-title">不重複</span>每種和絃性質只出現一次，題數會自動等於目前難度的和絃種類數（<span id="dictationUniqueCountHint">2</span> 題）</span>
+        </label>
+      </div>
+
+      <div class="playback-style-row">
+        <div class="switch-group-label">播放方式</div>
+        <label class="style-option">
+          <input type="radio" name="playbackStyle" value="blockTriple" checked>
+          <span><span class="opt-title">三遍連奏</span>每個和絃連續播放 3 遍（每遍間隔 0.5 秒），播完該題後停頓 2 秒，再接下一題</span>
+        </label>
+        <label class="style-option">
+          <input type="radio" name="playbackStyle" value="singlePass">
+          <span><span class="opt-title">單次播放</span>每個和絃只播放 1 遍，播完停頓 2 秒，再接下一題</span>
+        </label>
+      </div>
+
+      <div class="replay-select-row" id="dictationReplayRow">
+        <label for="dictationReplaySelect">整段可重播次數：</label>
+        <select id="dictationReplaySelect" class="replay-select">
+          <option value="1">1 次</option>
+          <option value="2" selected>2 次</option>
+          <option value="3">3 次</option>
+          <option value="5">5 次</option>
+          <option value="inf">不限</option>
+        </select>
+      </div>
+
+      <button class="test-start-btn" id="dictationStartBtn">開始聽寫</button>
+    </div>
+
+    <!-- 連續聽寫：主畫面 -->
+    <div id="dictationPanel" style="display:none;">
+      <div class="dictation-progress" id="dictationDots"></div>
+      <div class="play-area" style="border-bottom:none; padding-bottom: 8px; margin-bottom: 8px;">
+        <button class="play-btn" id="dictationPlayBtn" disabled>▶　播放整段</button>
+        <div class="play-caption" id="dictationCaption">音色載入中，請稍候</div>
+      </div>
+      <p class="dictation-hint">選項面板固定顯示這個難度的和絃性質，可重複拖曳使用；把標籤拖到對應的題號格子中，點一下格子裡已填入的標籤可以清除重填。</p>
+      <div class="dictation-bank" id="dictationBank"></div>
+      <div class="dictation-slots" id="dictationSlots"></div>
+      <button class="next-btn show" id="dictationSubmitBtn">提交作答</button>
+    </div>
+
+    <!-- 連續聽寫：成績畫面 -->
+    <div class="test-summary" id="dictationSummaryPanel" style="display:none;">
+      <div class="test-score-big" id="dictationSummaryScore">0 / 10</div>
+      <div class="test-score-label">聽寫結束</div>
+      <p>答錯的題目已收錄到下方「複習訂正」區。</p>
+      <button class="test-again-btn" id="dictationAgainBtn">🔁 再聽寫一次</button>
+      <button class="test-back-btn" id="dictationBackBtn">↩ 回到練習模式</button>
+    </div>
+
+    <!-- 單題：出題畫面（練習／測驗共用） -->
+    <div id="questionPanel">
+      <div class="play-area">
+        <button class="play-btn" id="playBtn" disabled>▶　播放和絃（連續 3 遍）</button>
+        <div class="play-caption" id="playCaption">音色載入中，請稍候</div>
+        <div class="question-count" id="questionCount">第 1 題</div>
+      </div>
+      <div class="answer-grid" id="answerGrid"></div>
+      <div class="feedback-panel" id="feedbackPanel">
+        <div class="feedback-text" id="feedbackText"></div>
+        <div class="staff-answer" id="staffAnswer"></div>
+      </div>
+      <button class="next-btn" id="nextBtn">下一題 →</button>
+    </div>
+
+  </div>
+
+  <div class="review-section">
+    <h2>複習訂正</h2>
+    <p class="hint">答錯的題目會出現在這裡。「分解重播」會播放琶音，方便逐音辨認。</p>
+    <div id="reviewList"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // ---------- 資料設定 ----------
+  const QUALITIES = {
+    major:      { label: '大三和絃',   intervals: [0,4,7],     symbol: '' },
+    minor:      { label: '小三和絃',   intervals: [0,3,7],     symbol: 'm' },
+    augmented:  { label: '增三和絃',   intervals: [0,4,8],     symbol: 'aug' },
+    diminished: { label: '減三和絃',   intervals: [0,3,6],     symbol: 'dim' },
+    major7:     { label: '大七和絃',   intervals: [0,4,7,11],  symbol: 'maj7' },
+    dominant7:  { label: '屬七和絃',   intervals: [0,4,7,10],  symbol: '7' },
+    minor7:     { label: '小七和絃',   intervals: [0,3,7,10],  symbol: 'm7' },
+    halfDim7:   { label: '半減七和絃', intervals: [0,3,6,10],  symbol: 'm7b5' },
+    dim7:       { label: '減七和絃',   intervals: [0,3,6,9],   symbol: 'dim7' },
+    augmented7: { label: '增七和絃',   intervals: [0,4,8,11],  symbol: 'maj7#5' },
+    major9:     { label: '大九和絃',   intervals: [0,4,7,11,14], symbol: 'maj9' },
+    minor9:     { label: '小九和絃',   intervals: [0,3,7,10,14], symbol: 'm9' },
+    dominant9:  { label: '屬九和絃',   intervals: [0,4,7,10,14], symbol: '9' },
+  };
+
+  // 供「自訂和絃」勾選面板使用的固定顯示順序（大、小、屬、增、減、半減；三和絃→七和絃→九和絃）
+  const QUALITY_ORDER = ['major','minor','augmented','diminished','major7','minor7','dominant7','augmented7','dim7','halfDim7','major9','minor9','dominant9'];
+  const CUSTOM_LEVEL_ID = 7;
+
+  const LEVELS = [
+    { id: 1, name: 'Lv1 三和絃基礎', pool: ['major','minor'] },
+    { id: 2, name: 'Lv2 三和絃進階', pool: ['major','minor','augmented','diminished'] },
+    { id: 3, name: 'Lv3 七和絃基礎', pool: ['major7','minor7','dominant7'] },
+    { id: 4, name: 'Lv4 七和絃完整', pool: ['major7','minor7','dominant7','augmented7','dim7','halfDim7'] },
+    { id: 5, name: 'Lv5 三和絃／七和絃混合', pool: ['major','minor','augmented','diminished','major7','minor7','dominant7','augmented7','dim7','halfDim7'] },
+    { id: 6, name: 'Lv6 九和絃', pool: ['major9','minor9','dominant9'] },
+    { id: CUSTOM_LEVEL_ID, name: '自訂和絃', pool: ['major','minor','dominant7','major7'] },
+  ];
+  const customLevel = LEVELS[LEVELS.length - 1];
+
+  const ROOT_MIN = 36; // C2
+  const ROOT_MAX = 72; // C5
+  const TEST_TOTAL = 10;
+
+  // bpm60，每個和絃持續兩拍（= 2 秒）
+  const CHORD_HOLD_SEC = 2.0;
+  const CHORD_TRIPLE_GAP = 0.5;   // 三遍連奏：同一和絃連續彈三次時，彼此的間隔
+  const DICT_PAUSE_BETWEEN_Q = 2.0; // 兩種聽寫模式共用：題與題之間的停頓
+
+  // ---------- 樂理拼寫 ----------
+  const LETTERS = ['C','D','E','F','G','A','B'];
+  const NATURAL_PC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+  const ROOT_SPELLING = {
+    0:{letter:'C',diff:0}, 1:{letter:'C',diff:1}, 2:{letter:'D',diff:0},
+    3:{letter:'E',diff:-1}, 4:{letter:'E',diff:0}, 5:{letter:'F',diff:0},
+    6:{letter:'F',diff:1}, 7:{letter:'G',diff:0}, 8:{letter:'A',diff:-1},
+    9:{letter:'A',diff:0}, 10:{letter:'B',diff:-1}, 11:{letter:'B',diff:0},
+  };
+
+  function accCodeFromDiff(diff){
+    if(diff === 1) return '#';
+    if(diff === -1) return 'b';
+    if(diff === 2) return '##';
+    if(diff === -2) return 'bb';
+    return null;
+  }
+
+
+  // 依「音級」（0=根音,1=三音,2=五音,3=七音,4=九音…）決定字母拼寫，
+  // 而非陣列位置——這樣轉位後（音符重新排序）字母拼寫依然正確
+  function spellChordNotes(root, intervals, degrees){
+    const rootPc = ((root % 12) + 12) % 12;
+    const rootLetterIdx = LETTERS.indexOf(ROOT_SPELLING[rootPc].letter);
+    return intervals.map((iv, i) => {
+      const degree = degrees[i];
+      const noteMidi = root + iv;
+      const letterIdx = (rootLetterIdx + degree * 2) % 7;
+      const letter = LETTERS[letterIdx];
+      const targetPc = ((noteMidi % 12) + 12) % 12;
+      let diff = targetPc - NATURAL_PC[letter];
+      diff = ((diff % 12) + 12) % 12;
+      if(diff > 6) diff -= 12;
+      const naturalMidiEquivalent = noteMidi - diff;
+      const octave = Math.floor(naturalMidiEquivalent / 12) - 1;
+      const accCode = accCodeFromDiff(diff);
+      const vexKey = `${letter.toLowerCase()}${accCode || ''}/${octave}`;
+      return { letter, diff, octave, midi: noteMidi, accCode, vexKey };
+    });
+  }
+
+  // 和絃代號永遠依「根位」顯示，不受轉位影響（轉位只影響實際發聲/記譜的音符排列）
+  function buildChordSymbol(root, qualityKey){
+    const rootPc = ((root % 12) + 12) % 12;
+    const rootSpell = ROOT_SPELLING[rootPc];
+    const accText = accCodeFromDiff(rootSpell.diff) || '';
+    return `${rootSpell.letter}${accText}${QUALITIES[qualityKey].symbol}`;
+  }
+
+
+  // ---------- 狀態 ----------
+  let appMode = 'practice';     // 'practice' | 'test'
+  let questionType = 'single';  // 'single' | 'dictation'
+  let currentLevel = LEVELS[0];
+  let score = { correct: 0, total: 0, streak: 0 };
+  let questionIndex = 1;
+  let current = null;
+  let answered = false;
+  let audioCtx = null;
+  let pianoInstrument = null;
+  let reviewItems = [];
+  let reviewIdSeq = 1;
+  let testSession = null;      // { total, index, correct, maxReplays, replaysLeft, finished }
+  let dictationSession = null; // { questions, maxReplays, replaysLeft, submitted, playbackStyle }
+  let includeInversions = false;
+
+  // 依原始（根位）音程與轉位編號，算出實際發聲的音符
+  // 回傳排序後的 {degree, semis} 陣列：degree 保留原本音級（供拼寫用），semis 已依轉位調整八度
+  function applyInversion(baseIntervals, inversionIndex){
+    return baseIntervals
+      .map((semis, degree) => ({ degree, semis: degree < inversionIndex ? semis + 12 : semis }))
+      .sort((a, b) => a.semis - b.semis);
+  }
+
+  // ---------- 音訊 ----------
+  function ensureAudio(){
+    if(!audioCtx){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+    return audioCtx;
+  }
+
+  function loadPiano(){
+    const ctx = ensureAudio();
+    return Soundfont.instrument(ctx, 'acoustic_grand_piano').then(inst => {
+      pianoInstrument = inst;
+      document.getElementById('loadingBanner').style.display = 'none';
+      updatePlayBtnState();
+      updateDictationPlayCaption();
+    }).catch(() => {
+      document.getElementById('loadingBanner').textContent = '鋼琴音色載入失敗，請確認網路連線後重新整理頁面';
+    });
+  }
+
+  function animatePlayhead(durationMs){
+    const ph = document.getElementById('playhead');
+    ph.classList.remove('active');
+    ph.style.transition = 'none';
+    ph.style.left = '0%';
+    void ph.offsetWidth;
+    ph.classList.add('active');
+    ph.style.transition = `left ${durationMs}ms linear`;
+    requestAnimationFrame(() => { ph.style.left = '100%'; });
+    setTimeout(() => { ph.classList.remove('active'); }, durationMs + 100);
+  }
+
+  function playBlockChord(root, intervals, repeats){
+    if(!pianoInstrument) return 0;
+    const ctx = audioCtx;
+    let t = ctx.currentTime + 0.05;
+    for(let r = 0; r < repeats; r++){
+      intervals.forEach(iv => pianoInstrument.play(root + iv, t, { duration: CHORD_HOLD_SEC, gain: 1.3 }));
+      t += CHORD_HOLD_SEC + CHORD_TRIPLE_GAP;
+    }
+    const totalMs = (t - ctx.currentTime) * 1000;
+    animatePlayhead(totalMs);
+    return totalMs;
+  }
+
+  function playArpeggio(root, intervals){
+    if(!pianoInstrument) return 0;
+    const ctx = audioCtx;
+    let t = ctx.currentTime + 0.05;
+    const noteGap = 0.46;
+    intervals.forEach(iv => { pianoInstrument.play(root + iv, t, { duration: 0.55, gain: 1.3 }); t += noteGap; });
+    t += 0.15;
+    intervals.forEach(iv => pianoInstrument.play(root + iv, t, { duration: CHORD_HOLD_SEC, gain: 1.1 }));
+    t += CHORD_HOLD_SEC + 0.2;
+    const totalMs = (t - ctx.currentTime) * 1000;
+    animatePlayhead(totalMs);
+    return totalMs;
+  }
+
+  // 連續聽寫：依所選播放方式排出完整時間表
+  function scheduleDictationPlayback(){
+    const ctx = audioCtx;
+    let t = ctx.currentTime + 0.05;
+    const events = [];
+    const style = dictationSession.playbackStyle;
+
+    dictationSession.questions.forEach((q, qi) => {
+      if(style === 'blockTriple'){
+        for(let r = 0; r < 3; r++){
+          events.push({ qi, start: t - ctx.currentTime, dur: CHORD_HOLD_SEC });
+          q.intervals.forEach(iv => pianoInstrument.play(q.root + iv, t, { duration: CHORD_HOLD_SEC, gain: 1.3 }));
+          t += CHORD_HOLD_SEC;
+          t += (r < 2) ? CHORD_TRIPLE_GAP : DICT_PAUSE_BETWEEN_Q;
+        }
+      } else {
+        events.push({ qi, start: t - ctx.currentTime, dur: CHORD_HOLD_SEC });
+        q.intervals.forEach(iv => pianoInstrument.play(q.root + iv, t, { duration: CHORD_HOLD_SEC, gain: 1.3 }));
+        t += CHORD_HOLD_SEC;
+        t += DICT_PAUSE_BETWEEN_Q;
+      }
+    });
+
+    const totalMs = (t - ctx.currentTime) * 1000;
+    document.querySelectorAll('.dict-dot').forEach(d => d.classList.remove('active'));
+    events.forEach(ev => {
+      setTimeout(() => { const d = document.getElementById('dict-dot-' + ev.qi); if(d) d.classList.add('active'); }, ev.start * 1000);
+      setTimeout(() => { const d = document.getElementById('dict-dot-' + ev.qi); if(d) d.classList.remove('active'); }, (ev.start + ev.dur) * 1000);
+    });
+    return totalMs;
+  }
+
+  // ---------- 大譜表繪製 ----------
+  function renderChordGrandStaff(container, root, intervals, degrees, width, height){
+    container.innerHTML = '';
+    const VF = Vex.Flow;
+    const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+    renderer.resize(width, height);
+    const context = renderer.getContext();
+
+    const staveX = 44;
+    const staveWidth = Math.max(80, width - staveX - 10);
+    const trebleY = Math.round(height * 0.15);
+    const bassY = Math.round(height * 0.52);
+
+    const trebleStave = new VF.Stave(staveX, trebleY, staveWidth);
+    trebleStave.addClef('treble');
+    const bassStave = new VF.Stave(staveX, bassY, staveWidth);
+    bassStave.addClef('bass');
+    trebleStave.setContext(context).draw();
+    bassStave.setContext(context).draw();
+
+    new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
+    new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
+
+    const spelled = spellChordNotes(root, intervals, degrees);
+    const trebleNotes = spelled.filter(n => n.midi >= 60);
+    const bassNotes = spelled.filter(n => n.midi < 60);
+
+    if(trebleNotes.length){
+      const note = new VF.StaveNote({ clef: 'treble', keys: trebleNotes.map(n => n.vexKey), duration: 'w' });
+      trebleNotes.forEach((n, idx) => { if(n.accCode) note.addAccidental(idx, new VF.Accidental(n.accCode)); });
+      VF.Formatter.FormatAndDraw(context, trebleStave, [note]);
+    }
+    if(bassNotes.length){
+      const note = new VF.StaveNote({ clef: 'bass', keys: bassNotes.map(n => n.vexKey), duration: 'w' });
+      bassNotes.forEach((n, idx) => { if(n.accCode) note.addAccidental(idx, new VF.Accidental(n.accCode)); });
+      VF.Formatter.FormatAndDraw(context, bassStave, [note]);
+    }
+  }
+
+  // 大譜表 + 下方和絃代號，一起渲染進容器
+  function renderChordWithSymbol(container, root, qualityKey, intervals, degrees, width, height){
+    container.innerHTML = '';
+    const staffDiv = document.createElement('div');
+    container.appendChild(staffDiv);
+    renderChordGrandStaff(staffDiv, root, intervals, degrees, width, height);
+    const label = document.createElement('div');
+    label.className = 'chord-symbol-label';
+    label.textContent = buildChordSymbol(root, qualityKey);
+    container.appendChild(label);
+  }
+
+  // ---------- 出題 ----------
+  // 依基礎（根位）音程，決定實際出題用的 intervals/degrees（依 includeInversions 決定是否轉位）
+  function buildQuestionVoicing(qualityKey){
+    const baseIntervals = QUALITIES[qualityKey].intervals;
+    const inversionIndex = includeInversions ? Math.floor(Math.random() * baseIntervals.length) : 0;
+    const voiced = applyInversion(baseIntervals, inversionIndex);
+    return {
+      intervals: voiced.map(v => v.semis),
+      degrees: voiced.map(v => v.degree),
+      inversionIndex,
+    };
+  }
+
+  function generateQuestion(){
+    const pool = currentLevel.pool;
+    const qualityKey = pool[Math.floor(Math.random() * pool.length)];
+    const root = ROOT_MIN + Math.floor(Math.random() * (ROOT_MAX - ROOT_MIN + 1));
+    const voicing = buildQuestionVoicing(qualityKey);
+    return { root, qualityKey, intervals: voicing.intervals, degrees: voicing.degrees, inversionIndex: voicing.inversionIndex };
+  }
+
+  function shuffleCopy(arr){
+    const a = arr.slice();
+    for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+
+  // 連續聽寫專用出題：allowRepeat=false 時，每種和絃性質只出現一次
+  function generateDictationQuestions(count, allowRepeat){
+    if(allowRepeat){
+      const qs = [];
+      for(let i = 0; i < count; i++) qs.push(generateQuestion());
+      return qs;
+    }
+    const shuffledPool = shuffleCopy(currentLevel.pool).slice(0, count);
+    return shuffledPool.map(key => {
+      const root = ROOT_MIN + Math.floor(Math.random() * (ROOT_MAX - ROOT_MIN + 1));
+      const voicing = buildQuestionVoicing(key);
+      return { root, qualityKey: key, intervals: voicing.intervals, degrees: voicing.degrees, inversionIndex: voicing.inversionIndex };
+    });
+  }
+
+  function renderAnswerGrid(){
+    const grid = document.getElementById('answerGrid');
+    grid.innerHTML = '';
+    currentLevel.pool.forEach(key => {
+      const btn = document.createElement('button');
+      btn.className = 'answer-btn';
+      btn.textContent = QUALITIES[key].label;
+      btn.dataset.key = key;
+      btn.addEventListener('click', () => handleAnswer(key));
+      grid.appendChild(btn);
+    });
+  }
+
+  function resetFeedbackUI(){
+    document.getElementById('feedbackPanel').classList.remove('show');
+    document.getElementById('nextBtn').classList.remove('show');
+    document.getElementById('nextBtn').textContent = '下一題 →';
+    document.getElementById('playCaption').textContent = pianoInstrument ? '按下播放，聽聽這是什麼和絃' : '音色載入中，請稍候';
+  }
+
+  function newQuestion(){
+    if(currentLevel.pool.length < 2){
+      current = null;
+      document.getElementById('answerGrid').innerHTML = '';
+      document.getElementById('questionCount').textContent = '';
+      resetFeedbackUI();
+      document.getElementById('playCaption').textContent = '請先在上方選擇至少 2 種和絃性質';
+      updatePlayBtnState();
+      return;
+    }
+    current = generateQuestion();
+    answered = false;
+    resetFeedbackUI();
+    document.getElementById('questionCount').textContent = `第 ${questionIndex} 題`;
+    renderAnswerGrid();
+    updatePlayBtnState();
+  }
+
+  function newTestQuestion(){
+    current = generateQuestion();
+    answered = false;
+    testSession.replaysLeft = testSession.maxReplays;
+    resetFeedbackUI();
+    document.getElementById('questionCount').textContent =
+      `第 ${testSession.index} / ${testSession.total} 題　目前正確 ${testSession.correct} 題`;
+    renderAnswerGrid();
+    updatePlayBtnState();
+  }
+
+  function handleAnswer(userKey){
+    if(answered) return;
+    answered = true;
+    const correctKey = current.qualityKey;
+    const isCorrect = userKey === correctKey;
+
+    document.querySelectorAll('#answerGrid .answer-btn').forEach(btn => {
+      btn.disabled = true;
+      if(btn.dataset.key === correctKey) btn.classList.add('correct');
+      if(btn.dataset.key === userKey && !isCorrect) btn.classList.add('wrong');
+    });
+
+    const feedbackPanel = document.getElementById('feedbackPanel');
+    const feedbackText = document.getElementById('feedbackText');
+    feedbackPanel.classList.add('show');
+
+    if(isCorrect){
+      feedbackText.textContent = '✓ 正確！這是 ' + QUALITIES[correctKey].label;
+      feedbackText.className = 'feedback-text correct';
+    } else {
+      feedbackText.textContent = '✗ 正確答案是 ' + QUALITIES[correctKey].label;
+      feedbackText.className = 'feedback-text wrong';
+      addToReview(current, userKey);
+    }
+
+    renderChordWithSymbol(document.getElementById('staffAnswer'), current.root, current.qualityKey, current.intervals, current.degrees, 280, 260);
+
+    if(appMode === 'practice'){
+      score.total += 1;
+      if(isCorrect) score.correct += 1;
+      score.streak = isCorrect ? score.streak + 1 : 0;
+      updateScoreBox();
+    } else if(appMode === 'test' && testSession){
+      if(isCorrect) testSession.correct += 1;
+      document.getElementById('questionCount').textContent =
+        `第 ${testSession.index} / ${testSession.total} 題　目前正確 ${testSession.correct} 題`;
+      document.getElementById('nextBtn').textContent =
+        testSession.index >= testSession.total ? '查看成績' : '下一題 →';
+    }
+
+    document.getElementById('nextBtn').classList.add('show');
+  }
+
+  function updateScoreBox(){
+    document.getElementById('scoreNum').textContent = `${score.correct} / ${score.total}`;
+    document.getElementById('streakNum').textContent = score.streak;
+  }
+
+  function updatePlayBtnState(){
+    const btn = document.getElementById('playBtn');
+    if(currentLevel.pool.length < 2){ btn.disabled = true; return; }
+    if(appMode === 'test' && testSession && !testSession.finished){
+      const remainText = testSession.replaysLeft === Infinity ? '不限' : testSession.replaysLeft;
+      btn.textContent = `▶　播放和絃（剩餘 ${remainText} 次）`;
+      btn.disabled = !pianoInstrument || testSession.replaysLeft <= 0;
+    } else {
+      btn.textContent = '▶　播放和絃（連續 3 遍）';
+      btn.disabled = !pianoInstrument;
+    }
+  }
+
+  // ---------- 複習訂正 ----------
+  function addToReview(question, userKey){
+    reviewItems.unshift({
+      id: reviewIdSeq++, root: question.root, qualityKey: question.qualityKey,
+      intervals: question.intervals, degrees: question.degrees, userAnswerKey: userKey, corrected: false,
+      levelId: currentLevel.id,
+    });
+    renderReview();
+  }
+
+  function renderReview(){
+    const list = document.getElementById('reviewList');
+    list.innerHTML = '';
+    if(reviewItems.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'review-empty';
+      empty.textContent = '目前沒有錯題，繼續保持！';
+      list.appendChild(empty);
+      return;
+    }
+    reviewItems.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'review-item' + (item.corrected ? ' corrected' : '');
+
+      const staffMini = document.createElement('div');
+      staffMini.className = 'review-staff-mini';
+      row.appendChild(staffMini);
+      renderChordWithSymbol(staffMini, item.root, item.qualityKey, item.intervals, item.degrees, 210, 210);
+
+      const meta = document.createElement('div');
+      meta.className = 'review-meta';
+      const ansEl = document.createElement('div');
+      ansEl.className = 'review-answers';
+      const userLabel = item.userAnswerKey && QUALITIES[item.userAnswerKey] ? QUALITIES[item.userAnswerKey].label : '（未作答）';
+      if(item.corrected){
+        ansEl.innerHTML = `<span class="right-ans">✓ 已訂正為 ${QUALITIES[item.qualityKey].label}</span>`;
+      } else {
+        ansEl.innerHTML = `你的答案：<span class="wrong-ans">${userLabel}</span><br>正解：<span class="right-ans">${QUALITIES[item.qualityKey].label}</span>`;
+      }
+      meta.appendChild(ansEl);
+
+      const actions = document.createElement('div');
+      actions.className = 'review-actions';
+
+      const replayBtn = document.createElement('button');
+      replayBtn.className = 'icon-btn';
+      replayBtn.textContent = '🔁 分解重播';
+      replayBtn.addEventListener('click', () => playArpeggio(item.root, item.intervals));
+      actions.appendChild(replayBtn);
+
+      if(!item.corrected){
+        const correctBtn = document.createElement('button');
+        correctBtn.className = 'icon-btn';
+        correctBtn.textContent = '✎ 重新作答';
+        correctBtn.addEventListener('click', () => openCorrection(item, row));
+        actions.appendChild(correctBtn);
+      } else {
+        const tag = document.createElement('span');
+        tag.className = 'corrected-tag';
+        tag.textContent = '已訂正';
+        actions.appendChild(tag);
+      }
+
+      row.appendChild(meta);
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+
+  function openCorrection(item, rowEl){
+    const levelForItem = LEVELS.find(l => l.id === item.levelId) || LEVELS[LEVELS.length - 1];
+    const existing = rowEl.querySelector('.correction-grid');
+    if(existing) existing.remove();
+    const grid = document.createElement('div');
+    grid.className = 'correction-grid';
+    levelForItem.pool.forEach(key => {
+      const btn = document.createElement('button');
+      btn.className = 'answer-btn';
+      btn.textContent = QUALITIES[key].label;
+      btn.addEventListener('click', () => {
+        if(key === item.qualityKey){ item.corrected = true; renderReview(); }
+        else { btn.classList.add('wrong'); btn.disabled = true; }
+      });
+      grid.appendChild(btn);
+    });
+    rowEl.appendChild(grid);
+  }
+
+  // ---------- 難度切換 ----------
+  function renderLevelTabs(){
+    const wrap = document.getElementById('levelTabs');
+    wrap.innerHTML = '';
+    const locked = (questionType === 'single' && appMode === 'test' && testSession && !testSession.finished) ||
+                   (questionType === 'dictation' && dictationSession && !dictationSession.submitted);
+    LEVELS.forEach(level => {
+      const btn = document.createElement('button');
+      btn.className = 'level-tab' + (level.id === currentLevel.id ? ' active' : '') + (locked ? ' locked' : '');
+      btn.textContent = level.name;
+      btn.addEventListener('click', () => {
+        if(locked) return;
+        currentLevel = level;
+        renderLevelTabs();
+        if(questionType === 'single' && appMode === 'practice'){ questionIndex = 1; newQuestion(); }
+        updateTestStartDesc();
+        updateDictationStartDesc();
+      });
+      wrap.appendChild(btn);
+    });
+    updateCustomPanelVisibility();
+    updateStartButtonsAvailability();
+    document.getElementById('inversionToggle').disabled = locked;
+  }
+
+  function updateCustomPanelVisibility(){
+    document.getElementById('customChordPanel').style.display = currentLevel.id === CUSTOM_LEVEL_ID ? 'block' : 'none';
+  }
+
+  function updateStartButtonsAvailability(){
+    const insufficient = currentLevel.id === CUSTOM_LEVEL_ID && currentLevel.pool.length < 2;
+    document.getElementById('testStartBtn').disabled = insufficient;
+    document.getElementById('dictationStartBtn').disabled = insufficient;
+  }
+
+  function renderCustomChordPanel(){
+    const grid = document.getElementById('customChordGrid');
+    grid.innerHTML = '';
+    QUALITY_ORDER.forEach(key => {
+      const item = document.createElement('label');
+      item.className = 'custom-chord-item';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = customLevel.pool.includes(key);
+      checkbox.addEventListener('change', () => onCustomChordToggle(key, checkbox.checked));
+      item.appendChild(checkbox);
+      item.appendChild(document.createTextNode(QUALITIES[key].label));
+      grid.appendChild(item);
+    });
+    updateCustomChordHint();
+  }
+
+  function onCustomChordToggle(key, checked){
+    if(checked){
+      if(!customLevel.pool.includes(key)) customLevel.pool.push(key);
+    } else {
+      customLevel.pool = customLevel.pool.filter(k => k !== key);
+    }
+    updateCustomChordHint();
+    updateStartButtonsAvailability();
+    updateTestStartDesc();
+    updateDictationStartDesc();
+    if(currentLevel.id === CUSTOM_LEVEL_ID && questionType === 'single' && appMode === 'practice'){
+      questionIndex = 1;
+      newQuestion();
+    }
+  }
+
+  function updateCustomChordHint(){
+    const hint = document.getElementById('customChordHint');
+    hint.classList.toggle('show', customLevel.pool.length < 2);
+  }
+
+  function updateTestStartDesc(){
+    document.getElementById('testStartDesc').textContent =
+      `這次測驗共 10 題（難度：${currentLevel.name}），結束後會顯示總成績。`;
+  }
+  function updateDictationStartDesc(){
+    const modeNote = appMode === 'practice' ? '（練習模式，重播不限次數）' : '';
+    document.getElementById('dictationStartDesc').textContent =
+      `這個模式會依你設定的題數連續彈奏和絃（難度：${currentLevel.name}）${modeNote}。播放結束後，把下方的和絃名稱拖曳到正確的題號格子中。`;
+    updateDictationCountAvailability();
+  }
+  function updateDictationCountAvailability(){
+    const repeatMode = document.querySelector('input[name="dictationRepeatMode"]:checked').value;
+    const countInput = document.getElementById('dictationCountInput');
+    document.getElementById('dictationUniqueCountHint').textContent = currentLevel.pool.length;
+    if(repeatMode === 'unique'){
+      countInput.value = currentLevel.pool.length;
+      countInput.disabled = true;
+    } else {
+      countInput.disabled = false;
+    }
+  }
+  function updateDictationReplayRowVisibility(){
+    document.getElementById('dictationReplayRow').style.display = appMode === 'test' ? 'flex' : 'none';
+  }
+  document.querySelectorAll('input[name="dictationRepeatMode"]').forEach(r => {
+    r.addEventListener('change', updateDictationCountAvailability);
+  });
+
+  // ---------- 模式 / 題型 切換 ----------
+  function refreshUI(){
+    const show = {
+      question: questionType === 'single' && (appMode === 'practice' || (appMode === 'test' && testSession && !testSession.finished)),
+      testStart: questionType === 'single' && appMode === 'test' && !testSession,
+      testSummary: questionType === 'single' && appMode === 'test' && testSession && testSession.finished,
+      dictationStart: questionType === 'dictation' && !dictationSession,
+      dictationMain: questionType === 'dictation' && dictationSession && !dictationSession.submitted,
+      dictationSummary: questionType === 'dictation' && dictationSession && dictationSession.submitted,
+    };
+    document.getElementById('questionPanel').style.display = show.question ? 'block' : 'none';
+    document.getElementById('testStartPanel').style.display = show.testStart ? 'block' : 'none';
+    document.getElementById('testSummaryPanel').style.display = show.testSummary ? 'block' : 'none';
+    document.getElementById('dictationStartPanel').style.display = show.dictationStart ? 'block' : 'none';
+    document.getElementById('dictationPanel').style.display = show.dictationMain ? 'block' : 'none';
+    document.getElementById('dictationSummaryPanel').style.display = show.dictationSummary ? 'block' : 'none';
+    document.getElementById('scoreBoxWrap').style.display = (questionType === 'single' && appMode === 'practice') ? 'block' : 'none';
+    updateDictationReplayRowVisibility();
+    renderLevelTabs();
+  }
+
+  function onContextChange(){
+    testSession = null;
+    dictationSession = null;
+    document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === appMode));
+    document.querySelectorAll('.mode-btn[data-qtype]').forEach(b => b.classList.toggle('active', b.dataset.qtype === questionType));
+    if(questionType === 'single' && appMode === 'practice'){ questionIndex = 1; newQuestion(); }
+    updateTestStartDesc();
+    updateDictationStartDesc();
+    refreshUI();
+  }
+
+  document.querySelectorAll('#modeSwitch .mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(btn.dataset.mode === appMode) return;
+      appMode = btn.dataset.mode;
+      onContextChange();
+    });
+  });
+  document.querySelectorAll('#qtypeSwitch .mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(btn.dataset.qtype === questionType) return;
+      questionType = btn.dataset.qtype;
+      onContextChange();
+    });
+  });
+
+  // ---------- 單題測驗 ----------
+  document.getElementById('testStartBtn').addEventListener('click', () => {
+    if(currentLevel.pool.length < 2) return;
+    const val = document.getElementById('testReplaySelect').value;
+    const maxReplays = val === 'inf' ? Infinity : parseInt(val, 10);
+    testSession = { total: TEST_TOTAL, index: 1, correct: 0, maxReplays, replaysLeft: maxReplays, finished: false };
+    refreshUI();
+    newTestQuestion();
+  });
+  document.getElementById('testAgainBtn').addEventListener('click', () => { testSession = null; refreshUI(); });
+  document.getElementById('testBackBtn').addEventListener('click', () => { appMode = 'practice'; onContextChange(); });
+
+  document.getElementById('playBtn').addEventListener('click', function(){
+    if(!pianoInstrument || !current) return;
+    if(appMode === 'test' && testSession && !testSession.finished){
+      if(testSession.replaysLeft <= 0) return;
+      if(testSession.replaysLeft !== Infinity) testSession.replaysLeft -= 1;
+      updatePlayBtnState();
+    }
+    playBlockChord(current.root, current.intervals, 3);
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', function(){
+    if(appMode === 'practice'){ questionIndex += 1; newQuestion(); }
+    else if(appMode === 'test' && testSession){
+      if(testSession.index >= testSession.total){
+        testSession.finished = true;
+        document.getElementById('testSummaryScore').textContent = `${testSession.correct} / ${testSession.total}`;
+        refreshUI();
+      } else { testSession.index += 1; newTestQuestion(); }
+    }
+  });
+
+  // ---------- 連續聽寫 ----------
+  function updateDictationPlayCaption(){
+    const btn = document.getElementById('dictationPlayBtn');
+    if(!dictationSession){ btn.disabled = true; return; }
+    const remain = dictationSession.replaysLeft;
+    const remainText = remain === Infinity ? '不限' : remain;
+    btn.textContent = `▶　播放整段（${dictationSession.questions.length} 個和絃，剩餘 ${remainText} 次）`;
+    btn.disabled = !pianoInstrument || dictationSession.submitted || remain <= 0;
+    document.getElementById('dictationCaption').textContent = pianoInstrument ? '播放時可對照上方題號燈號' : '音色載入中，請稍候';
+  }
+
+  // 把某個和絃性質「放入」指定格子（同一個標籤可以重複使用在多個格子）
+  function placeAnswerInSlot(slot, key){
+    const existing = slot.querySelector('.dict-tag');
+    if(existing) existing.remove();
+    const placed = document.createElement('div');
+    placed.className = 'dict-tag';
+    placed.dataset.quality = key;
+    placed.textContent = QUALITIES[key].label;
+    slot.appendChild(placed);
+  }
+
+  function renderDictationBoard(){
+    const dots = document.getElementById('dictationDots');
+    dots.innerHTML = '';
+    dictationSession.questions.forEach((q, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'dict-dot';
+      dot.id = 'dict-dot-' + i;
+      dot.textContent = i + 1;
+      dots.appendChild(dot);
+    });
+
+    // 選項面板：固定顯示該難度所有的和絃性質，各一個，可重複拖曳使用
+    const bank = document.getElementById('dictationBank');
+    bank.innerHTML = '';
+    currentLevel.pool.forEach(key => {
+      const tag = document.createElement('div');
+      tag.className = 'dict-tag';
+      tag.draggable = true;
+      tag.dataset.quality = key;
+      tag.textContent = QUALITIES[key].label;
+      tag.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', key));
+      bank.appendChild(tag);
+    });
+
+    const slots = document.getElementById('dictationSlots');
+    slots.innerHTML = '';
+    dictationSession.questions.forEach((q, i) => {
+      const slot = document.createElement('div');
+      slot.className = 'dict-slot';
+      slot.id = 'dict-slot-' + i;
+      const label = document.createElement('div');
+      label.className = 'dict-slot-label';
+      label.textContent = '第 ' + (i + 1) + ' 題';
+      slot.appendChild(label);
+      slot.addEventListener('dragover', e => e.preventDefault());
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        if(dictationSession.submitted) return;
+        const key = e.dataTransfer.getData('text/plain');
+        if(!QUALITIES[key]) return;
+        placeAnswerInSlot(slot, key);
+      });
+      slots.appendChild(slot);
+    });
+
+    updateDictationPlayCaption();
+  }
+
+  // 點一下格子裡已填入的標籤，清除該格重填
+  document.getElementById('dictationSlots').addEventListener('click', e => {
+    if(!dictationSession || dictationSession.submitted) return;
+    const tag = e.target.closest('.dict-tag');
+    if(tag) tag.remove();
+  });
+
+  document.getElementById('dictationStartBtn').addEventListener('click', () => {
+    if(currentLevel.pool.length < 2) return;
+    const val = document.getElementById('dictationReplaySelect').value;
+    const maxReplays = appMode === 'test' ? (val === 'inf' ? Infinity : parseInt(val, 10)) : Infinity;
+    const styleVal = document.querySelector('input[name="playbackStyle"]:checked').value;
+    const repeatMode = document.querySelector('input[name="dictationRepeatMode"]:checked').value;
+    const allowRepeat = repeatMode === 'allow';
+
+    let count;
+    if(allowRepeat){
+      const countInput = document.getElementById('dictationCountInput');
+      count = parseInt(countInput.value, 10);
+      if(isNaN(count) || count < 2) count = 2;
+      if(count > 40) count = 40;
+      countInput.value = count;
+    } else {
+      count = currentLevel.pool.length;
+    }
+
+    const questions = generateDictationQuestions(count, allowRepeat);
+    dictationSession = { questions, maxReplays, replaysLeft: maxReplays, submitted: false, playbackStyle: styleVal };
+    renderDictationBoard();
+    refreshUI();
+  });
+
+  document.getElementById('dictationPlayBtn').addEventListener('click', () => {
+    if(!pianoInstrument || !dictationSession || dictationSession.replaysLeft <= 0) return;
+    if(dictationSession.replaysLeft !== Infinity) dictationSession.replaysLeft -= 1;
+    updateDictationPlayCaption();
+    const btn = document.getElementById('dictationPlayBtn');
+    btn.disabled = true;
+    const totalMs = scheduleDictationPlayback();
+    setTimeout(() => { updateDictationPlayCaption(); }, totalMs + 80);
+  });
+
+  document.getElementById('dictationSubmitBtn').addEventListener('click', () => {
+    if(!dictationSession || dictationSession.submitted) return;
+    let correctCount = 0;
+    dictationSession.questions.forEach((q, i) => {
+      const slot = document.getElementById('dict-slot-' + i);
+      const tag = slot.querySelector('.dict-tag');
+      const userKey = tag ? tag.dataset.quality : null;
+      const isCorrect = userKey === q.qualityKey;
+      slot.classList.add(isCorrect ? 'correct' : 'wrong');
+      if(tag) tag.draggable = false;
+      if(isCorrect) correctCount++;
+      else addToReview(q, userKey);
+    });
+    dictationSession.submitted = true;
+    document.getElementById('dictationSummaryScore').textContent = `${correctCount} / ${dictationSession.questions.length}`;
+    refreshUI();
+  });
+
+  document.getElementById('dictationAgainBtn').addEventListener('click', () => { dictationSession = null; refreshUI(); });
+  document.getElementById('dictationBackBtn').addEventListener('click', () => { appMode = 'practice'; onContextChange(); });
+
+  document.getElementById('inversionToggle').addEventListener('change', e => {
+    includeInversions = e.target.checked;
+    if(questionType === 'single' && appMode === 'practice'){ questionIndex = 1; newQuestion(); }
+  });
+
+  // ---------- 初始化 ----------
+  renderCustomChordPanel();
+  updateScoreBox();
+  renderReview();
+  updateTestStartDesc();
+  updateDictationStartDesc();
+  refreshUI();
+  newQuestion();
+  loadPiano();
+})();
+</script>
+</body>
+</html>
