@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>和絃辨認 — 聽力訓練</title>
+<title>音樂聽力練習 App — 和絃辨認</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="和絃辨認">
+<meta name="apple-mobile-web-app-title" content="聽力訓練">
 <meta name="theme-color" content="#33415c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -29,73 +29,159 @@
     --correct-soft: rgba(75,122,91,0.10);
     --wrong: #a6493b;
     --wrong-soft: rgba(166,73,59,0.09);
-    --radius: 14px;
+    --radius: 16px;
     --font-display: 'Fraunces', serif;
     --font-body: 'Inter', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
   }
   *{ box-sizing: border-box; }
-  body{ margin:0; background: var(--paper); color: var(--ink); font-family: var(--font-body); min-height:100vh; padding: 36px 16px 72px; }
+  body{ margin:0; background: var(--paper); color: var(--ink); font-family: var(--font-body); min-height:100vh; padding: 24px 16px 72px; }
   .wrap{ max-width: 720px; margin: 0 auto; }
 
-  .staff-header{ position: relative; height: 76px; margin-bottom: 30px; }
+  /* ---------- 頁面轉場 ---------- */
+  .page-view { display: none; animation: fadeIn 0.25s ease-out; }
+  .page-view.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- 導覽回選單按鈕（優化大按鈕） ---------- */
+  .nav-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    padding: 10px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(38,36,32,0.04);
+    margin-bottom: 20px;
+    user-select: none;
+  }
+  .nav-back-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--panel);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(51,65,92,0.15);
+  }
+  .nav-back-btn:active { transform: translateY(0); }
+
+  /* ---------- 頂部樂譜裝飾 ---------- */
+  .staff-header{ position: relative; height: 70px; margin-bottom: 24px; }
   .staff-line{ position:absolute; left:0; right:0; height:1px; background: var(--hairline); }
   .staff-line:nth-child(1){ top: 6px; } .staff-line:nth-child(2){ top: 22px; } .staff-line:nth-child(3){ top: 38px; }
   .staff-line:nth-child(4){ top: 54px; } .staff-line:nth-child(5){ top: 70px; }
-  .playhead{ position:absolute; top:0; bottom:0; width:1.5px; background: var(--accent); left: 0%; opacity: 0; }
-  .playhead.active{ opacity: 0.55; transition: left linear; }
+  .playhead{ position:absolute; top:0; bottom:0; width:2px; background: var(--accent); left: 0%; opacity: 0; z-index: 2; }
+  .playhead.active{ opacity: 0.65; transition: left linear; }
   .clef-mark{ position:absolute; left: 8px; top: -14px; font-family: var(--font-display); font-size: 74px; font-weight: 400; color: var(--ink); opacity: 0.85; line-height: 1; user-select:none; }
 
-  h1{ font-family: var(--font-display); font-weight: 600; font-size: 32px; margin: 0 0 6px; letter-spacing: -0.01em; }
-  .subtitle{ color: var(--ink-soft); font-size: 14.5px; margin: 0 0 22px; line-height: 1.6; }
+  h1{ font-family: var(--font-display); font-weight: 600; font-size: 32px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .subtitle{ color: var(--ink-soft); font-size: 14.5px; margin: 0 0 24px; line-height: 1.6; }
 
-  .switch-row{ display:flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
-  .switch-group{ display:flex; flex-direction: column; gap: 6px; }
-  .switch-group-label{ font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-soft); letter-spacing: 0.04em; }
+  /* ---------- 主選單卡片網格 (第1頁) ---------- */
+  .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 10px; }
+  .menu-card {
+    background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius);
+    padding: 24px; cursor: default; transition: all 0.2s ease; display: flex; flex-direction: column; justify-content: space-between;
+    position: relative; overflow: hidden;
+  }
+  .menu-card.active-feature {
+    cursor: pointer; border-color: var(--accent-line);
+    box-shadow: 0 4px 16px rgba(51,65,92,0.06);
+  }
+  .menu-card.active-feature:hover {
+    transform: translateY(-3px); border-color: var(--accent);
+    box-shadow: 0 10px 24px rgba(51,65,92,0.12);
+  }
+  .menu-card.disabled-feature { opacity: 0.55; }
+  .menu-card-num { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+  .menu-card-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--ink); margin: 0 0 8px; }
+  .menu-card-desc { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .menu-badge {
+    position: absolute; top: 20px; right: 20px; font-size: 11px; font-weight: 600; padding: 4px 10px;
+    border-radius: 999px; font-family: var(--font-mono);
+  }
+  .badge-ready { background: var(--accent); color: var(--panel); }
+  .badge-soon { background: var(--hairline); color: var(--ink-soft); }
+
+  /* ---------- 設定面板控制元件 (第2頁) ---------- */
+  .switch-row{ display:flex; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
+  .switch-group{ display:flex; flex-direction: column; gap: 8px; }
+  .switch-group-label{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); letter-spacing: 0.04em; font-weight: 700; }
   .switch-btns{ display:flex; gap: 8px; }
-  .mode-btn{ font-family: var(--font-body); font-size: 12.5px; font-weight: 700; padding: 9px 15px; border-radius: 10px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); cursor:pointer; transition: all 0.15s ease; }
+  .mode-btn{ font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 10px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); cursor:pointer; transition: all 0.15s ease; }
   .mode-btn:hover{ border-color: var(--accent-line); color: var(--ink); }
   .mode-btn.active{ background: var(--ink); border-color: var(--ink); color: var(--panel); }
 
-  .toggle-switch{ display:flex; align-items:center; gap: 9px; cursor:pointer; padding: 9px 2px; height: 38px; box-sizing:border-box; }
+  .toggle-switch{ display:flex; align-items:center; gap: 9px; cursor:pointer; padding: 9px 2px; height: 40px; box-sizing:border-box; }
   .toggle-switch input{ display:none; }
-  .toggle-slider{ width:38px; height:22px; background: var(--panel-border); border-radius:999px; position:relative; transition: background .15s ease; flex-shrink:0; }
-  .toggle-slider::before{ content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; background:var(--panel); border-radius:50%; transition: transform .15s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .toggle-slider{ width:40px; height:24px; background: var(--panel-border); border-radius:999px; position:relative; transition: background .15s ease; flex-shrink:0; }
+  .toggle-slider::before{ content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; background:var(--panel); border-radius:50%; transition: transform .15s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
   .toggle-switch input:checked + .toggle-slider{ background: var(--accent); }
   .toggle-switch input:checked + .toggle-slider::before{ transform: translateX(16px); }
-  .toggle-text{ font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+  .toggle-text{ font-size:13px; font-weight:600; color:var(--ink-soft); }
   .toggle-switch input:checked ~ .toggle-text{ color:var(--ink); }
   .toggle-switch input:disabled ~ .toggle-slider{ opacity:0.45; cursor:not-allowed; }
   .toggle-switch input:disabled ~ .toggle-text{ opacity:0.45; }
 
-  .top-row{ display:flex; justify-content: space-between; align-items:flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
-  .score-box{ font-family: var(--font-mono); text-align:right; }
-  .score-box .num{ font-size: 19px; font-weight:700; color: var(--accent); }
-  .score-box .label{ font-size: 11px; color: var(--ink-soft); letter-spacing: 0.03em; }
-
-  .level-tabs{ display:flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
-  .level-tab{ font-family: var(--font-body); font-size: 12.5px; font-weight: 600; padding: 8px 13px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); border-radius: 999px; cursor:pointer; transition: all 0.15s ease; }
+  .level-tabs{ display:flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .level-tab{ font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 9px 15px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); border-radius: 999px; cursor:pointer; transition: all 0.15s ease; }
   .level-tab:hover{ border-color: var(--accent-line); color: var(--ink); }
   .level-tab.active{ background: var(--accent); border-color: var(--accent); color: var(--panel); }
-  .level-tab.locked{ opacity: 0.45; pointer-events: none; }
 
-  .custom-chord-panel{ margin-bottom: 22px; padding: 18px 20px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; }
-  .custom-chord-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(128px,1fr)); gap: 8px; margin-top: 10px; }
-  .custom-chord-item{ display:flex; align-items:center; gap: 8px; padding: 9px 12px; border: 1px solid var(--panel-border); border-radius: 8px; font-size: 13px; color: var(--ink); cursor:pointer; transition: border-color 0.12s ease; }
+  .custom-chord-panel{ margin-bottom: 24px; padding: 20px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; }
+  .custom-chord-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 8px; margin-top: 10px; }
+  .custom-chord-item{ display:flex; align-items:center; gap: 8px; padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: 8px; font-size: 13px; color: var(--ink); cursor:pointer; transition: border-color 0.12s ease; }
   .custom-chord-item:hover{ border-color: var(--accent-line); }
-  .custom-chord-item input{ cursor:pointer; accent-color: var(--accent); }
-  .custom-chord-hint{ font-size: 12px; color: var(--wrong); margin-top: 12px; display:none; }
+  .custom-chord-item input{ cursor:pointer; accent-color: var(--accent); width: 16px; height: 16px; }
+  .custom-chord-hint{ font-size: 12.5px; color: var(--wrong); margin-top: 12px; display:none; }
   .custom-chord-hint.show{ display:block; }
 
-  .card{ background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 34px 30px; margin-bottom: 26px; box-shadow: 0 1px 2px rgba(38,36,32,0.04), 0 10px 28px rgba(38,36,32,0.035); }
+  .replay-select-row{ display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:18px; font-size:13.5px; color:var(--ink-soft); flex-wrap: wrap; }
+  select.replay-select, input.replay-select{ font-family:var(--font-body); font-size:13.5px; padding:8px 12px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); }
+
+  .playback-style-row{ margin-bottom: 20px; text-align:left; }
+  .style-option{ display:flex; align-items:flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--panel-border); border-radius: 10px; margin-bottom: 8px; cursor:pointer; font-size: 13px; color: var(--ink-soft); background: var(--panel); transition: border-color 0.15s ease; }
+  .style-option:hover{ border-color: var(--accent-line); }
+  .style-option input{ margin-top: 2px; accent-color: var(--accent); }
+  .style-option span.opt-title{ color: var(--ink); font-weight: 600; display:block; margin-bottom: 2px; }
+
+  /* 進入作答區巨大按鈕 */
+  .start-big-btn {
+    width: 100%; font-family: var(--font-body); font-weight: 700; font-size: 16px; padding: 16px;
+    border-radius: var(--radius); background: var(--accent); color: var(--panel); border: none;
+    cursor: pointer; transition: all 0.15s ease; box-shadow: 0 6px 20px rgba(51,65,92,0.25);
+    margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .start-big-btn:hover { filter: brightness(1.12); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(51,65,92,0.35); }
+  .start-big-btn:active { transform: translateY(0); }
+  .start-big-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; box-shadow: none; }
+
+  /* ---------- 作答區面板 (第3頁) ---------- */
+  .top-bar-practice { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .practice-status-badge { font-family: var(--font-mono); font-size: 12px; background: var(--panel); border: 1px solid var(--panel-border); padding: 6px 12px; border-radius: 999px; color: var(--ink-soft); }
+  .score-box{ font-family: var(--font-mono); text-align:right; }
+  .score-box .num{ font-size: 20px; font-weight:700; color: var(--accent); }
+  .score-box .label{ font-size: 11px; color: var(--ink-soft); letter-spacing: 0.03em; }
+
+  .card{ background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 34px 30px; margin-bottom: 28px; box-shadow: 0 1px 2px rgba(38,36,32,0.04), 0 10px 28px rgba(38,36,32,0.035); }
 
   .play-area{ display:flex; flex-direction:column; align-items:center; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid var(--hairline); }
-  .play-btn{ font-family: var(--font-body); font-weight: 600; font-size: 14px; padding: 13px 26px; border-radius: 999px; background: var(--accent); color: var(--panel); border: none; cursor:pointer; display:flex; align-items:center; gap: 8px; transition: filter 0.12s ease, transform 0.1s ease; }
+  .play-btn{ font-family: var(--font-body); font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 999px; background: var(--accent); color: var(--panel); border: none; cursor:pointer; display:flex; align-items:center; gap: 8px; transition: filter 0.12s ease, transform 0.1s ease; box-shadow: 0 4px 12px rgba(51,65,92,0.18); }
   .play-btn:hover{ filter: brightness(1.12); }
   .play-btn:active{ transform: scale(0.98); }
-  .play-btn:disabled{ opacity: 0.5; cursor: wait; }
-  .play-caption{ margin-top: 14px; font-size: 12.5px; color: var(--ink-soft); }
-  .question-count{ margin-top: 4px; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft); }
+  .play-btn:disabled{ opacity: 0.5; cursor: wait; box-shadow: none; }
+  .play-caption{ margin-top: 14px; font-size: 13px; color: var(--ink-soft); }
+  .question-count{ margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
 
   .answer-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 22px; }
   .answer-btn{ font-family: var(--font-body); font-size: 14.5px; font-weight: 600; padding: 15px 12px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink); border-radius: 10px; cursor: pointer; transition: all 0.12s ease; }
@@ -105,83 +191,81 @@
   .answer-btn.correct{ background: var(--correct-soft); border-color: var(--correct); color: var(--correct); }
   .answer-btn.wrong{ background: var(--wrong-soft); border-color: var(--wrong); color: var(--wrong); }
   .answer-btn:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
-  .answer-btn.pending-lock{ opacity: 0.4; cursor: not-allowed; }
+  .answer-btn.pending-lock{ opacity: 0.45; cursor: not-allowed; }
 
   .feedback-panel{ display:none; text-align:center; margin-bottom: 20px; padding-top: 18px; border-top: 1px solid var(--hairline); }
   .feedback-panel.show{ display:block; }
-  .feedback-text{ font-size: 14px; margin-bottom: 10px; font-weight: 600; }
+  .feedback-text{ font-size: 15px; margin-bottom: 10px; font-weight: 600; }
   .feedback-text.correct{ color: var(--correct); }
   .feedback-text.wrong{ color: var(--wrong); }
   .staff-answer{ display:flex; justify-content:center; }
   .chord-symbol-label{ font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 16px; text-align:center; color: var(--ink); margin-top: 2px; letter-spacing: 0.02em; }
   .review-staff-mini .chord-symbol-label{ font-size: 13.5px; }
 
-  .next-btn{ display:block; margin: 0 auto; font-family: var(--font-body); font-weight: 600; font-size: 13.5px; padding: 11px 26px; background: transparent; color: var(--ink); border: 1px solid var(--ink); border-radius: 999px; cursor:pointer; opacity: 0; pointer-events: none; transition: all 0.15s ease; }
+  .next-btn{ display:block; margin: 0 auto; font-family: var(--font-body); font-weight: 600; font-size: 14px; padding: 12px 28px; background: transparent; color: var(--ink); border: 1px solid var(--ink); border-radius: 999px; cursor:pointer; opacity: 0; pointer-events: none; transition: all 0.15s ease; }
   .next-btn:disabled{ opacity: 0.4 !important; cursor: not-allowed; pointer-events: none !important; }
   .next-btn.show{ opacity: 1; pointer-events: auto; }
   .next-btn:hover{ background: var(--ink); color: var(--panel); }
 
-  .test-start, .test-summary{ text-align:center; padding: 12px 0; }
-  .test-start p, .test-summary p{ color: var(--ink-soft); font-size: 13.5px; line-height:1.7; margin: 0 0 18px; }
-  .test-start-btn, .test-again-btn, .test-back-btn{ font-family: var(--font-body); font-weight: 700; font-size: 14px; padding: 13px 30px; border-radius: 999px; cursor:pointer; margin: 4px 6px 10px; }
-  .test-start-btn, .test-again-btn{ background: var(--accent); color: var(--panel); border: none; }
-  .test-start-btn:disabled, .test-again-btn:disabled{ opacity: 0.4; cursor: not-allowed; filter: none; }
-  .test-start-btn:hover, .test-again-btn:hover{ filter: brightness(1.12); }
+  .test-summary{ text-align:center; padding: 16px 0; }
+  .test-summary p{ color: var(--ink-soft); font-size: 14px; line-height:1.7; margin: 0 0 22px; }
+  .test-again-btn, .test-back-btn{ font-family: var(--font-body); font-weight: 700; font-size: 14px; padding: 13px 30px; border-radius: 999px; cursor:pointer; margin: 6px; }
+  .test-again-btn{ background: var(--accent); color: var(--panel); border: none; box-shadow: 0 4px 12px rgba(51,65,92,0.18); }
+  .test-again-btn:hover{ filter: brightness(1.12); }
   .test-back-btn{ background: transparent; color: var(--ink); border: 1px solid var(--ink); }
   .test-back-btn:hover{ background: var(--ink); color: var(--panel); }
-  .test-score-big{ font-family: var(--font-mono); font-size: 40px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
-  .test-score-label{ font-size: 12.5px; color: var(--ink-soft); margin-bottom: 18px; }
-
-  .replay-select-row{ display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:16px; font-size:13px; color:var(--ink-soft); flex-wrap: wrap; }
-  select.replay-select{ font-family:var(--font-body); font-size:13px; padding:7px 10px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); }
-
-  .playback-style-row{ margin-bottom: 18px; text-align:left; max-width: 420px; margin-left:auto; margin-right:auto; }
-  .playback-style-row > .switch-group-label{ text-align:center; margin-bottom: 8px; }
-  .style-option{ display:flex; align-items:flex-start; gap: 8px; padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: 10px; margin-bottom: 8px; cursor:pointer; font-size: 12.5px; color: var(--ink-soft); }
-  .style-option:hover{ border-color: var(--accent-line); }
-  .style-option input{ margin-top: 2px; }
-  .style-option span.opt-title{ color: var(--ink); font-weight: 600; display:block; margin-bottom: 2px; }
+  .test-score-big{ font-family: var(--font-mono); font-size: 44px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+  .test-score-label{ font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; }
 
   /* ---------- 連續聽寫 ---------- */
   .dictation-progress{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:18px; }
-  .dict-dot{ width:26px; height:26px; border-radius:50%; border:1px solid var(--panel-border); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); transition:all .15s ease; flex-shrink:0; }
+  .dict-dot{ width:28px; height:28px; border-radius:50%; border:1px solid var(--panel-border); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); transition:all .15s ease; flex-shrink:0; }
   .dict-dot.active{ background:var(--accent); border-color:var(--accent); color:var(--panel); }
   .dictation-bank{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; padding:16px; margin: 18px 0; border:1px dashed var(--panel-border); border-radius:10px; min-height: 52px; }
-  .dict-tag{ font-family:var(--font-body); font-size:12.5px; font-weight:600; padding:9px 14px; background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent); border-radius:999px; cursor:grab; user-select:none; }
-  .dict-tag:active{ cursor:grabbing; }
+  .dict-tag{ font-family:var(--font-body); font-size:13px; font-weight:600; padding:9px 14px; background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent); border-radius:999px; cursor:grab; user-select:none; transition: transform 0.1s; }
+  .dict-tag:active{ cursor:grabbing; transform: scale(0.95); }
   .dictation-slots{ display:grid; grid-template-columns: repeat(auto-fit, minmax(96px,1fr)); gap:10px; margin-bottom: 22px; }
   .dictation-bank.locked-pending, .dictation-slots.locked-pending{ opacity: 0.45; pointer-events: none; }
-  .dict-slot{ min-height:66px; border:1.5px dashed var(--panel-border); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:8px; text-align:center; }
-  .dict-slot-label{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-soft); }
+  .dict-slot{ min-height:68px; border:1.5px dashed var(--panel-border); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:8px; text-align:center; transition: all 0.15s; }
+  .dict-slot-label{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); }
   .dict-slot.correct{ border-style:solid; border-color:var(--correct); background:var(--correct-soft); }
   .dict-slot.wrong{ border-style:solid; border-color:var(--wrong); background:var(--wrong-soft); }
   .dict-slot .dict-tag{ cursor:pointer; }
-  .dictation-hint{ text-align:center; font-size:12px; color:var(--ink-soft); margin-bottom:18px; }
+  .dictation-hint{ text-align:center; font-size:12.5px; color:var(--ink-soft); margin-bottom:18px; line-height: 1.5; }
 
   /* ---------- 複習訂正 ---------- */
-  .review-section h2{ font-family: var(--font-display); font-size: 19px; font-weight: 600; margin: 0 0 4px; }
-  .review-section .hint{ color: var(--ink-soft); font-size: 12.5px; margin: 0 0 16px; }
-  .review-empty{ color: var(--ink-soft); font-size: 13.5px; padding: 22px; text-align:center; border: 1px dashed var(--panel-border); border-radius: 10px; }
-  .review-item{ display:flex; align-items:center; gap: 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .review-section h2{ font-family: var(--font-display); font-size: 20px; font-weight: 600; margin: 0 0 6px; }
+  .review-section .hint{ color: var(--ink-soft); font-size: 13px; margin: 0 0 18px; }
+  .review-empty{ color: var(--ink-soft); font-size: 14px; padding: 28px; text-align:center; border: 1px dashed var(--panel-border); border-radius: 12px; }
+  .review-item{ display:flex; align-items:center; gap: 16px; padding: 16px 18px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; margin-bottom: 12px; flex-wrap: wrap; }
   .review-item.corrected{ border-color: var(--correct); }
   .review-staff-mini{ flex-shrink: 0; }
-  .review-meta{ flex: 1; min-width: 160px; }
-  .review-answers{ font-size: 13.5px; }
-  .review-answers .wrong-ans{ color: var(--wrong); }
-  .review-answers .right-ans{ color: var(--correct); }
+  .review-meta{ flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 6px; }
+  .review-answers{ font-size: 13.5px; line-height: 1.6; }
+  .review-answers .wrong-ans{ color: var(--wrong); font-weight: 600; }
+  .review-answers .right-ans{ color: var(--correct); font-weight: 600; }
   .review-actions{ display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
-  .icon-btn{ background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); border-radius: 8px; padding: 7px 12px; font-size: 12.5px; cursor:pointer; }
-  .icon-btn:hover{ border-color: var(--accent); color: var(--accent); }
-  .corrected-tag{ font-size: 11.5px; color: var(--correct); font-family: var(--font-mono); }
+  .icon-btn{ background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; font-weight: 600; cursor:pointer; transition: all 0.15s; }
+  .icon-btn:hover{ border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .corrected-tag{ font-size: 12px; color: var(--correct); font-family: var(--font-mono); font-weight: 700; }
   .correction-grid{ width: 100%; display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
   .correction-grid .answer-btn{ padding: 11px 10px; font-size: 13px; }
 
-  .loading-banner{ text-align:center; font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft); margin-bottom: 18px; }
+  /* 聽寫錯題專門標記題號的 Badge */
+  .q-num-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line);
+    padding: 3px 8px; border-radius: 6px; align-self: flex-start;
+  }
+
+  .loading-banner{ text-align:center; font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; background: var(--panel); padding: 10px; border-radius: 8px; border: 1px solid var(--panel-border); }
 
   @media (max-width: 480px){
-    h1{ font-size: 27px; } .card{ padding: 26px 18px; } .review-item{ flex-direction: column; align-items: flex-start; }
+    h1{ font-size: 26px; } .card{ padding: 24px 18px; } .review-item{ flex-direction: column; align-items: flex-start; }
+    .top-bar-practice { flex-direction: column; align-items: flex-start; }
+    .score-box { text-align: left; }
   }
-  @media (prefers-reduced-motion: reduce){ .playhead{ transition: none !important; } }
+  @media (prefers-reduced-motion: reduce){ .playhead{ transition: none !important; } .page-view { animation: none; } }
 </style>
 </head>
 <body>
@@ -194,173 +278,275 @@
     <div class="playhead" id="playhead"></div>
   </div>
 
-  <a href="index.html" style="display:inline-block; margin-bottom:14px; font-family: var(--font-mono); font-size:12px; color: var(--ink-soft); text-decoration:none;">← 回選單</a>
-  <h1>和絃辨認</h1>
-  <p class="subtitle">聽和絃，判斷它的性質。答案一律用大譜表＋和絃代號顯示，升降記號依樂理規則精確標示。</p>
+  <div class="loading-banner" id="loadingBanner">🎹 正在載入高音質鋼琴音色，請稍候…</div>
 
-  <div class="loading-banner" id="loadingBanner">正在載入鋼琴音色…</div>
+  <!-- =========================================================
+       【第 1 頁】音樂聽力練習主選單
+       ========================================================= -->
+  <div id="pageMenu" class="page-view active">
+    <h1>音樂聽力練習</h1>
+    <p class="subtitle">歡迎使用聽力訓練系統，請從下方目錄選擇今天要練習的項目：</p>
+    
+    <div class="menu-grid">
+      <div class="menu-card disabled-feature">
+        <span class="menu-badge badge-soon">即將推出</span>
+        <div>
+          <div class="menu-card-num">01</div>
+          <h3 class="menu-card-title">音程練習</h3>
+          <p class="menu-card-desc">訓練對兩個音符之間距離的敏感度，建立旋律與和聲的聽覺基石。</p>
+        </div>
+      </div>
 
-  <div class="switch-row">
-    <div class="switch-group">
-      <div class="switch-group-label">模式</div>
-      <div class="switch-btns" id="modeSwitch">
-        <button class="mode-btn active" data-mode="practice">練習模式</button>
-        <button class="mode-btn" data-mode="test">測驗模式</button>
+      <!-- 和絃辨認 (唯一啟用並主打的功能) -->
+      <div class="menu-card active-feature" onclick="showPage('settings')">
+        <span class="menu-badge badge-ready">點擊進入</span>
+        <div>
+          <div class="menu-card-num">02</div>
+          <h3 class="menu-card-title">和絃辨認</h3>
+          <p class="menu-card-desc">聽辨各種三和絃、七和絃與九和絃的色彩與性質，支援單題作答與連續聽寫。</p>
+        </div>
       </div>
-    </div>
-    <div class="switch-group">
-      <div class="switch-group-label">題型</div>
-      <div class="switch-btns" id="qtypeSwitch">
-        <button class="mode-btn active" data-qtype="single">單題作答</button>
-        <button class="mode-btn" data-qtype="dictation">連續聽寫</button>
+
+      <div class="menu-card disabled-feature">
+        <span class="menu-badge badge-soon">即將推出</span>
+        <div>
+          <div class="menu-card-num">03</div>
+          <h3 class="menu-card-title">節奏練習</h3>
+          <p class="menu-card-desc">訓練拍子感與常見節奏型的記憶與默寫，提升視奏與穩定度。</p>
+        </div>
       </div>
-    </div>
-    <div class="switch-group">
-      <div class="switch-group-label">聲位</div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="inversionToggle">
-        <span class="toggle-slider"></span>
-        <span class="toggle-text">包含轉位和絃</span>
-      </label>
+
+      <div class="menu-card disabled-feature">
+        <span class="menu-badge badge-soon">即將推出</span>
+        <div>
+          <div class="menu-card-num">04</div>
+          <h3 class="menu-card-title">單旋律曲調</h3>
+          <p class="menu-card-desc">從短句到完整樂句的旋律聽寫，鍛鍊樂感與首調／固定調音感。</p>
+        </div>
+      </div>
+
+      <div class="menu-card disabled-feature">
+        <span class="menu-badge badge-soon">即將推出</span>
+        <div>
+          <div class="menu-card-num">05</div>
+          <h3 class="menu-card-title">兩聲部曲調</h3>
+          <p class="menu-card-desc">同時聆聽高低兩個聲部的交織，加強對位與多線條的聽覺注意力。</p>
+        </div>
+      </div>
+
+      <div class="menu-card disabled-feature">
+        <span class="menu-badge badge-soon">即將推出</span>
+        <div>
+          <div class="menu-card-num">06</div>
+          <h3 class="menu-card-title">四部和聲進行</h3>
+          <p class="menu-card-desc">古典與流行和聲連接聽辨，從 I-IV-V-I 體驗混聲合唱與和弦走向。</p>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="top-row">
+  <!-- =========================================================
+       【第 2 頁】和絃辨認 — 設定頁
+       ========================================================= -->
+  <div id="pageSettings" class="page-view">
+    <button class="nav-back-btn" onclick="showPage('menu')">← 回目錄選單</button>
+    <h1>和絃辨認 — 設定</h1>
+    <p class="subtitle">調整你想要的模式、題型與難度，設定完成後即可進入作答區訓練。</p>
+
+    <div class="switch-row">
+      <div class="switch-group">
+        <div class="switch-group-label">模式</div>
+        <div class="switch-btns" id="modeSwitch">
+          <button class="mode-btn active" data-mode="practice">練習模式</button>
+          <button class="mode-btn" data-mode="test">測驗模式</button>
+        </div>
+      </div>
+      <div class="switch-group">
+        <div class="switch-group-label">題型</div>
+        <div class="switch-btns" id="qtypeSwitch">
+          <button class="mode-btn active" data-qtype="single">單題作答</button>
+          <button class="mode-btn" data-qtype="dictation">連續聽寫</button>
+        </div>
+      </div>
+      <div class="switch-group">
+        <div class="switch-group-label">聲位</div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="inversionToggle">
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">包含轉位和絃</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="switch-group-label" style="margin-bottom: 8px;">難度選擇</div>
     <div class="level-tabs" id="levelTabs"></div>
-    <div class="score-box" id="scoreBoxWrap">
-      <div class="num" id="scoreNum">0 / 0</div>
-      <div class="label">正確 / 已作答　連續 <span id="streakNum">0</span></div>
+
+    <div class="custom-chord-panel" id="customChordPanel" style="display:none;">
+      <div class="switch-group-label">自訂和絃內容（至少選 2 種）</div>
+      <div class="custom-chord-grid" id="customChordGrid"></div>
+      <div class="custom-chord-hint" id="customChordHint">請至少選擇 2 種和絃性質才能開始練習</div>
     </div>
+
+    <!-- 模式專門細節設定區 -->
+    <div id="modeSpecificSettings" style="background: var(--panel); border: 1px solid var(--panel-border); padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+      
+      <!-- 單題測驗設定 -->
+      <div id="singleTestSettings" style="display:none;">
+        <div class="switch-group-label" style="margin-bottom:10px;">測驗規則</div>
+        <div class="replay-select-row" style="margin-bottom:0;">
+          <label for="testReplaySelect">每題可重播次數：</label>
+          <select id="testReplaySelect" class="replay-select">
+            <option value="1">1 次</option>
+            <option value="2" selected>2 次</option>
+            <option value="3">3 次</option>
+            <option value="5">5 次</option>
+            <option value="inf">不限</option>
+          </select>
+          <span style="font-size: 13px; color: var(--ink-soft);">（固定出題 10 題）</span>
+        </div>
+      </div>
+
+      <!-- 連續聽寫設定 -->
+      <div id="dictationSettings" style="display:none;">
+        <div class="switch-group-label" style="margin-bottom:12px;">聽寫規則與播放方式</div>
+        <div class="replay-select-row" id="dictationCountRow">
+          <label for="dictationCountInput">聽寫題數：</label>
+          <input type="number" id="dictationCountInput" class="replay-select" min="2" max="40" value="10" style="width:72px;">
+        </div>
+
+        <div class="playback-style-row" id="dictationRepeatRow">
+          <div class="switch-group-label" style="margin-bottom:6px;">和絃是否重複</div>
+          <label class="style-option">
+            <input type="radio" name="dictationRepeatMode" value="allow" checked>
+            <span><span class="opt-title">可以重複</span>同一種和絃性質可能出現多次，題數依上方設定的數字</span>
+          </label>
+          <label class="style-option">
+            <input type="radio" name="dictationRepeatMode" value="unique">
+            <span><span class="opt-title">不重複</span>每種和絃性質只出現一次，題數會自動等於目前難度的和絃種類數（<span id="dictationUniqueCountHint">2</span> 題）</span>
+          </label>
+        </div>
+
+        <div class="playback-style-row" style="margin-bottom:12px;">
+          <div class="switch-group-label" style="margin-bottom:6px;">播放連奏速度</div>
+          <label class="style-option">
+            <input type="radio" name="playbackStyle" value="blockTriple" checked>
+            <span><span class="opt-title">三遍連奏</span>每個和絃連續播放 3 遍（每遍間隔 0.5 秒），播完該題後停頓 2 秒，再接下一題</span>
+          </label>
+          <label class="style-option" style="margin-bottom:0;">
+            <input type="radio" name="playbackStyle" value="singlePass">
+            <span><span class="opt-title">單次播放</span>每個和絃只播放 1 遍，播完停頓 2 秒，再接下一題</span>
+          </label>
+        </div>
+
+        <div class="replay-select-row" id="dictationReplayRow" style="margin-top:16px; margin-bottom:0; display:none;">
+          <label for="dictationReplaySelect">整段可重播次數：</label>
+          <select id="dictationReplaySelect" class="replay-select">
+            <option value="1">1 次</option>
+            <option value="2" selected>2 次</option>
+            <option value="3">3 次</option>
+            <option value="5">5 次</option>
+            <option value="inf">不限</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="noSpecialSettings" style="font-size: 13.5px; color: var(--ink-soft); text-align: center;">
+        目前為<b>「單題作答 — 練習模式」</b>，不限時間與重播次數，準備好即可立即進入作答！
+      </div>
+
+    </div>
+
+    <button class="start-big-btn" id="enterPracticeBtn">🎯 確認設定，進入作答頁 →</button>
   </div>
 
-  <div class="custom-chord-panel" id="customChordPanel" style="display:none;">
-    <div class="switch-group-label">自訂和絃內容（至少選 2 種）</div>
-    <div class="custom-chord-grid" id="customChordGrid"></div>
-    <div class="custom-chord-hint" id="customChordHint">請至少選擇 2 種和絃性質才能開始練習</div>
-  </div>
-
-  <div class="card">
-
-    <!-- 單題：測驗開始畫面 -->
-    <div class="test-start" id="testStartPanel" style="display:none;">
-      <p id="testStartDesc">這次測驗共 10 題，結束後會顯示總成績。</p>
-      <div class="replay-select-row">
-        <label for="testReplaySelect">每題可重播次數：</label>
-        <select id="testReplaySelect" class="replay-select">
-          <option value="1">1 次</option>
-          <option value="2" selected>2 次</option>
-          <option value="3">3 次</option>
-          <option value="5">5 次</option>
-          <option value="inf">不限</option>
-        </select>
+  <!-- =========================================================
+       【第 3 頁】作答與複習頁
+       ========================================================= -->
+  <div id="pagePractice" class="page-view">
+    <div class="top-bar-practice">
+      <button class="nav-back-btn" style="margin-bottom:0;" onclick="showPage('settings')">← 返回設定頁</button>
+      <span class="practice-status-badge" id="statusBadgeText">Lv1 三和絃基礎｜練習模式</span>
+      <div class="score-box" id="scoreBoxWrap">
+        <div class="num" id="scoreNum">0 / 0</div>
+        <div class="label">正確 / 已作答 連續 <span id="streakNum">0</span></div>
       </div>
-      <button class="test-start-btn" id="testStartBtn">開始測驗</button>
     </div>
 
-    <!-- 單題：測驗成績畫面 -->
-    <div class="test-summary" id="testSummaryPanel" style="display:none;">
-      <div class="test-score-big" id="testSummaryScore">0 / 10</div>
-      <div class="test-score-label">測驗結束</div>
-      <p>答錯的題目已收錄到下方「複習訂正」區，可以重播分解和絃再訂正一次。</p>
-      <button class="test-again-btn" id="testAgainBtn">🔁 再測一次</button>
-      <button class="test-back-btn" id="testBackBtn">↩ 回到練習模式</button>
+    <div class="card">
+      <!-- 單題：測驗成績畫面 -->
+      <div class="test-summary" id="testSummaryPanel" style="display:none;">
+        <div class="test-score-big" id="testSummaryScore">0 / 10</div>
+        <div class="test-score-label">測驗結束</div>
+        <p>答錯的題目已收錄到下方「複習訂正」區，可以重播分解和絃再訂正一次。</p>
+        <button class="test-again-btn" id="testAgainBtn">🔁 再測一次</button>
+        <button class="test-back-btn" onclick="showPage('settings')">↩ 重新調整設定</button>
+      </div>
+
+      <!-- 連續聽寫：主畫面 -->
+      <div id="dictationPanel" style="display:none;">
+        <div class="dictation-progress" id="dictationDots"></div>
+        <div class="play-area" style="border-bottom:none; padding-bottom: 8px; margin-bottom: 8px;">
+          <button class="play-btn" id="dictationPlayBtn" disabled>▶ 播放整段</button>
+          <div class="play-caption" id="dictationCaption">音色載入中，請稍候</div>
+        </div>
+        <p class="dictation-hint">選項面板固定顯示這個難度的和絃性質，可重複拖曳使用；把標籤拖到對應的題號格子中，點一下格子裡已填入的標籤可以清除重填。</p>
+        <div class="dictation-bank" id="dictationBank"></div>
+        <div class="dictation-slots" id="dictationSlots"></div>
+        <button class="next-btn show" id="dictationSubmitBtn">提交作答</button>
+      </div>
+
+      <!-- 連續聽寫：成績畫面 -->
+      <div class="test-summary" id="dictationSummaryPanel" style="display:none;">
+        <div class="test-score-big" id="dictationSummaryScore">0 / 10</div>
+        <div class="test-score-label">聽寫結束</div>
+        <p>答錯的題目已收錄到下方「複習訂正」區，並已<b>標註題號</b>方便對照與訂正。</p>
+        <button class="test-again-btn" id="dictationAgainBtn">🔁 再聽寫一次</button>
+        <button class="test-back-btn" onclick="showPage('settings')">↩ 重新調整設定</button>
+      </div>
+
+      <!-- 單題：出題畫面（練習／測驗共用） -->
+      <div id="questionPanel">
+        <div class="play-area">
+          <button class="play-btn" id="playBtn" disabled>▶ 播放和絃（連續 3 遍）</button>
+          <div class="play-caption" id="playCaption">音色載入中，請稍候</div>
+          <div class="question-count" id="questionCount">第 1 題</div>
+        </div>
+        <div class="answer-grid" id="answerGrid"></div>
+        <div class="feedback-panel" id="feedbackPanel">
+          <div class="feedback-text" id="feedbackText"></div>
+          <div class="staff-answer" id="staffAnswer"></div>
+        </div>
+        <button class="next-btn" id="nextBtn">下一題 →</button>
+      </div>
     </div>
 
-    <!-- 連續聽寫：開始畫面 -->
-    <div class="test-start" id="dictationStartPanel" style="display:none;">
-      <p id="dictationStartDesc">這個模式會依你設定的題數連續彈奏和絃。播放結束後，把下方的和絃名稱拖曳到正確的題號格子中。</p>
-
-      <div class="replay-select-row" id="dictationCountRow">
-        <label for="dictationCountInput">聽寫題數：</label>
-        <input type="number" id="dictationCountInput" class="replay-select" min="2" max="40" value="10" style="width:64px;">
-      </div>
-
-      <div class="playback-style-row" id="dictationRepeatRow">
-        <div class="switch-group-label">和絃是否重複</div>
-        <label class="style-option">
-          <input type="radio" name="dictationRepeatMode" value="allow" checked>
-          <span><span class="opt-title">可以重複</span>同一種和絃性質可能出現多次，題數依上方設定的數字</span>
-        </label>
-        <label class="style-option">
-          <input type="radio" name="dictationRepeatMode" value="unique">
-          <span><span class="opt-title">不重複</span>每種和絃性質只出現一次，題數會自動等於目前難度的和絃種類數（<span id="dictationUniqueCountHint">2</span> 題）</span>
-        </label>
-      </div>
-
-      <div class="playback-style-row">
-        <div class="switch-group-label">播放方式</div>
-        <label class="style-option">
-          <input type="radio" name="playbackStyle" value="blockTriple" checked>
-          <span><span class="opt-title">三遍連奏</span>每個和絃連續播放 3 遍（每遍間隔 0.5 秒），播完該題後停頓 2 秒，再接下一題</span>
-        </label>
-        <label class="style-option">
-          <input type="radio" name="playbackStyle" value="singlePass">
-          <span><span class="opt-title">單次播放</span>每個和絃只播放 1 遍，播完停頓 2 秒，再接下一題</span>
-        </label>
-      </div>
-
-      <div class="replay-select-row" id="dictationReplayRow">
-        <label for="dictationReplaySelect">整段可重播次數：</label>
-        <select id="dictationReplaySelect" class="replay-select">
-          <option value="1">1 次</option>
-          <option value="2" selected>2 次</option>
-          <option value="3">3 次</option>
-          <option value="5">5 次</option>
-          <option value="inf">不限</option>
-        </select>
-      </div>
-
-      <button class="test-start-btn" id="dictationStartBtn">開始聽寫</button>
+    <!-- 複習訂正區 -->
+    <div class="review-section">
+      <h2>複習訂正</h2>
+      <p class="hint">答錯的題目會出現在這裡。「分解重播」會播放琶音，方便逐音辨認。連續聽寫答錯的卡片前方將<b>註明題號</b>。</p>
+      <div id="reviewList"></div>
     </div>
-
-    <!-- 連續聽寫：主畫面 -->
-    <div id="dictationPanel" style="display:none;">
-      <div class="dictation-progress" id="dictationDots"></div>
-      <div class="play-area" style="border-bottom:none; padding-bottom: 8px; margin-bottom: 8px;">
-        <button class="play-btn" id="dictationPlayBtn" disabled>▶　播放整段</button>
-        <div class="play-caption" id="dictationCaption">音色載入中，請稍候</div>
-      </div>
-      <p class="dictation-hint">選項面板固定顯示這個難度的和絃性質，可重複拖曳使用；把標籤拖到對應的題號格子中，點一下格子裡已填入的標籤可以清除重填。</p>
-      <div class="dictation-bank" id="dictationBank"></div>
-      <div class="dictation-slots" id="dictationSlots"></div>
-      <button class="next-btn show" id="dictationSubmitBtn">提交作答</button>
-    </div>
-
-    <!-- 連續聽寫：成績畫面 -->
-    <div class="test-summary" id="dictationSummaryPanel" style="display:none;">
-      <div class="test-score-big" id="dictationSummaryScore">0 / 10</div>
-      <div class="test-score-label">聽寫結束</div>
-      <p>答錯的題目已收錄到下方「複習訂正」區。</p>
-      <button class="test-again-btn" id="dictationAgainBtn">🔁 再聽寫一次</button>
-      <button class="test-back-btn" id="dictationBackBtn">↩ 回到練習模式</button>
-    </div>
-
-    <!-- 單題：出題畫面（練習／測驗共用） -->
-    <div id="questionPanel">
-      <div class="play-area">
-        <button class="play-btn" id="playBtn" disabled>▶　播放和絃（連續 3 遍）</button>
-        <div class="play-caption" id="playCaption">音色載入中，請稍候</div>
-        <div class="question-count" id="questionCount">第 1 題</div>
-      </div>
-      <div class="answer-grid" id="answerGrid"></div>
-      <div class="feedback-panel" id="feedbackPanel">
-        <div class="feedback-text" id="feedbackText"></div>
-        <div class="staff-answer" id="staffAnswer"></div>
-      </div>
-      <button class="next-btn" id="nextBtn">下一題 →</button>
-    </div>
-
-  </div>
-
-  <div class="review-section">
-    <h2>複習訂正</h2>
-    <p class="hint">答錯的題目會出現在這裡。「分解重播」會播放琶音，方便逐音辨認。</p>
-    <div id="reviewList"></div>
   </div>
 
 </div>
 
 <script>
+// 全域轉場控制函式（SPA 頁面切換）
+function showPage(pageId) {
+  // 停止目前可能正在播放的音訊
+  if (window.stopAllPlayback) window.stopAllPlayback();
+  
+  document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+  if (pageId === 'menu') {
+    document.getElementById('pageMenu').classList.add('active');
+  } else if (pageId === 'settings') {
+    document.getElementById('pageSettings').classList.add('active');
+  } else if (pageId === 'practice') {
+    document.getElementById('pagePractice').classList.add('active');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 (function(){
   // ---------- 資料設定 ----------
   const QUALITIES = {
@@ -381,7 +567,6 @@
     halfDim9:   { label: '半減九和絃', intervals: [0,3,6,10,14], symbol: 'm9b5' },
   };
 
-  // 供「自訂和絃」勾選面板使用的固定顯示順序（大、小、屬、增、減、半減；三和絃→七和絃→九和絃）
   const QUALITY_ORDER = ['major','minor','augmented','diminished','major7','minor7','dominant7','augmented7','dim7','halfDim7','major9','minor9','dominant9','dominant7b9','halfDim9'];
   const CUSTOM_LEVEL_ID = 7;
 
@@ -396,14 +581,14 @@
   ];
   const customLevel = LEVELS[LEVELS.length - 1];
 
-  const ROOT_MIN = 36; // C2
+  // ★ 調整至黃金音域：C3 (MIDI 48) ~ C5 (MIDI 72)，和絃音域將完美落在 C3 ~ B5 附近
+  const ROOT_MIN = 48; // C3
   const ROOT_MAX = 72; // C5
   const TEST_TOTAL = 10;
 
-  // bpm60，每個和絃持續兩拍（= 2 秒）
   const CHORD_HOLD_SEC = 2.0;
-  const CHORD_TRIPLE_GAP = 0.5;   // 三遍連奏：同一和絃連續彈三次時，彼此的間隔
-  const DICT_PAUSE_BETWEEN_Q = 2.0; // 兩種聽寫模式共用：題與題之間的停頓
+  const CHORD_TRIPLE_GAP = 0.5;   
+  const DICT_PAUSE_BETWEEN_Q = 2.0; 
 
   // ---------- 樂理拼寫 ----------
   const LETTERS = ['C','D','E','F','G','A','B'];
@@ -423,9 +608,6 @@
     return null;
   }
 
-
-  // 依「音級」（0=根音,1=三音,2=五音,3=七音,4=九音…）決定字母拼寫，
-  // 而非陣列位置——這樣轉位後（音符重新排序）字母拼寫依然正確
   function spellChordNotes(root, intervals, degrees){
     const rootPc = ((root % 12) + 12) % 12;
     const rootLetterIdx = LETTERS.indexOf(ROOT_SPELLING[rootPc].letter);
@@ -446,7 +628,6 @@
     });
   }
 
-  // 和絃代號永遠依「根位」顯示，不受轉位影響（轉位只影響實際發聲/記譜的音符排列）
   function buildChordSymbol(root, qualityKey){
     const rootPc = ((root % 12) + 12) % 12;
     const rootSpell = ROOT_SPELLING[rootPc];
@@ -454,10 +635,9 @@
     return `${rootSpell.letter}${accText}${QUALITIES[qualityKey].symbol}`;
   }
 
-
   // ---------- 狀態 ----------
-  let appMode = 'practice';     // 'practice' | 'test'
-  let questionType = 'single';  // 'single' | 'dictation'
+  let appMode = 'practice';     
+  let questionType = 'single';  
   let currentLevel = LEVELS[0];
   let score = { correct: 0, total: 0, streak: 0 };
   let questionIndex = 1;
@@ -467,13 +647,11 @@
   let pianoInstrument = null;
   let reviewItems = [];
   let reviewIdSeq = 1;
-  let testSession = null;      // { total, index, correct, maxReplays, replaysLeft, finished }
-  let dictationSession = null; // { questions, maxReplays, replaysLeft, submitted, playbackStyle }
+  let testSession = null;      
+  let dictationSession = null; 
   let includeInversions = false;
-  let hasPlayedCurrent = false; // 單題模式：是否已播放過目前題目（播放前鎖定選項）
+  let hasPlayedCurrent = false; 
 
-  // 依原始（根位）音程與轉位編號，算出實際發聲的音符
-  // 回傳排序後的 {degree, semis} 陣列：degree 保留原本音級（供拼寫用），semis 已依轉位調整八度
   function applyInversion(baseIntervals, inversionIndex){
     return baseIntervals
       .map((semis, degree) => ({ degree, semis: degree < inversionIndex ? semis + 12 : semis }))
@@ -492,8 +670,7 @@
     pendingTimeouts = [];
   }
 
-  // 統一的「停止播放」：中止鋼琴音源的所有已排程音符、清除所有畫面動畫的計時器
-  function stopAllPlayback(){
+  window.stopAllPlayback = function(){
     if(pianoInstrument && typeof pianoInstrument.stop === 'function'){
       pianoInstrument.stop();
     }
@@ -503,7 +680,7 @@
     document.querySelectorAll('.dict-dot').forEach(d => d.classList.remove('active'));
     updatePlayBtnState();
     updateDictationPlayCaption();
-  }
+  };
 
   function ensureAudio(){
     if(!audioCtx){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -519,7 +696,7 @@
       updatePlayBtnState();
       updateDictationPlayCaption();
     }).catch(() => {
-      document.getElementById('loadingBanner').textContent = '鋼琴音色載入失敗，請確認網路連線後重新整理頁面';
+      document.getElementById('loadingBanner').textContent = '⚠️ 鋼琴音色載入失敗，請確認網路連線後重新整理頁面';
     });
   }
 
@@ -562,7 +739,6 @@
     return totalMs;
   }
 
-  // 連續聽寫：依所選播放方式排出完整時間表
   function scheduleDictationPlayback(){
     const ctx = audioCtx;
     let t = ctx.currentTime + 0.05;
@@ -633,7 +809,6 @@
     }
   }
 
-  // 大譜表 + 下方和絃代號，一起渲染進容器
   function renderChordWithSymbol(container, root, qualityKey, intervals, degrees, width, height){
     container.innerHTML = '';
     const staffDiv = document.createElement('div');
@@ -646,7 +821,6 @@
   }
 
   // ---------- 出題 ----------
-  // 依基礎（根位）音程，決定實際出題用的 intervals/degrees（依 includeInversions 決定是否轉位）
   function buildQuestionVoicing(qualityKey){
     const baseIntervals = QUALITIES[qualityKey].intervals;
     const inversionIndex = includeInversions ? Math.floor(Math.random() * baseIntervals.length) : 0;
@@ -672,7 +846,6 @@
     return a;
   }
 
-  // 連續聽寫專用出題：allowRepeat=false 時，每種和絃性質只出現一次
   function generateDictationQuestions(count, allowRepeat){
     if(allowRepeat){
       const qs = [];
@@ -716,7 +889,7 @@
   }
 
   function newQuestion(){
-    stopAllPlayback();
+    window.stopAllPlayback();
     hasPlayedCurrent = false;
     if(currentLevel.pool.length < 2){
       current = null;
@@ -736,14 +909,14 @@
   }
 
   function newTestQuestion(){
-    stopAllPlayback();
+    window.stopAllPlayback();
     hasPlayedCurrent = false;
     current = generateQuestion();
     answered = false;
     testSession.replaysLeft = testSession.maxReplays;
     resetFeedbackUI();
     document.getElementById('questionCount').textContent =
-      `第 ${testSession.index} / ${testSession.total} 題　目前正確 ${testSession.correct} 題`;
+      `第 ${testSession.index} / ${testSession.total} 題 目前正確 ${testSession.correct} 題`;
     renderAnswerGrid();
     updatePlayBtnState();
   }
@@ -770,7 +943,7 @@
     } else {
       feedbackText.textContent = '✗ 正確答案是 ' + QUALITIES[correctKey].label;
       feedbackText.className = 'feedback-text wrong';
-      addToReview(current, userKey);
+      addToReview(current, userKey, null); // 單題作答不需要標題號
     }
 
     renderChordWithSymbol(document.getElementById('staffAnswer'), current.root, current.qualityKey, current.intervals, current.degrees, 280, 260);
@@ -783,7 +956,7 @@
     } else if(appMode === 'test' && testSession){
       if(isCorrect) testSession.correct += 1;
       document.getElementById('questionCount').textContent =
-        `第 ${testSession.index} / ${testSession.total} 題　目前正確 ${testSession.correct} 題`;
+        `第 ${testSession.index} / ${testSession.total} 題 目前正確 ${testSession.correct} 題`;
       document.getElementById('nextBtn').textContent =
         testSession.index >= testSession.total ? '查看成績' : '下一題 →';
     }
@@ -801,20 +974,21 @@
     if(currentLevel.pool.length < 2){ btn.disabled = true; return; }
     if(appMode === 'test' && testSession && !testSession.finished){
       const remainText = testSession.replaysLeft === Infinity ? '不限' : testSession.replaysLeft;
-      btn.textContent = `▶　播放和絃（剩餘 ${remainText} 次）`;
+      btn.textContent = `▶ 播放和絃（剩餘 ${remainText} 次）`;
       btn.disabled = !pianoInstrument || testSession.replaysLeft <= 0;
     } else {
-      btn.textContent = '▶　播放和絃（連續 3 遍）';
+      btn.textContent = '▶ 播放和絃（連續 3 遍）';
       btn.disabled = !pianoInstrument;
     }
   }
 
-  // ---------- 複習訂正 ----------
-  function addToReview(question, userKey){
+  // ---------- 複習訂正（★加入 qNum 參數標註題號） ----------
+  function addToReview(question, userKey, qNum){
     reviewItems.unshift({
       id: reviewIdSeq++, root: question.root, qualityKey: question.qualityKey,
       intervals: question.intervals, degrees: question.degrees, userAnswerKey: userKey, corrected: false,
       levelId: currentLevel.id,
+      questionNum: qNum || null // 記錄聽寫題號
     });
     renderReview();
   }
@@ -825,7 +999,7 @@
     if(reviewItems.length === 0){
       const empty = document.createElement('div');
       empty.className = 'review-empty';
-      empty.textContent = '目前沒有錯題，繼續保持！';
+      empty.textContent = '🎉 目前沒有錯題，繼續保持你的好聽力！';
       list.appendChild(empty);
       return;
     }
@@ -840,13 +1014,22 @@
 
       const meta = document.createElement('div');
       meta.className = 'review-meta';
+      
+      // ★ 聽寫答錯時，最上面顯示題號 Badge
+      if(item.questionNum){
+        const qBadge = document.createElement('div');
+        qBadge.className = 'q-num-badge';
+        qBadge.textContent = `【第 ${item.questionNum} 題】`;
+        meta.appendChild(qBadge);
+      }
+
       const ansEl = document.createElement('div');
       ansEl.className = 'review-answers';
       const userLabel = item.userAnswerKey && QUALITIES[item.userAnswerKey] ? QUALITIES[item.userAnswerKey].label : '（未作答）';
       if(item.corrected){
         ansEl.innerHTML = `<span class="right-ans">✓ 已訂正為 ${QUALITIES[item.qualityKey].label}</span>`;
       } else {
-        ansEl.innerHTML = `你的答案：<span class="wrong-ans">${userLabel}</span><br>正解：<span class="right-ans">${QUALITIES[item.qualityKey].label}</span>`;
+        ansEl.innerHTML = `你的答案：<span class="wrong-ans">${userLabel}</span><br>正解答案：<span class="right-ans">${QUALITIES[item.qualityKey].label}</span>`;
       }
       meta.appendChild(ansEl);
 
@@ -868,7 +1051,7 @@
       } else {
         const tag = document.createElement('span');
         tag.className = 'corrected-tag';
-        tag.textContent = '已訂正';
+        tag.textContent = '✓ 已訂正';
         actions.appendChild(tag);
       }
 
@@ -897,29 +1080,26 @@
     rowEl.appendChild(grid);
   }
 
-  // ---------- 難度切換 ----------
+  // ---------- 難度切換與設定連動 ----------
   function renderLevelTabs(){
     const wrap = document.getElementById('levelTabs');
     wrap.innerHTML = '';
-    const locked = (questionType === 'single' && appMode === 'test' && testSession && !testSession.finished) ||
-                   (questionType === 'dictation' && dictationSession && !dictationSession.submitted);
     LEVELS.forEach(level => {
       const btn = document.createElement('button');
-      btn.className = 'level-tab' + (level.id === currentLevel.id ? ' active' : '') + (locked ? ' locked' : '');
+      btn.className = 'level-tab' + (level.id === currentLevel.id ? ' active' : '');
       btn.textContent = level.name;
       btn.addEventListener('click', () => {
-        if(locked) return;
         currentLevel = level;
         renderLevelTabs();
-        if(questionType === 'single' && appMode === 'practice'){ questionIndex = 1; newQuestion(); }
-        updateTestStartDesc();
-        updateDictationStartDesc();
+        updateCustomPanelVisibility();
+        updateStartButtonsAvailability();
+        updateStatusBadge();
+        updateDictationCountAvailability();
       });
       wrap.appendChild(btn);
     });
     updateCustomPanelVisibility();
     updateStartButtonsAvailability();
-    document.getElementById('inversionToggle').disabled = locked;
   }
 
   function updateCustomPanelVisibility(){
@@ -928,8 +1108,12 @@
 
   function updateStartButtonsAvailability(){
     const insufficient = currentLevel.id === CUSTOM_LEVEL_ID && currentLevel.pool.length < 2;
-    document.getElementById('testStartBtn').disabled = insufficient;
-    document.getElementById('dictationStartBtn').disabled = insufficient;
+    document.getElementById('enterPracticeBtn').disabled = insufficient;
+    if(insufficient){
+      document.getElementById('enterPracticeBtn').textContent = '⚠️ 請至少勾選 2 種和絃性質才能開始';
+    } else {
+      updateEnterBtnLabel();
+    }
   }
 
   function renderCustomChordPanel(){
@@ -957,12 +1141,7 @@
     }
     updateCustomChordHint();
     updateStartButtonsAvailability();
-    updateTestStartDesc();
-    updateDictationStartDesc();
-    if(currentLevel.id === CUSTOM_LEVEL_ID && questionType === 'single' && appMode === 'practice'){
-      questionIndex = 1;
-      newQuestion();
-    }
+    updateDictationCountAvailability();
   }
 
   function updateCustomChordHint(){
@@ -970,16 +1149,6 @@
     hint.classList.toggle('show', customLevel.pool.length < 2);
   }
 
-  function updateTestStartDesc(){
-    document.getElementById('testStartDesc').textContent =
-      `這次測驗共 10 題（難度：${currentLevel.name}），結束後會顯示總成績。`;
-  }
-  function updateDictationStartDesc(){
-    const modeNote = appMode === 'practice' ? '（練習模式，重播不限次數）' : '';
-    document.getElementById('dictationStartDesc').textContent =
-      `這個模式會依你設定的題數連續彈奏和絃（難度：${currentLevel.name}）${modeNote}。播放結束後，把下方的和絃名稱拖曳到正確的題號格子中。`;
-    updateDictationCountAvailability();
-  }
   function updateDictationCountAvailability(){
     const repeatMode = document.querySelector('input[name="dictationRepeatMode"]:checked').value;
     const countInput = document.getElementById('dictationCountInput');
@@ -991,44 +1160,53 @@
       countInput.disabled = false;
     }
   }
-  function updateDictationReplayRowVisibility(){
-    document.getElementById('dictationReplayRow').style.display = appMode === 'test' ? 'flex' : 'none';
-  }
   document.querySelectorAll('input[name="dictationRepeatMode"]').forEach(r => {
     r.addEventListener('change', updateDictationCountAvailability);
   });
 
-  // ---------- 模式 / 題型 切換 ----------
-  function refreshUI(){
-    const show = {
-      question: questionType === 'single' && (appMode === 'practice' || (appMode === 'test' && testSession && !testSession.finished)),
-      testStart: questionType === 'single' && appMode === 'test' && !testSession,
-      testSummary: questionType === 'single' && appMode === 'test' && testSession && testSession.finished,
-      dictationStart: questionType === 'dictation' && !dictationSession,
-      dictationMain: questionType === 'dictation' && dictationSession && !dictationSession.submitted,
-      dictationSummary: questionType === 'dictation' && dictationSession && dictationSession.submitted,
-    };
-    document.getElementById('questionPanel').style.display = show.question ? 'block' : 'none';
-    document.getElementById('testStartPanel').style.display = show.testStart ? 'block' : 'none';
-    document.getElementById('testSummaryPanel').style.display = show.testSummary ? 'block' : 'none';
-    document.getElementById('dictationStartPanel').style.display = show.dictationStart ? 'block' : 'none';
-    document.getElementById('dictationPanel').style.display = show.dictationMain ? 'block' : 'none';
-    document.getElementById('dictationSummaryPanel').style.display = show.dictationSummary ? 'block' : 'none';
-    document.getElementById('scoreBoxWrap').style.display = (questionType === 'single' && appMode === 'practice') ? 'block' : 'none';
-    updateDictationReplayRowVisibility();
-    renderLevelTabs();
+  // ---------- 設定面板與作答區標題連動 ----------
+  function updateSettingsVisibility(){
+    const singleTest = document.getElementById('singleTestSettings');
+    const dictSettings = document.getElementById('dictationSettings');
+    const noSpecial = document.getElementById('noSpecialSettings');
+    const dictReplay = document.getElementById('dictationReplayRow');
+
+    singleTest.style.display = 'none';
+    dictSettings.style.display = 'none';
+    noSpecial.style.display = 'none';
+
+    if(questionType === 'single'){
+      if(appMode === 'test') singleTest.style.display = 'block';
+      else noSpecial.style.display = 'block';
+    } else {
+      dictSettings.style.display = 'block';
+      dictReplay.style.display = (appMode === 'test') ? 'flex' : 'none';
+    }
+    updateEnterBtnLabel();
+    updateStatusBadge();
+  }
+
+  function updateEnterBtnLabel(){
+    const btn = document.getElementById('enterPracticeBtn');
+    if(currentLevel.id === CUSTOM_LEVEL_ID && currentLevel.pool.length < 2) return;
+    if(questionType === 'single'){
+      btn.textContent = appMode === 'test' ? '🎯 確認設定，進入「單題測驗」 →' : '🎯 確認設定，進入「單題練習」 →';
+    } else {
+      btn.textContent = appMode === 'test' ? '🎯 確認設定，進入「聽寫測驗」 →' : '🎯 確認設定，進入「連續聽寫」 →';
+    }
+  }
+
+  function updateStatusBadge(){
+    const badge = document.getElementById('statusBadgeText');
+    const modeName = appMode === 'test' ? '測驗模式' : '練習模式';
+    const qtypeName = questionType === 'single' ? '單題作答' : '連續聽寫';
+    badge.textContent = `${currentLevel.name}｜${qtypeName} (${modeName})`;
   }
 
   function onContextChange(){
-    stopAllPlayback();
-    testSession = null;
-    dictationSession = null;
     document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === appMode));
     document.querySelectorAll('.mode-btn[data-qtype]').forEach(b => b.classList.toggle('active', b.dataset.qtype === questionType));
-    if(questionType === 'single' && appMode === 'practice'){ questionIndex = 1; newQuestion(); }
-    updateTestStartDesc();
-    updateDictationStartDesc();
-    refreshUI();
+    updateSettingsVisibility();
   }
 
   document.querySelectorAll('#modeSwitch .mode-btn').forEach(btn => {
@@ -1046,21 +1224,72 @@
     });
   });
 
-  // ---------- 單題測驗 ----------
-  document.getElementById('testStartBtn').addEventListener('click', () => {
-    if(currentLevel.pool.length < 2) return;
+  // ---------- 點擊「確認設定，進入作答頁」大按鈕 ----------
+  document.getElementById('enterPracticeBtn').addEventListener('click', () => {
+    if(currentLevel.id === CUSTOM_LEVEL_ID && currentLevel.pool.length < 2) return;
+    window.stopAllPlayback();
+    testSession = null;
+    dictationSession = null;
+
+    const showQuestion = (questionType === 'single');
+    const showDictation = (questionType === 'dictation');
+    document.getElementById('questionPanel').style.display = showQuestion ? 'block' : 'none';
+    document.getElementById('dictationPanel').style.display = showDictation ? 'block' : 'none';
+    document.getElementById('testSummaryPanel').style.display = 'none';
+    document.getElementById('dictationSummaryPanel').style.display = 'none';
+    document.getElementById('scoreBoxWrap').style.display = (questionType === 'single' && appMode === 'practice') ? 'block' : 'none';
+
+    if(questionType === 'single'){
+      if(appMode === 'practice'){
+        questionIndex = 1;
+        newQuestion();
+      } else {
+        const val = document.getElementById('testReplaySelect').value;
+        const maxReplays = val === 'inf' ? Infinity : parseInt(val, 10);
+        testSession = { total: TEST_TOTAL, index: 1, correct: 0, maxReplays, replaysLeft: maxReplays, finished: false };
+        newTestQuestion();
+      }
+    } else {
+      const val = document.getElementById('dictationReplaySelect').value;
+      const maxReplays = appMode === 'test' ? (val === 'inf' ? Infinity : parseInt(val, 10)) : Infinity;
+      const styleVal = document.querySelector('input[name="playbackStyle"]:checked').value;
+      const repeatMode = document.querySelector('input[name="dictationRepeatMode"]:checked').value;
+      const allowRepeat = repeatMode === 'allow';
+
+      let count;
+      if(allowRepeat){
+        const countInput = document.getElementById('dictationCountInput');
+        count = parseInt(countInput.value, 10);
+        if(isNaN(count) || count < 2) count = 2;
+        if(count > 40) count = 40;
+        countInput.value = count;
+      } else {
+        count = currentLevel.pool.length;
+      }
+
+      const questions = generateDictationQuestions(count, allowRepeat);
+      dictationSession = { questions, maxReplays, replaysLeft: maxReplays, submitted: false, playbackStyle: styleVal, hasPlayed: false };
+      renderDictationBoard();
+    }
+
+    showPage('practice');
+    ensureAudio(); // 確保解鎖瀏覽器音訊
+  });
+
+  // ---------- 單題作答事件 ----------
+  document.getElementById('testAgainBtn').addEventListener('click', () => {
+    window.stopAllPlayback();
+    document.getElementById('testSummaryPanel').style.display = 'none';
+    document.getElementById('questionPanel').style.display = 'block';
     const val = document.getElementById('testReplaySelect').value;
     const maxReplays = val === 'inf' ? Infinity : parseInt(val, 10);
     testSession = { total: TEST_TOTAL, index: 1, correct: 0, maxReplays, replaysLeft: maxReplays, finished: false };
-    refreshUI();
     newTestQuestion();
   });
-  document.getElementById('testAgainBtn').addEventListener('click', () => { stopAllPlayback(); testSession = null; refreshUI(); });
-  document.getElementById('testBackBtn').addEventListener('click', () => { appMode = 'practice'; onContextChange(); });
 
   document.getElementById('playBtn').addEventListener('click', function(){
     if(!pianoInstrument || !current) return;
-    stopAllPlayback();
+    window.stopAllPlayback();
     if(appMode === 'test' && testSession && !testSession.finished){
       if(testSession.replaysLeft <= 0) return;
       if(testSession.replaysLeft !== Infinity) testSession.replaysLeft -= 1;
@@ -1072,29 +1301,29 @@
   });
 
   document.getElementById('nextBtn').addEventListener('click', function(){
-    stopAllPlayback();
+    window.stopAllPlayback();
     if(appMode === 'practice'){ questionIndex += 1; newQuestion(); }
     else if(appMode === 'test' && testSession){
       if(testSession.index >= testSession.total){
         testSession.finished = true;
+        document.getElementById('questionPanel').style.display = 'none';
+        document.getElementById('testSummaryPanel').style.display = 'block';
         document.getElementById('testSummaryScore').textContent = `${testSession.correct} / ${testSession.total}`;
-        refreshUI();
       } else { testSession.index += 1; newTestQuestion(); }
     }
   });
 
-  // ---------- 連續聽寫 ----------
+  // ---------- 連續聽寫事件 ----------
   function updateDictationPlayCaption(){
     const btn = document.getElementById('dictationPlayBtn');
     if(!dictationSession){ btn.disabled = true; return; }
     const remain = dictationSession.replaysLeft;
     const remainText = remain === Infinity ? '不限' : remain;
-    btn.textContent = `▶　播放整段（${dictationSession.questions.length} 個和絃，剩餘 ${remainText} 次）`;
+    btn.textContent = `▶ 播放整段（${dictationSession.questions.length} 個和絃，剩餘 ${remainText} 次）`;
     btn.disabled = !pianoInstrument || dictationSession.submitted || remain <= 0;
     document.getElementById('dictationCaption').textContent = pianoInstrument ? '播放時可對照上方題號燈號' : '音色載入中，請稍候';
   }
 
-  // 播放前鎖定：尚未播放整段之前，選項標籤無法拖曳、提交按鈕無法點擊
   function setDictationLocked(locked){
     const bank = document.getElementById('dictationBank');
     const slots = document.getElementById('dictationSlots');
@@ -1104,7 +1333,6 @@
     document.getElementById('dictationSubmitBtn').disabled = locked;
   }
 
-  // 把某個和絃性質「放入」指定格子（同一個標籤可以重複使用在多個格子）
   function placeAnswerInSlot(slot, key){
     const existing = slot.querySelector('.dict-tag');
     if(existing) existing.remove();
@@ -1126,7 +1354,6 @@
       dots.appendChild(dot);
     });
 
-    // 選項面板：固定顯示該難度所有的和絃性質，各一個，可重複拖曳使用
     const bank = document.getElementById('dictationBank');
     bank.innerHTML = '';
     currentLevel.pool.forEach(key => {
@@ -1164,42 +1391,15 @@
     setDictationLocked(!dictationSession.hasPlayed);
   }
 
-  // 點一下格子裡已填入的標籤，清除該格重填
   document.getElementById('dictationSlots').addEventListener('click', e => {
     if(!dictationSession || dictationSession.submitted) return;
     const tag = e.target.closest('.dict-tag');
     if(tag) tag.remove();
   });
 
-  document.getElementById('dictationStartBtn').addEventListener('click', () => {
-    if(currentLevel.pool.length < 2) return;
-    stopAllPlayback();
-    const val = document.getElementById('dictationReplaySelect').value;
-    const maxReplays = appMode === 'test' ? (val === 'inf' ? Infinity : parseInt(val, 10)) : Infinity;
-    const styleVal = document.querySelector('input[name="playbackStyle"]:checked').value;
-    const repeatMode = document.querySelector('input[name="dictationRepeatMode"]:checked').value;
-    const allowRepeat = repeatMode === 'allow';
-
-    let count;
-    if(allowRepeat){
-      const countInput = document.getElementById('dictationCountInput');
-      count = parseInt(countInput.value, 10);
-      if(isNaN(count) || count < 2) count = 2;
-      if(count > 40) count = 40;
-      countInput.value = count;
-    } else {
-      count = currentLevel.pool.length;
-    }
-
-    const questions = generateDictationQuestions(count, allowRepeat);
-    dictationSession = { questions, maxReplays, replaysLeft: maxReplays, submitted: false, playbackStyle: styleVal, hasPlayed: false };
-    renderDictationBoard();
-    refreshUI();
-  });
-
   document.getElementById('dictationPlayBtn').addEventListener('click', () => {
     if(!pianoInstrument || !dictationSession || dictationSession.replaysLeft <= 0) return;
-    stopAllPlayback();
+    window.stopAllPlayback();
     if(dictationSession.replaysLeft !== Infinity) dictationSession.replaysLeft -= 1;
     dictationSession.hasPlayed = true;
     setDictationLocked(false);
@@ -1212,7 +1412,7 @@
 
   document.getElementById('dictationSubmitBtn').addEventListener('click', () => {
     if(!dictationSession || dictationSession.submitted) return;
-    stopAllPlayback();
+    window.stopAllPlayback();
     let correctCount = 0;
     dictationSession.questions.forEach((q, i) => {
       const slot = document.getElementById('dict-slot-' + i);
@@ -1221,31 +1421,46 @@
       const isCorrect = userKey === q.qualityKey;
       slot.classList.add(isCorrect ? 'correct' : 'wrong');
       if(tag) tag.draggable = false;
-      if(isCorrect) correctCount++;
-      else addToReview(q, userKey);
+      if(isCorrect) {
+        correctCount++;
+      } else {
+        // ★ 提交時把 i + 1 傳入作為題號標注
+        addToReview(q, userKey, i + 1);
+      }
     });
     dictationSession.submitted = true;
+    document.getElementById('dictationPanel').style.display = 'none';
+    document.getElementById('dictationSummaryPanel').style.display = 'block';
     document.getElementById('dictationSummaryScore').textContent = `${correctCount} / ${dictationSession.questions.length}`;
-    refreshUI();
   });
 
-  document.getElementById('dictationAgainBtn').addEventListener('click', () => { stopAllPlayback(); dictationSession = null; refreshUI(); });
-  document.getElementById('dictationBackBtn').addEventListener('click', () => { appMode = 'practice'; onContextChange(); });
+  document.getElementById('dictationAgainBtn').addEventListener('click', () => {
+    window.stopAllPlayback();
+    document.getElementById('dictationSummaryPanel').style.display = 'none';
+    document.getElementById('dictationPanel').style.display = 'block';
+    
+    const val = document.getElementById('dictationReplaySelect').value;
+    const maxReplays = appMode === 'test' ? (val === 'inf' ? Infinity : parseInt(val, 10)) : Infinity;
+    const styleVal = document.querySelector('input[name="playbackStyle"]:checked').value;
+    const repeatMode = document.querySelector('input[name="dictationRepeatMode"]:checked').value;
+    const allowRepeat = repeatMode === 'allow';
+    const count = allowRepeat ? parseInt(document.getElementById('dictationCountInput').value, 10) || 10 : currentLevel.pool.length;
 
+    const questions = generateDictationQuestions(count, allowRepeat);
+    dictationSession = { questions, maxReplays, replaysLeft: maxReplays, submitted: false, playbackStyle: styleVal, hasPlayed: false };
+    renderDictationBoard();
+  });
 
   document.getElementById('inversionToggle').addEventListener('change', e => {
     includeInversions = e.target.checked;
-    if(questionType === 'single' && appMode === 'practice'){ questionIndex = 1; newQuestion(); }
   });
 
   // ---------- 初始化 ----------
   renderCustomChordPanel();
+  renderLevelTabs();
   updateScoreBox();
   renderReview();
-  updateTestStartDesc();
-  updateDictationStartDesc();
-  refreshUI();
-  newQuestion();
+  updateSettingsVisibility();
   loadPiano();
 })();
 </script>
