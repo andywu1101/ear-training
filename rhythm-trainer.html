@@ -329,29 +329,29 @@ function showPage(pageId) {
 (function(){
   // --- 100% 編碼相容安全符號池 (完全移除 4-Byte 特殊 Unicode，確保編輯器不報錯) ---
   const RHYTHM_BLOCKS = {
-    w:    { name: '全音符',    sym: 'o',   beats: 4, meter: 'simple', vex: [{dur:'w'}] },
-    h:    { name: '二分音符',  sym: 'd',   beats: 2, meter: 'simple', vex: [{dur:'h'}] },
-    q:    { name: '四分音符',  sym: '♩',  beats: 1, meter: 'simple', vex: [{dur:'q'}] },
-    8:    { name: '兩八分音',  sym: '♫',  beats: 1, meter: 'simple', vex: [{dur:'8'}, {dur:'8'}] },
-    38:   { name: '三連音',    sym: '3連音', beats: 1, meter: 'simple', vex: [{dur:'8',tuplet:3}, {dur:'8',tuplet:3}, {dur:'8',tuplet:3}] },
-    16:   { name: '四十六分',  sym: '♬',  beats: 1, meter: 'simple', vex: [{dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}] },
-    8_16: { name: '前八後十六', sym: '♪♬', beats: 1, meter: 'simple', vex: [{dur:'8'}, {dur:'16'}, {dur:'16'}] },
-    16_8: { name: '前十六後八', sym: '♬♪', beats: 1, meter: 'simple', vex: [{dur:'16'}, {dur:'16'}, {dur:'8'}] },
-    sync: { name: '切分音',    sym: '♪♩♪', beats: 2, meter: 'simple', vex: [{dur:'8'}, {dur:'q'}, {dur:'8'}] },
-    qd_8: { name: '附點四+八',  sym: '♩.♪', beats: 2, meter: 'simple', vex: [{dur:'qd'}, {dur:'8'}] },
-    8_qd: { name: '八+附點四',  sym: '♪♩.', beats: 2, meter: 'simple', vex: [{dur:'8'}, {dur:'qd'}] },
-    qr:   { name: '四分休止',  sym: '休',  beats: 1, meter: 'simple', vex: [{dur:'qr'}] },
-    r8_8: { name: '休止+八分', sym: '休♪', beats: 1, meter: 'simple', vex: [{dur:'8r'}, {dur:'8'}] },
-    8_r8: { name: '八分+休止', sym: '♪休', beats: 1, meter: 'simple', vex: [{dur:'8'}, {dur:'8r'}] },
+    'w':    { name: '全音符',    sym: 'o',   beats: 4, meter: 'simple', vex: [{dur:'w'}] },
+    'h':    { name: '二分音符',  sym: 'd',   beats: 2, meter: 'simple', vex: [{dur:'h'}] },
+    'q':    { name: '四分音符',  sym: '♩',  beats: 1, meter: 'simple', vex: [{dur:'q'}] },
+    '8':    { name: '兩八分音',  sym: '♫',  beats: 1, meter: 'simple', vex: [{dur:'8'}, {dur:'8'}] },
+    '38':   { name: '三連音',    sym: '3連音', beats: 1, meter: 'simple', vex: [{dur:'8',tuplet:3}, {dur:'8',tuplet:3}, {dur:'8',tuplet:3}] },
+    '16':   { name: '四十六分',  sym: '♬',  beats: 1, meter: 'simple', vex: [{dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}] },
+    '8_16': { name: '前八後十六', sym: '♪♬', beats: 1, meter: 'simple', vex: [{dur:'8'}, {dur:'16'}, {dur:'16'}] },
+    '16_8': { name: '前十六後八', sym: '♬♪', beats: 1, meter: 'simple', vex: [{dur:'16'}, {dur:'16'}, {dur:'8'}] },
+    'sync': { name: '切分音',    sym: '♪♩♪', beats: 2, meter: 'simple', vex: [{dur:'8'}, {dur:'q'}, {dur:'8'}] },
+    'qd_8': { name: '附點四+八',  sym: '♩.♪', beats: 2, meter: 'simple', vex: [{dur:'qd'}, {dur:'8'}] },
+    '8_qd': { name: '八+附點四',  sym: '♪♩.', beats: 2, meter: 'simple', vex: [{dur:'8'}, {dur:'qd'}] },
+    'qr':   { name: '四分休止',  sym: '休',  beats: 1, meter: 'simple', vex: [{dur:'qr'}] },
+    'r8_8': { name: '休止+八分', sym: '休♪', beats: 1, meter: 'simple', vex: [{dur:'8r'}, {dur:'8'}] },
+    '8_r8': { name: '八分+休止', sym: '♪休', beats: 1, meter: 'simple', vex: [{dur:'8'}, {dur:'8r'}] },
 
-    hd:   { name: '附點二分',  sym: 'd.', beats: 2, meter: 'compound', vex: [{dur:'hd'}] },
-    qd:   { name: '附點四分',  sym: '♩.', beats: 1, meter: 'compound', vex: [{dur:'qd'}] },
-    8_c:  { name: '三八分音',  sym: '♪♪♪', beats: 1, meter: 'compound', vex: [{dur:'8'}, {dur:'8'}, {dur:'8'}] },
-    q_8:  { name: '四分+八分', sym: '♩♪', beats: 1, meter: 'compound', vex: [{dur:'q'}, {dur:'8'}] },
-    8_q:  { name: '八分+四分', sym: '♪♩', beats: 1, meter: 'compound', vex: [{dur:'8'}, {dur:'q'}] },
-    16_c: { name: '六十六分',  sym: '♬♬', beats: 1, meter: 'compound', vex: [{dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}] },
-    qdr:  { name: '附四休止',  sym: '休.', beats: 1, meter: 'compound', vex: [{dur:'qdr'}] },
-    r8_8c:{ name: '休+兩八分', sym: '休♪♪', beats: 1, meter: 'compound', vex: [{dur:'8r'}, {dur:'8'}, {dur:'8'}] }
+    'hd':   { name: '附點二分',  sym: 'd.', beats: 2, meter: 'compound', vex: [{dur:'hd'}] },
+    'qd':   { name: '附點四分',  sym: '♩.', beats: 1, meter: 'compound', vex: [{dur:'qd'}] },
+    '8_c':  { name: '三八分音',  sym: '♪♪♪', beats: 1, meter: 'compound', vex: [{dur:'8'}, {dur:'8'}, {dur:'8'}] },
+    'q_8':  { name: '四分+八分', sym: '♩♪', beats: 1, meter: 'compound', vex: [{dur:'q'}, {dur:'8'}] },
+    '8_q':  { name: '八分+四分', sym: '♪♩', beats: 1, meter: 'compound', vex: [{dur:'8'}, {dur:'q'}] },
+    '16_c': { name: '六十六分',  sym: '♬♬', beats: 1, meter: 'compound', vex: [{dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}] },
+    'qdr':  { name: '附四休止',  sym: '休.', beats: 1, meter: 'compound', vex: [{dur:'qdr'}] },
+    'r8_8c':{ name: '休+兩八分', sym: '休♪♪', beats: 1, meter: 'compound', vex: [{dur:'8r'}, {dur:'8'}, {dur:'8'}] }
   };
 
   const SIMPLE_ORDER = ['w','h','q','8','38','16','8_16','16_8','sync','qd_8','8_qd','qr','r8_8','8_r8'];
