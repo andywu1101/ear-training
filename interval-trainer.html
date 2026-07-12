@@ -129,15 +129,17 @@
   .dict-dot{ width:28px; height:28px; border-radius:50%; border:1px solid var(--panel-border); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); transition:all .15s ease; flex-shrink:0; }
   .dict-dot.active{ background:var(--accent); border-color:var(--accent); color:var(--panel); }
   .dictation-bank{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; padding:16px; margin: 18px 0; border:1px dashed var(--panel-border); border-radius:10px; min-height: 52px; }
-  .dict-tag{ font-family:var(--font-body); font-size:13px; font-weight:600; padding:9px 14px; background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent); border-radius:999px; cursor:grab; user-select:none; transition: transform 0.1s; touch-action: manipulation; }
-  .dict-tag:active{ cursor:grabbing; transform: scale(0.95); }
+  /* 修改：取消拖曳效果，改為點擊滑鼠指標 */
+  .dict-tag{ font-family:var(--font-body); font-size:13px; font-weight:600; padding:9px 14px; background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent); border-radius:999px; cursor:pointer; user-select:none; transition: all 0.1s ease; touch-action: manipulation; }
+  .dict-tag:active{ transform: scale(0.95); }
   .dictation-slots{ display:grid; grid-template-columns: repeat(auto-fit, minmax(96px,1fr)); gap:10px; margin-bottom: 22px; }
   .dictation-bank.locked-pending, .dictation-slots.locked-pending{ opacity: 0.45; pointer-events: none; }
-  .dict-slot{ min-height:68px; border:1.5px dashed var(--panel-border); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:8px; text-align:center; transition: all 0.15s; }
+  .dict-slot{ min-height:68px; border:1.5px dashed var(--panel-border); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:8px; text-align:center; transition: all 0.15s; cursor:pointer; }
   .dict-slot-label{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); }
   .dict-slot.correct{ border-style:solid; border-color:var(--correct); background:var(--correct-soft); }
   .dict-slot.wrong{ border-style:solid; border-color:var(--wrong); background:var(--wrong-soft); }
-  .dict-slot .dict-tag{ cursor:pointer; }
+  /* 新增：被選中的格子樣式 */
+  .dict-slot.active-slot{ border-color: var(--accent); background: var(--panel); box-shadow: 0 0 0 2px var(--accent); transform: translateY(-2px); }
   .dictation-hint{ text-align:center; font-size:12.5px; color:var(--ink-soft); margin-bottom:18px; line-height: 1.5; }
   .review-section h2{ font-family: var(--font-display); font-size: 20px; font-weight: 600; margin: 0 0 6px; }
   .review-section .hint{ color: var(--ink-soft); font-size: 13px; margin: 0 0 18px; }
@@ -285,7 +287,7 @@
           <button class="play-btn" id="int-dictPlayBtn" disabled>▶ 播放整段和聲音程</button>
           <div class="play-caption" id="int-dictCaption">音色載入中，請稍候</div>
         </div>
-        <p class="dictation-hint">選項面板固定顯示這個難度的音程，可重複拖曳使用；把標籤拖到對應的格子中，點擊格子裡已填入的標籤可清除。</p>
+        <p class="dictation-hint">點擊選中欲作答的題號格子，接著點擊下方選項即可填入答案，系統會自動跳至下一題！若要修改，可點擊格子內的選項清除，或直接點選新題號。</p>
         <div class="dictation-bank" id="int-dictBank"></div>
         <div class="dictation-slots" id="int-dictSlots"></div>
         <button class="next-btn show" id="int-dictSubmitBtn">提交作答</button>
@@ -316,7 +318,7 @@
 
     <div class="review-section">
       <h2>複習訂正</h2>
-      <p class="hint">答錯的音程會顯示於此。點擊<b>「上行＋和聲」</b>會先後彈奏兩音再合奏，聽覺對應最貼合！</p>
+      <p class="hint">答錯的音程會依序顯示於此。點擊<b>「上行＋和聲」</b>會先後彈奏兩音再合奏，聽覺對應最貼合！</p>
       <div id="int-reviewList"></div>
     </div>
   </div>
@@ -610,10 +612,13 @@ function showPage(pageId) {
         btn.textContent = `▶ 播放和聲音程（剩餘 ${rm} 次）`; btn.disabled = !pianoInstrument || testSession.replaysLeft <= 0;
       } else { btn.textContent = '▶ 播放和聲音程（連續 3 遍）'; btn.disabled = !pianoInstrument; }
     }
+    
+    /* 修正：錯題改為 push 排列，先出錯的在上方 */
     function addToRev(q, userKey, qNum){
-      reviewItems.unshift({ id: reviewIdSeq++, root: q.root, qualityKey: q.qualityKey, intervals: q.intervals, steps: q.steps, userAnswerKey: userKey, corrected: false, levelId: curLevel.id, questionNum: qNum || null });
+      reviewItems.push({ id: reviewIdSeq++, root: q.root, qualityKey: q.qualityKey, intervals: q.intervals, steps: q.steps, userAnswerKey: userKey, corrected: false, levelId: curLevel.id, questionNum: qNum || null });
       renderRev();
     }
+    
     function renderRev(){
       const list = document.getElementById('int-reviewList'); list.innerHTML = '';
       if(reviewItems.length === 0){ list.innerHTML = '<div class="review-empty">🎉 目前沒有錯題，繼續保持你的好聽力！</div>'; return; }
@@ -647,33 +652,63 @@ function showPage(pageId) {
         row.appendChild(meta); row.appendChild(actions); list.appendChild(row);
       });
     }
+    
     function updateDictCaption(){
       const btn = document.getElementById('int-dictPlayBtn'); if(!dictSession){ btn.disabled=true; return; }
       const rm = dictSession.replaysLeft === Infinity ? '不限' : dictSession.replaysLeft;
       btn.textContent = `▶ 播放整段和聲音程（共 ${dictSession.questions.length} 題，剩餘 ${rm} 次）`;
       btn.disabled = !pianoInstrument || dictSession.submitted || dictSession.replaysLeft <= 0;
     }
+    
+    /* 新增：切換作答選中格子 */
+    function setActiveDictSlot(idx) {
+      if(!dictSession) return;
+      dictSession.activeIndex = idx;
+      document.querySelectorAll('#int-dictSlots .dict-slot').forEach(s => s.classList.remove('active-slot'));
+      const active = document.getElementById(`int-slot-${idx}`);
+      if(active) active.classList.add('active-slot');
+    }
+
+    /* 修改：渲染聽寫面板，改為點擊作答 */
     function renderDictBoard(){
       const dots = document.getElementById('int-dictDots'); dots.innerHTML = '';
       dictSession.questions.forEach((q,i) => { dots.innerHTML += `<div class="dict-dot" id="int-dot-${i}">${i+1}</div>`; });
       const bank = document.getElementById('int-dictBank'); bank.innerHTML = '';
+      
       curLevel.pool.forEach(k => {
-        const tag = document.createElement('div'); tag.className = 'dict-tag'; tag.draggable = true; tag.dataset.key = k; tag.textContent = QUALITIES[k].label;
-        tag.ondragstart = e => e.dataTransfer.setData('text/plain', k); bank.appendChild(tag);
+        const tag = document.createElement('div'); tag.className = 'dict-tag'; tag.dataset.key = k; tag.textContent = QUALITIES[k].label;
+        tag.onclick = () => {
+          if(!dictSession || dictSession.submitted) return;
+          const slot = document.getElementById(`int-slot-${dictSession.activeIndex}`);
+          if(!slot) return;
+          const old = slot.querySelector('.dict-tag'); if(old) old.remove();
+          
+          const p = document.createElement('div'); p.className = 'dict-tag'; p.dataset.key = k; p.textContent = QUALITIES[k].label;
+          p.onclick = (e) => { e.stopPropagation(); if(!dictSession.submitted) p.remove(); };
+          slot.appendChild(p);
+
+          // 自動尋找下一個未作答的空位
+          let nextIdx = (dictSession.activeIndex + 1) % dictSession.questions.length;
+          for (let j = 1; j < dictSession.questions.length; j++) {
+            let testIdx = (dictSession.activeIndex + j) % dictSession.questions.length;
+            if (!document.getElementById(`int-slot-${testIdx}`).querySelector('.dict-tag')) {
+              nextIdx = testIdx; break;
+            }
+          }
+          setActiveDictSlot(nextIdx);
+        };
+        bank.appendChild(tag);
       });
+      
       const slots = document.getElementById('int-dictSlots'); slots.innerHTML = '';
       dictSession.questions.forEach((q,i) => {
-        const slot = document.createElement('div'); slot.className = 'dict-slot'; slot.id = `int-slot-${i}`; slot.innerHTML = `<div class="dict-slot-label">第 ${i+1} 題</div>`;
-        slot.ondragover = e => e.preventDefault();
-        slot.ondrop = e => {
-          e.preventDefault(); if(dictSession.submitted) return;
-          const k = e.dataTransfer.getData('text/plain'); if(!QUALITIES[k]) return;
-          const old = slot.querySelector('.dict-tag'); if(old) old.remove();
-          const p = document.createElement('div'); p.className = 'dict-tag'; p.dataset.key = k; p.textContent = QUALITIES[k].label; slot.appendChild(p);
-        };
+        const slot = document.createElement('div'); slot.className = 'dict-slot'; slot.id = `int-slot-${i}`;
+        slot.innerHTML = `<div class="dict-slot-label">第 ${i+1} 題</div>`;
+        slot.onclick = () => { if(!dictSession.submitted) setActiveDictSlot(i); };
         slots.appendChild(slot);
       });
-      document.getElementById('int-dictSlots').onclick = e => { if(!dictSession||dictSession.submitted)return; const tag = e.target.closest('.dict-tag'); if(tag)tag.remove(); };
+      
+      setActiveDictSlot(0); // 預設選中第一題
       updateDictCaption();
       document.getElementById('int-dictBank').classList.add('locked-pending'); document.getElementById('int-dictSlots').classList.add('locked-pending');
       document.getElementById('int-dictSubmitBtn').disabled = true;
@@ -700,7 +735,7 @@ function showPage(pageId) {
             const v = document.getElementById('int-dictReplaySelect').value; const max = mode==='test'?(v==='inf'?Infinity:parseInt(v,10)):Infinity;
             const allowRepeat = document.querySelector('input[name="int-dictRepeat"]:checked').value === 'allow';
             const count = allowRepeat ? parseInt(document.getElementById('int-dictationCountInput').value,10)||10 : curLevel.pool.length;
-            dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, hasPlayed: false };
+            dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, hasPlayed: false, activeIndex: 0 };
             renderDictBoard();
           }
           showPage('int-practice'); ensureAudio();
@@ -759,7 +794,7 @@ function showPage(pageId) {
           const v = document.getElementById('int-dictReplaySelect').value; const max = mode==='test'?(v==='inf'?Infinity:parseInt(v,10)):Infinity;
           const allowRepeat = document.querySelector('input[name="int-dictRepeat"]:checked').value === 'allow';
           const count = allowRepeat ? parseInt(document.getElementById('int-dictationCountInput').value,10)||10 : curLevel.pool.length;
-          dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, hasPlayed: false };
+          dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, hasPlayed: false, activeIndex: 0 };
           renderDictBoard();
         };
       },
