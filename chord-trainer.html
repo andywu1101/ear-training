@@ -824,6 +824,23 @@ function showPage(pageId) {
   chrModule.init();
   loadPiano();
 })();
+<script>
+  // PWA Service Worker 註冊與自動更新邏輯
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+
+      // 監聽：當背景發現有新版安裝完成並接管時
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          // 強制瀏覽器自動重新整理，瞬間換上最新版畫面！
+          window.location.reload();
+        }
+      });
+    });
+  }
 </script>
 </body>
 </html>
