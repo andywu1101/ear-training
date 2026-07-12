@@ -624,7 +624,6 @@ function showPage(pageId) {
       } else { btn.textContent = '▶ 播放和絃（連續 3 遍）'; btn.disabled = !pianoInstrument; }
     }
     
-    /* 修正：錯題改為 push 排列，先出錯的在上方 */
     function addToRev(q, userKey, qNum){
       reviewItems.push({ id: reviewIdSeq++, root: q.root, qualityKey: q.qualityKey, intervals: q.intervals, steps: q.steps, userAnswerKey: userKey, corrected: false, levelId: curLevel.id, questionNum: qNum || null });
       renderRev();
@@ -671,7 +670,6 @@ function showPage(pageId) {
       btn.disabled = !pianoInstrument || dictSession.submitted || dictSession.replaysLeft <= 0;
     }
     
-    /* 新增：切換作答選中格子 */
     function setActiveDictSlot(idx) {
       if(!dictSession) return;
       dictSession.activeIndex = idx;
@@ -680,7 +678,6 @@ function showPage(pageId) {
       if(active) active.classList.add('active-slot');
     }
 
-    /* 修改：渲染聽寫面板，改為點擊作答 */
     function renderDictBoard(){
       const dots = document.getElementById('chr-dictDots'); dots.innerHTML = '';
       dictSession.questions.forEach((q,i) => { dots.innerHTML += `<div class="dict-dot" id="chr-dot-${i}">${i+1}</div>`; });
@@ -698,7 +695,6 @@ function showPage(pageId) {
           p.onclick = (e) => { e.stopPropagation(); if(!dictSession.submitted) p.remove(); };
           slot.appendChild(p);
 
-          // 自動尋找下一個未作答的空位
           let nextIdx = (dictSession.activeIndex + 1) % dictSession.questions.length;
           for (let j = 1; j < dictSession.questions.length; j++) {
             let testIdx = (dictSession.activeIndex + j) % dictSession.questions.length;
@@ -719,7 +715,7 @@ function showPage(pageId) {
         slots.appendChild(slot);
       });
       
-      setActiveDictSlot(0); // 預設選中第一題
+      setActiveDictSlot(0);
       updateDictCaption();
       document.getElementById('chr-dictBank').classList.add('locked-pending'); document.getElementById('chr-dictSlots').classList.add('locked-pending');
       document.getElementById('chr-dictSubmitBtn').disabled = true;
@@ -824,18 +820,17 @@ function showPage(pageId) {
   chrModule.init();
   loadPiano();
 })();
+</script>
+
 <script>
-  // PWA Service Worker 註冊與自動更新邏輯
   if('serviceWorker' in navigator){
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('service-worker.js').catch(() => {});
 
-      // 監聽：當背景發現有新版安裝完成並接管時
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {
           refreshing = true;
-          // 強制瀏覽器自動重新整理，瞬間換上最新版畫面！
           window.location.reload();
         }
       });
