@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>和絃辨認 - 音樂聽力練習</title>
+<title>音程辨認 - 音樂聽力練習</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -172,52 +172,52 @@
 
   <div class="loading-banner" id="loadingBanner">🎹 正在載入高音質鋼琴音色，請稍候…</div>
 
-  <!-- 【和絃辨認】設定頁 -->
-  <div id="pageChrSettings" class="page-view active">
+  <!-- 【音程練習】設定頁 -->
+  <div id="pageIntSettings" class="page-view active">
     <button class="nav-back-btn" onclick="location.href='index.html'">← 回目錄選單</button>
-    <h1>和絃辨認 — 設定</h1>
-    <p class="subtitle">調整你想要的模式、題型與難度，設定完成後即可進入作答區訓練。</p>
+    <h1>音程練習 — 設定</h1>
+    <p class="subtitle">調整你想要的音程模式、難度與副（複）音程開關，設定完成即可進入作答。</p>
 
     <div class="switch-row">
       <div class="switch-group">
         <div class="switch-group-label">模式</div>
-        <div class="switch-btns" id="chr-modeSwitch">
+        <div class="switch-btns" id="int-modeSwitch">
           <button class="mode-btn active" data-mode="practice">練習模式</button>
           <button class="mode-btn" data-mode="test">測驗模式</button>
         </div>
       </div>
       <div class="switch-group">
-        <div class="switch-group-label">題型</div>
-        <div class="switch-btns" id="chr-qtypeSwitch">
+        <div class="switch-group-label">作答題型</div>
+        <div class="switch-btns" id="int-qtypeSwitch">
           <button class="mode-btn active" data-qtype="single">單題作答</button>
           <button class="mode-btn" data-qtype="dictation">連續聽寫</button>
         </div>
       </div>
       <div class="switch-group">
-        <div class="switch-group-label">聲位</div>
+        <div class="switch-group-label">副音程開關</div>
         <label class="toggle-switch">
-          <input type="checkbox" id="chr-inversionToggle">
+          <input type="checkbox" id="int-compoundToggle">
           <span class="toggle-slider"></span>
-          <span class="toggle-text">包含轉位和絃</span>
+          <span class="toggle-text">出現超過八度之複音程</span>
         </label>
       </div>
     </div>
 
     <div class="switch-group-label" style="margin-bottom: 8px;">難度選擇</div>
-    <div class="level-tabs" id="chr-levelTabs"></div>
+    <div class="level-tabs" id="int-levelTabs"></div>
 
-    <div class="custom-panel" id="chr-customPanel" style="display:none;">
-      <div class="switch-group-label">自訂和絃內容（至少選 2 種）</div>
-      <div class="custom-grid" id="chr-customGrid"></div>
-      <div class="custom-hint" id="chr-customHint">請至少選擇 2 種和絃性質才能開始練習</div>
+    <div class="custom-panel" id="int-customPanel" style="display:none;">
+      <div class="switch-group-label">自訂音程內容（至少選 2 種）</div>
+      <div class="custom-grid" id="int-customGrid"></div>
+      <div class="custom-hint" id="int-customHint">請至少選擇 2 種音程才能開始練習</div>
     </div>
 
     <div style="background: var(--panel); border: 1px solid var(--panel-border); padding: 18px; border-radius: 12px; margin-bottom: 24px;">
-      <div id="chr-singleTestSettings" style="display:none;">
+      <div id="int-singleTestSettings" style="display:none;">
         <div class="switch-group-label" style="margin-bottom:10px;">測驗規則</div>
         <div class="replay-select-row" style="margin-bottom:0;">
-          <label for="chr-testReplaySelect">每題可重播次數：</label>
-          <select id="chr-testReplaySelect" class="replay-select">
+          <label for="int-testReplaySelect">每題可重播次數：</label>
+          <select id="int-testReplaySelect" class="replay-select">
             <option value="1">1 次</option><option value="2" selected>2 次</option>
             <option value="3">3 次</option><option value="5">5 次</option><option value="inf">不限</option>
           </select>
@@ -225,110 +225,99 @@
         </div>
       </div>
 
-      <div id="chr-dictationSettings" style="display:none;">
+      <div id="int-dictationSettings" style="display:none;">
         <div class="switch-group-label" style="margin-bottom:12px;">聽寫規則與播放方式</div>
         <div class="replay-select-row">
-          <label for="chr-dictationCountInput">聽寫題數：</label>
-          <input type="number" id="chr-dictationCountInput" class="replay-select" min="2" max="40" value="10" style="width:72px;">
+          <label for="int-dictationCountInput">聽寫題數：</label>
+          <input type="number" id="int-dictationCountInput" class="replay-select" min="2" max="40" value="10" style="width:72px;">
         </div>
         <div class="playback-style-row" style="margin-bottom:12px;">
-          <div class="switch-group-label" style="margin-bottom:6px;">和絃是否重複</div>
+          <div class="switch-group-label" style="margin-bottom:6px;">和聲音程是否重複</div>
           <label class="style-option">
-            <input type="radio" name="chr-dictRepeat" value="allow" checked>
-            <span><span class="opt-title">可以重複</span>同一種和絃性質可能出現多次，題數依上方設定的數字</span>
-          </label>
-          <label class="style-option">
-            <input type="radio" name="chr-dictRepeat" value="unique">
-            <span><span class="opt-title">不重複</span>每種和絃性質只出現一次（題數為 <span id="chr-uniqueHint">2</span> 題）</span>
-          </label>
-        </div>
-        <div class="playback-style-row" style="margin-bottom:12px;">
-          <div class="switch-group-label" style="margin-bottom:6px;">播放連奏速度</div>
-          <label class="style-option">
-            <input type="radio" name="chr-playbackStyle" value="blockTriple" checked>
-            <span><span class="opt-title">三遍連奏</span>每個和絃連續播放 3 遍（間隔 0.5 秒），播完停頓 2 秒再接下一題</span>
+            <input type="radio" name="int-dictRepeat" value="allow" checked>
+            <span><span class="opt-title">可以重複</span>同一種音程可能出現多次，題數依上方數字</span>
           </label>
           <label class="style-option" style="margin-bottom:0;">
-            <input type="radio" name="chr-playbackStyle" value="singlePass">
-            <span><span class="opt-title">單次播放</span>每個和絃只播放 1 遍，播完停頓 2 秒再接下一題</span>
+            <input type="radio" name="int-dictRepeat" value="unique">
+            <span><span class="opt-title">不重複</span>每種音程只出現一次（題數為 <span id="int-uniqueHint">4</span> 題）</span>
           </label>
         </div>
-        <div class="replay-select-row" id="chr-dictReplayRow" style="margin-top:16px; margin-bottom:0; display:none;">
-          <label for="chr-dictReplaySelect">整段可重播次數：</label>
-          <select id="chr-dictReplaySelect" class="replay-select">
+        <div class="replay-select-row" id="int-dictReplayRow" style="margin-top:16px; margin-bottom:0; display:none;">
+          <label for="int-dictReplaySelect">整段可重播次數：</label>
+          <select id="int-dictReplaySelect" class="replay-select">
             <option value="1">1 次</option><option value="2" selected>2 次</option>
             <option value="3">3 次</option><option value="5">5 次</option><option value="inf">不限</option>
           </select>
         </div>
       </div>
 
-      <div id="chr-noSpecialSettings" style="font-size: 13.5px; color: var(--ink-soft); text-align: center;">
-        目前為<b>「單題作答 — 練習模式」</b>，不限時間與重播次數，準備好即可立即進入作答！
+      <div id="int-noSpecialSettings" style="font-size: 13.5px; color: var(--ink-soft); text-align: center;">
+        目前為<b>「單題作答 — 練習模式」</b>，預設播放同時彈奏的「和聲音程」，不限重播次數！
       </div>
     </div>
 
-    <button class="start-big-btn" id="chr-enterBtn">🎯 確認設定，進入和絃作答區 →</button>
+    <button class="start-big-btn" id="int-enterBtn">🎯 確認設定，進入音程作答區 →</button>
   </div>
 
-  <!-- 【和絃辨認】作答與複習頁 -->
-  <div id="pageChrPractice" class="page-view">
+  <!-- 【音程練習】作答與複習頁 -->
+  <div id="pageIntPractice" class="page-view">
     <div class="top-bar-practice">
-      <button class="nav-back-btn" style="margin-bottom:0;" onclick="showPage('chr-settings')">← 返回設定頁</button>
-      <span class="practice-status-badge" id="chr-statusBadge">Lv1 三和絃基礎｜練習模式</span>
-      <div class="score-box" id="chr-scoreBoxWrap">
-        <div class="num" id="chr-scoreNum">0 / 0</div>
-        <div class="label">正確 / 已作答 連續 <span id="chr-streakNum">0</span></div>
+      <button class="nav-back-btn" style="margin-bottom:0;" onclick="showPage('int-settings')">← 返回設定頁</button>
+      <span class="practice-status-badge" id="int-statusBadge">Lv1 協和音程｜練習模式</span>
+      <div class="score-box" id="int-scoreBoxWrap">
+        <div class="num" id="int-scoreNum">0 / 0</div>
+        <div class="label">正確 / 已作答 連續 <span id="int-streakNum">0</span></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="test-summary" id="chr-testSummary" style="display:none;">
-        <div class="test-score-big" id="chr-testScore">0 / 10</div>
+      <div class="test-summary" id="int-testSummary" style="display:none;">
+        <div class="test-score-big" id="int-testScore">0 / 10</div>
         <div class="test-score-label">測驗結束</div>
-        <p>答錯的題目已收錄到下方「複習訂正」區，可以重播分解和絃再訂正一次。</p>
-        <button class="test-again-btn" id="chr-testAgainBtn">🔁 再測一次</button>
-        <button class="test-back-btn" onclick="showPage('chr-settings')">↩ 重新調整設定</button>
+        <p>答錯的題目已收錄到下方「複習訂正」區，可點擊「上行＋和聲」徹底聽清答案。</p>
+        <button class="test-again-btn" id="int-testAgainBtn">🔁 再測一次</button>
+        <button class="test-back-btn" onclick="showPage('int-settings')">↩ 重新調整設定</button>
       </div>
 
-      <div id="chr-dictPanel" style="display:none;">
-        <div class="dictation-progress" id="chr-dictDots"></div>
+      <div id="int-dictPanel" style="display:none;">
+        <div class="dictation-progress" id="int-dictDots"></div>
         <div class="play-area" style="border-bottom:none; padding-bottom: 8px; margin-bottom: 8px;">
-          <button class="play-btn" id="chr-dictPlayBtn" disabled>▶ 播放整段</button>
-          <div class="play-caption" id="chr-dictCaption">音色載入中，請稍候</div>
+          <button class="play-btn" id="int-dictPlayBtn" disabled>▶ 播放整段和聲音程</button>
+          <div class="play-caption" id="int-dictCaption">音色載入中，請稍候</div>
         </div>
-        <p class="dictation-hint">選項面板固定顯示這個難度的和絃性質，可重複拖曳使用；把標籤拖到對應的題號格子中，點一下格子裡已填入的標籤可以清除重填。</p>
-        <div class="dictation-bank" id="chr-dictBank"></div>
-        <div class="dictation-slots" id="chr-dictSlots"></div>
-        <button class="next-btn show" id="chr-dictSubmitBtn">提交作答</button>
+        <p class="dictation-hint">選項面板固定顯示這個難度的音程，可重複拖曳使用；把標籤拖到對應的格子中，點擊格子裡已填入的標籤可清除。</p>
+        <div class="dictation-bank" id="int-dictBank"></div>
+        <div class="dictation-slots" id="int-dictSlots"></div>
+        <button class="next-btn show" id="int-dictSubmitBtn">提交作答</button>
       </div>
 
-      <div class="test-summary" id="chr-dictSummary" style="display:none;">
-        <div class="test-score-big" id="chr-dictScore">0 / 10</div>
+      <div class="test-summary" id="int-dictSummary" style="display:none;">
+        <div class="test-score-big" id="int-dictScore">0 / 10</div>
         <div class="test-score-label">聽寫結束</div>
         <p>答錯的題目已收錄到下方「複習訂正」區，並已<b>標註題號</b>方便對照與訂正。</p>
-        <button class="test-again-btn" id="chr-dictAgainBtn">🔁 再聽寫一次</button>
-        <button class="test-back-btn" onclick="showPage('chr-settings')">↩ 重新調整設定</button>
+        <button class="test-again-btn" id="int-dictAgainBtn">🔁 再聽寫一次</button>
+        <button class="test-back-btn" onclick="showPage('int-settings')">↩ 重新調整設定</button>
       </div>
 
-      <div id="chr-questionPanel">
+      <div id="int-questionPanel">
         <div class="play-area">
-          <button class="play-btn" id="chr-playBtn" disabled>▶ 播放和絃（連續 3 遍）</button>
-          <div class="play-caption" id="chr-playCaption">音色載入中，請稍候</div>
-          <div class="question-count" id="chr-questionCount">第 1 題</div>
+          <button class="play-btn" id="int-playBtn" disabled>▶ 播放和聲音程（連續 3 遍）</button>
+          <div class="play-caption" id="int-playCaption">音色載入中，請稍候</div>
+          <div class="question-count" id="int-questionCount">第 1 題</div>
         </div>
-        <div class="answer-grid" id="chr-answerGrid"></div>
-        <div class="feedback-panel" id="chr-feedbackPanel">
-          <div class="feedback-text" id="chr-feedbackText"></div>
-          <div class="staff-answer" id="chr-staffAnswer"></div>
+        <div class="answer-grid" id="int-answerGrid"></div>
+        <div class="feedback-panel" id="int-feedbackPanel">
+          <div class="feedback-text" id="int-feedbackText"></div>
+          <div class="staff-answer" id="int-staffAnswer"></div>
         </div>
-        <button class="next-btn" id="chr-nextBtn">下一題 →</button>
+        <button class="next-btn" id="int-nextBtn">下一題 →</button>
       </div>
     </div>
 
     <div class="review-section">
       <h2>複習訂正</h2>
-      <p class="hint">答錯的題目會出現在這裡。「分解重播」會播放琶音，方便逐音辨認。連續聽寫答錯的卡片前方將<b>註明題號</b>。</p>
-      <div id="chr-reviewList"></div>
+      <p class="hint">答錯的音程會顯示於此。點擊<b>「上行＋和聲」</b>會先後彈奏兩音再合奏，聽覺對應最貼合！</p>
+      <div id="int-reviewList"></div>
     </div>
   </div>
 </div>
@@ -337,8 +326,8 @@
 function showPage(pageId) {
   if (window.stopAllPlayback) window.stopAllPlayback();
   document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
-  if (pageId === 'chr-settings') document.getElementById('pageChrSettings').classList.add('active');
-  else if (pageId === 'chr-practice') document.getElementById('pageChrPractice').classList.add('active');
+  if (pageId === 'int-settings') document.getElementById('pageIntSettings').classList.add('active');
+  else if (pageId === 'int-practice') document.getElementById('pageIntPractice').classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -414,7 +403,7 @@ function showPage(pageId) {
     clearPendingTimeouts();
     const ph = document.getElementById('playhead'); if(ph) ph.classList.remove('active');
     document.querySelectorAll('.dict-dot').forEach(d => d.classList.remove('active'));
-    chrModule.updatePlayBtn();
+    intModule.updatePlayBtn();
   };
 
   function ensureAudio(){
@@ -427,7 +416,7 @@ function showPage(pageId) {
     const ctx = ensureAudio();
     Soundfont.instrument(ctx, 'acoustic_grand_piano').then(inst => {
       pianoInstrument = inst; document.getElementById('loadingBanner').style.display = 'none';
-      chrModule.updatePlayBtn();
+      intModule.updatePlayBtn();
     }).catch(() => {
       document.getElementById('loadingBanner').textContent = '⚠️ 鋼琴音色載入失敗，請確認網路後重新整理頁面';
     });
@@ -450,74 +439,74 @@ function showPage(pageId) {
     const totalMs = (t - ctx.currentTime) * 1000; animatePlayhead(totalMs); return totalMs;
   }
 
-  function playArpeggio(root, intervals){
-    if(!pianoInstrument) return 0; const ctx = audioCtx; let t = ctx.currentTime + 0.05;
-    intervals.forEach(iv => { pianoInstrument.play(root + iv, t, { duration: 0.55, gain: 1.3 }); t += 0.46; });
-    t += 0.15;
-    intervals.forEach(iv => pianoInstrument.play(root + iv, t, { duration: CHORD_HOLD_SEC, gain: 1.1 }));
+  function playAscendingHarmonic(root, intervals){
+    if(!pianoInstrument || intervals.length < 2) return 0;
+    const ctx = audioCtx; let t = ctx.currentTime + 0.05;
+    pianoInstrument.play(root + intervals[0], t, { duration: 0.6, gain: 1.3 }); t += 0.55;
+    pianoInstrument.play(root + intervals[1], t, { duration: 0.6, gain: 1.3 }); t += 0.65;
+    pianoInstrument.play(root + intervals[0], t, { duration: CHORD_HOLD_SEC, gain: 1.2 });
+    pianoInstrument.play(root + intervals[1], t, { duration: CHORD_HOLD_SEC, gain: 1.2 });
     t += CHORD_HOLD_SEC + 0.2;
     const totalMs = (t - ctx.currentTime) * 1000; animatePlayhead(totalMs); return totalMs;
   }
 
-  const chrModule = (function(){
+  const intModule = (function(){
     const QUALITIES = {
-      major:      { label: '大三和絃',   intervals: [0,4,7],     symbol: '' },
-      minor:      { label: '小三和絃',   intervals: [0,3,7],     symbol: 'm' },
-      augmented:  { label: '增三和絃',   intervals: [0,4,8],     symbol: 'aug' },
-      diminished: { label: '減三和絃',   intervals: [0,3,6],     symbol: 'dim' },
-      major7:     { label: '大七和絃',   intervals: [0,4,7,11],  symbol: 'maj7' },
-      dominant7:  { label: '屬七和絃',   intervals: [0,4,7,10],  symbol: '7' },
-      minor7:     { label: '小七和絃',   intervals: [0,3,7,10],  symbol: 'm7' },
-      halfDim7:   { label: '半減七和絃', intervals: [0,3,6,10],  symbol: 'm7b5' },
-      dim7:       { label: '減七和絃',   intervals: [0,3,6,9],   symbol: 'dim7' },
-      augmented7: { label: '增七和絃',   intervals: [0,4,8,11],  symbol: 'maj7#5' },
-      major9:     { label: '大九和絃',   intervals: [0,4,7,11,14], symbol: 'maj9' },
-      minor9:     { label: '小九和絃',   intervals: [0,3,7,10,14], symbol: 'm9' },
-      dominant9:  { label: '屬九和絃',   intervals: [0,4,7,10,14], symbol: '9' },
-      dominant7b9:{ label: '屬七降九和絃', intervals: [0,4,7,10,13], symbol: '7b9' },
-      halfDim9:   { label: '半減九和絃', intervals: [0,3,6,10,14], symbol: 'm9b5' },
+      P1:    { label: '完全一度',      semitones: 0,  baseStep: 0 },
+      m2:    { label: '小二度',        semitones: 1,  baseStep: 1 },
+      M2:    { label: '大二度',        semitones: 2,  baseStep: 1 },
+      m3:    { label: '小三度',        semitones: 3,  baseStep: 2 },
+      M3:    { label: '大三度',        semitones: 4,  baseStep: 2 },
+      P4:    { label: '完全四度',      semitones: 5,  baseStep: 3 },
+      A4_d5: { label: '增四度/減五度',  semitones: 6,  baseStep: 3 },
+      P5:    { label: '完全五度',      semitones: 7,  baseStep: 4 },
+      m6:    { label: '小六度',        semitones: 8,  baseStep: 5 },
+      M6:    { label: '大六度',        semitones: 9,  baseStep: 5 },
+      m7:    { label: '小七度',        semitones: 10, baseStep: 6 },
+      M7:    { label: '大七度',        semitones: 11, baseStep: 6 },
+      P8:    { label: '完全八度',      semitones: 12, baseStep: 7 }
     };
-    const ORDER = ['major','minor','augmented','diminished','major7','minor7','dominant7','augmented7','dim7','halfDim7','major9','minor9','dominant9','dominant7b9','halfDim9'];
-    const CUSTOM_ID = 7;
+    const ORDER = ['P1','m2','M2','m3','M3','P4','A4_d5','P5','m6','M6','m7','M7','P8'];
+    const CUSTOM_ID = 4;
     const LEVELS = [
-      { id: 1, name: 'Lv1 三和絃基礎', pool: ['major','minor'] },
-      { id: 2, name: 'Lv2 三和絃進階', pool: ['major','minor','augmented','diminished'] },
-      { id: 3, name: 'Lv3 七和絃基礎', pool: ['major7','minor7','dominant7'] },
-      { id: 4, name: 'Lv4 七和絃完整', pool: ['major7','minor7','dominant7','augmented7','dim7','halfDim7'] },
-      { id: 5, name: 'Lv5 三／七和絃混合', pool: ['major','minor','augmented','diminished','major7','minor7','dominant7','augmented7','dim7','halfDim7'] },
-      { id: 6, name: 'Lv6 九和絃', pool: ['major9','minor9','dominant9','dominant7b9','halfDim9'] },
-      { id: CUSTOM_ID, name: '自訂和絃', pool: ['major','minor','dominant7','major7'] },
+      { id: 1, name: 'Lv1 協和音程', pool: ['P1','P4','P5','P8'] },
+      { id: 2, name: 'Lv2 不協和音程', pool: ['M2','m2','A4_d5','M7','m7'] },
+      { id: 3, name: 'Lv3 不完全協和', pool: ['M3','m3','M6','m6'] },
+      { id: CUSTOM_ID, name: '自訂音程選項', pool: ['P1','M3','P5','P8'] }
     ];
-    let customPool = LEVELS[6].pool;
-    let mode = 'practice', qtype = 'single', inversion = false, curLevel = LEVELS[0];
+    let customPool = LEVELS[3].pool;
+    let mode = 'practice', qtype = 'single', compound = false, curLevel = LEVELS[0];
     let score = { correct: 0, total: 0, streak: 0 }, qIndex = 1, current = null, answered = false;
     let reviewItems = [], reviewIdSeq = 1, testSession = null, dictSession = null, hasPlayed = false;
 
-    function buildSymbol(root, key){
-      const rootPc = ((root % 12) + 12) % 12;
-      return `${ROOT_SPELLING[rootPc].letter}${accCodeFromDiff(ROOT_SPELLING[rootPc].diff) || ''}${QUALITIES[key].symbol}`;
-    }
-    function applyInv(baseIvs, invIdx){
-      return baseIvs.map((semis, idx) => ({ step: idx * 2, semis: idx < invIdx ? semis + 12 : semis })).sort((a,b) => a.semis - b.semis);
-    }
+    function buildSymbol(key){ return QUALITIES[key].label; }
     function generateQ(){
       const pool = curLevel.pool; const key = pool[Math.floor(Math.random() * pool.length)];
-      const root = ROOT_MIN + Math.floor(Math.random() * (ROOT_MAX - ROOT_MIN + 1));
-      const baseIvs = QUALITIES[key].intervals; const invIdx = inversion ? Math.floor(Math.random() * baseIvs.length) : 0;
-      const voiced = applyInv(baseIvs, invIdx);
-      return { root, qualityKey: key, intervals: voiced.map(v=>v.semis), steps: voiced.map(v=>v.step) };
+      let root = ROOT_MIN + Math.floor(Math.random() * (ROOT_MAX - ROOT_MIN + 1));
+      const q = QUALITIES[key]; let step = (key === 'A4_d5') ? (Math.random() < 0.5 ? 3 : 4) : q.baseStep;
+      let chosenOctave = 0;
+      if(compound){
+        const validOcts = [0, 12, 24].filter(oct => root + q.semitones + oct <= 83);
+        if(validOcts.length > 0) chosenOctave = validOcts[Math.floor(Math.random() * validOcts.length)];
+      }
+      let actualSemitones = q.semitones + chosenOctave;
+      while(root + actualSemitones > 83) root -= 1;
+      let actualStep = step + (chosenOctave / 12) * 7;
+      return { root, qualityKey: key, intervals: [0, actualSemitones], steps: [0, actualStep] };
     }
     function generateDictQs(count, allowRepeat){
       if(allowRepeat){ const qs = []; for(let i=0; i<count; i++) qs.push(generateQ()); return qs; }
       return shuffleCopy(curLevel.pool).slice(0, count).map(key => {
-        const root = ROOT_MIN + Math.floor(Math.random() * (ROOT_MAX - ROOT_MIN + 1));
-        const baseIvs = QUALITIES[key].intervals; const invIdx = inversion ? Math.floor(Math.random() * baseIvs.length) : 0;
-        const voiced = applyInv(baseIvs, invIdx);
-        return { root, qualityKey: key, intervals: voiced.map(v=>v.semis), steps: voiced.map(v=>v.step) };
+        let root = ROOT_MIN + Math.floor(Math.random() * (ROOT_MAX - ROOT_MIN + 1));
+        const q = QUALITIES[key]; let step = (key === 'A4_d5') ? (Math.random() < 0.5 ? 3 : 4) : q.baseStep;
+        let chosenOctave = compound ? (Math.random()<0.5?12:0) : 0;
+        if(root + q.semitones + chosenOctave > 83) chosenOctave = 0;
+        while(root + q.semitones + chosenOctave > 83) root -= 1;
+        return { root, qualityKey: key, intervals: [0, q.semitones + chosenOctave], steps: [0, step + (chosenOctave/12)*7] };
       });
     }
     function renderTabs(){
-      const wrap = document.getElementById('chr-levelTabs'); wrap.innerHTML = '';
+      const wrap = document.getElementById('int-levelTabs'); wrap.innerHTML = '';
       LEVELS.forEach(l => {
         const btn = document.createElement('button'); btn.className = 'level-tab' + (l.id === curLevel.id ? ' active' : '');
         btn.textContent = l.name;
@@ -526,65 +515,65 @@ function showPage(pageId) {
       });
       updateCustomVis(); updateStartBtn();
     }
-    function updateCustomVis(){ document.getElementById('chr-customPanel').style.display = curLevel.id === CUSTOM_ID ? 'block' : 'none'; }
+    function updateCustomVis(){ document.getElementById('int-customPanel').style.display = curLevel.id === CUSTOM_ID ? 'block' : 'none'; }
     function updateStartBtn(){
       const insufficient = curLevel.id === CUSTOM_ID && curLevel.pool.length < 2;
-      const btn = document.getElementById('chr-enterBtn'); btn.disabled = insufficient;
-      btn.textContent = insufficient ? '⚠️ 請至少勾選 2 種和絃性質才能開始' : `🎯 確認設定，進入「和絃${mode==='test'?'測驗':'練習'}」 →`;
+      const btn = document.getElementById('int-enterBtn'); btn.disabled = insufficient;
+      btn.textContent = insufficient ? '⚠️ 請至少勾選 2 種音程才能開始' : `🎯 確認設定，進入「音程${mode==='test'?'測驗':'練習'}」 →`;
     }
-    function updateStatus(){ document.getElementById('chr-statusBadge').textContent = `${curLevel.name}｜${qtype==='single'?'單題作答':'連續聽寫'} (${mode==='test'?'測驗模式':'練習模式'})`; }
+    function updateStatus(){ document.getElementById('int-statusBadge').textContent = `${curLevel.name}｜${qtype==='single'?'單題作答':'連續聽寫'} (${mode==='test'?'測驗模式':'練習模式'})`; }
     function renderCustom(){
-      const grid = document.getElementById('chr-customGrid'); grid.innerHTML = '';
+      const grid = document.getElementById('int-customGrid'); grid.innerHTML = '';
       ORDER.forEach(key => {
         const item = document.createElement('label'); item.className = 'custom-item';
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = customPool.includes(key);
         cb.onchange = () => {
           if(cb.checked){ if(!customPool.includes(key)) customPool.push(key); }
           else customPool = customPool.filter(k => k !== key);
-          document.getElementById('chr-customHint').classList.toggle('show', customPool.length < 2);
+          document.getElementById('int-customHint').classList.toggle('show', customPool.length < 2);
           updateStartBtn(); updateDictCount();
         };
         item.appendChild(cb); item.appendChild(document.createTextNode(QUALITIES[key].label)); grid.appendChild(item);
       });
     }
     function updateDictCount(){
-      const repeat = document.querySelector('input[name="chr-dictRepeat"]:checked').value;
-      const input = document.getElementById('chr-dictationCountInput');
-      document.getElementById('chr-uniqueHint').textContent = curLevel.pool.length;
+      const repeat = document.querySelector('input[name="int-dictRepeat"]:checked').value;
+      const input = document.getElementById('int-dictationCountInput');
+      document.getElementById('int-uniqueHint').textContent = curLevel.pool.length;
       if(repeat === 'unique'){ input.value = curLevel.pool.length; input.disabled = true; } else { input.disabled = false; }
     }
     function updateSettingsVis(){
-      document.getElementById('chr-singleTestSettings').style.display = 'none';
-      document.getElementById('chr-dictationSettings').style.display = 'none';
-      document.getElementById('chr-noSpecialSettings').style.display = 'none';
-      document.getElementById('chr-dictReplayRow').style.display = 'none';
+      document.getElementById('int-singleTestSettings').style.display = 'none';
+      document.getElementById('int-dictationSettings').style.display = 'none';
+      document.getElementById('int-noSpecialSettings').style.display = 'none';
+      document.getElementById('int-dictReplayRow').style.display = 'none';
       if(qtype === 'single'){
-        if(mode === 'test') document.getElementById('chr-singleTestSettings').style.display = 'block';
-        else document.getElementById('chr-noSpecialSettings').style.display = 'block';
+        if(mode === 'test') document.getElementById('int-singleTestSettings').style.display = 'block';
+        else document.getElementById('int-noSpecialSettings').style.display = 'block';
       } else {
-        document.getElementById('chr-dictationSettings').style.display = 'block';
-        if(mode === 'test') document.getElementById('chr-dictReplayRow').style.display = 'flex';
+        document.getElementById('int-dictationSettings').style.display = 'block';
+        if(mode === 'test') document.getElementById('int-dictReplayRow').style.display = 'flex';
       }
       updateStartBtn(); updateStatus();
     }
     function newQ(){
       window.stopAllPlayback(); hasPlayed = false; current = generateQ(); answered = false;
-      document.getElementById('chr-feedbackPanel').classList.remove('show');
-      document.getElementById('chr-nextBtn').classList.remove('show');
-      document.getElementById('chr-playCaption').textContent = pianoInstrument ? '按下播放，聽聽這是什麼和絃' : '音色載入中，請稍候';
-      document.getElementById('chr-questionCount').textContent = `第 ${qIndex} 題`;
+      document.getElementById('int-feedbackPanel').classList.remove('show');
+      document.getElementById('int-nextBtn').classList.remove('show');
+      document.getElementById('int-playCaption').textContent = pianoInstrument ? '按下播放，聆聽兩音之間的音程關係' : '音色載入中，請稍候';
+      document.getElementById('int-questionCount').textContent = `第 ${qIndex} 題`;
       renderGrid(); updatePlayBtn();
     }
     function newTestQ(){
       window.stopAllPlayback(); hasPlayed = false; current = generateQ(); answered = false;
       testSession.replaysLeft = testSession.maxReplays;
-      document.getElementById('chr-feedbackPanel').classList.remove('show');
-      document.getElementById('chr-nextBtn').classList.remove('show');
-      document.getElementById('chr-questionCount').textContent = `第 ${testSession.index} / ${testSession.total} 題 目前正確 ${testSession.correct} 題`;
+      document.getElementById('int-feedbackPanel').classList.remove('show');
+      document.getElementById('int-nextBtn').classList.remove('show');
+      document.getElementById('int-questionCount').textContent = `第 ${testSession.index} / ${testSession.total} 題 目前正確 ${testSession.correct} 題`;
       renderGrid(); updatePlayBtn();
     }
     function renderGrid(){
-      const grid = document.getElementById('chr-answerGrid'); grid.innerHTML = '';
+      const grid = document.getElementById('int-answerGrid'); grid.innerHTML = '';
       curLevel.pool.forEach(key => {
         const btn = document.createElement('button'); btn.className = 'answer-btn pending-lock'; btn.disabled = !hasPlayed;
         btn.textContent = QUALITIES[key].label; btn.dataset.key = key;
@@ -594,56 +583,56 @@ function showPage(pageId) {
     function handleAns(userKey){
       if(answered) return; answered = true;
       const correctKey = current.qualityKey; const isCorrect = userKey === correctKey;
-      document.querySelectorAll('#chr-answerGrid .answer-btn').forEach(btn => {
+      document.querySelectorAll('#int-answerGrid .answer-btn').forEach(btn => {
         btn.disabled = true;
         if(btn.dataset.key === correctKey) btn.classList.add('correct');
         if(btn.dataset.key === userKey && !isCorrect) btn.classList.add('wrong');
       });
-      const fp = document.getElementById('chr-feedbackPanel'), ft = document.getElementById('chr-feedbackText'); fp.classList.add('show');
+      const fp = document.getElementById('int-feedbackPanel'), ft = document.getElementById('int-feedbackText'); fp.classList.add('show');
       if(isCorrect){ ft.textContent = '✓ 正確！這是 ' + QUALITIES[correctKey].label; ft.className = 'feedback-text correct'; }
       else { ft.textContent = '✗ 正確答案是 ' + QUALITIES[correctKey].label; ft.className = 'feedback-text wrong'; addToRev(current, userKey, null); }
-      const staffDiv = document.getElementById('chr-staffAnswer'); staffDiv.innerHTML = '';
+      const staffDiv = document.getElementById('int-staffAnswer'); staffDiv.innerHTML = '';
       renderGrandStaff(staffDiv, current.root, current.intervals, current.steps, 280, 260);
-      const lbl = document.createElement('div'); lbl.className = 'chord-symbol-label'; lbl.textContent = buildSymbol(current.root, correctKey); staffDiv.appendChild(lbl);
+      const lbl = document.createElement('div'); lbl.className = 'chord-symbol-label'; lbl.textContent = buildSymbol(correctKey); staffDiv.appendChild(lbl);
       if(mode === 'practice'){ score.total++; if(isCorrect) score.correct++; score.streak = isCorrect ? score.streak+1 : 0; updateScore(); }
       else if(mode === 'test' && testSession){
         if(isCorrect) testSession.correct++;
-        document.getElementById('chr-questionCount').textContent = `第 ${testSession.index} / ${testSession.total} 題 目前正確 ${testSession.correct} 題`;
-        document.getElementById('chr-nextBtn').textContent = testSession.index >= testSession.total ? '查看成績' : '下一題 →';
+        document.getElementById('int-questionCount').textContent = `第 ${testSession.index} / ${testSession.total} 題 目前正確 ${testSession.correct} 題`;
+        document.getElementById('int-nextBtn').textContent = testSession.index >= testSession.total ? '查看成績' : '下一題 →';
       }
-      document.getElementById('chr-nextBtn').classList.add('show');
+      document.getElementById('int-nextBtn').classList.add('show');
     }
-    function updateScore(){ document.getElementById('chr-scoreNum').textContent = `${score.correct} / ${score.total}`; document.getElementById('chr-streakNum').textContent = score.streak; }
+    function updateScore(){ document.getElementById('int-scoreNum').textContent = `${score.correct} / ${score.total}`; document.getElementById('int-streakNum').textContent = score.streak; }
     function updatePlayBtn(){
-      const btn = document.getElementById('chr-playBtn');
+      const btn = document.getElementById('int-playBtn');
       if(mode === 'test' && testSession && !testSession.finished){
         const rm = testSession.replaysLeft === Infinity ? '不限' : testSession.replaysLeft;
-        btn.textContent = `▶ 播放和絃（剩餘 ${rm} 次）`; btn.disabled = !pianoInstrument || testSession.replaysLeft <= 0;
-      } else { btn.textContent = '▶ 播放和絃（連續 3 遍）'; btn.disabled = !pianoInstrument; }
+        btn.textContent = `▶ 播放和聲音程（剩餘 ${rm} 次）`; btn.disabled = !pianoInstrument || testSession.replaysLeft <= 0;
+      } else { btn.textContent = '▶ 播放和聲音程（連續 3 遍）'; btn.disabled = !pianoInstrument; }
     }
     function addToRev(q, userKey, qNum){
       reviewItems.unshift({ id: reviewIdSeq++, root: q.root, qualityKey: q.qualityKey, intervals: q.intervals, steps: q.steps, userAnswerKey: userKey, corrected: false, levelId: curLevel.id, questionNum: qNum || null });
       renderRev();
     }
     function renderRev(){
-      const list = document.getElementById('chr-reviewList'); list.innerHTML = '';
+      const list = document.getElementById('int-reviewList'); list.innerHTML = '';
       if(reviewItems.length === 0){ list.innerHTML = '<div class="review-empty">🎉 目前沒有錯題，繼續保持你的好聽力！</div>'; return; }
       reviewItems.forEach(item => {
         const row = document.createElement('div'); row.className = 'review-item' + (item.corrected ? ' corrected' : '');
         const staffMini = document.createElement('div'); staffMini.className = 'review-staff-mini'; row.appendChild(staffMini);
         renderGrandStaff(staffMini, item.root, item.intervals, item.steps, 210, 210);
-        const lbl = document.createElement('div'); lbl.className = 'chord-symbol-label'; lbl.style.fontSize = '13.5px'; lbl.textContent = buildSymbol(item.root, item.qualityKey); staffMini.appendChild(lbl);
+        const lbl = document.createElement('div'); lbl.className = 'chord-symbol-label'; lbl.style.fontSize = '13.5px'; lbl.textContent = buildSymbol(item.qualityKey); staffMini.appendChild(lbl);
         const meta = document.createElement('div'); meta.className = 'review-meta';
         if(item.questionNum) meta.innerHTML += `<div class="q-num-badge">【第 ${item.questionNum} 題】</div>`;
         const userLabel = item.userAnswerKey ? QUALITIES[item.userAnswerKey].label : '（未作答）';
         meta.innerHTML += `<div class="review-answers">${item.corrected ? `<span class="right-ans">✓ 已訂正為 ${QUALITIES[item.qualityKey].label}</span>` : `你的答案：<span class="wrong-ans">${userLabel}</span><br>正解答案：<span class="right-ans">${QUALITIES[item.qualityKey].label}</span>`}</div>`;
         const actions = document.createElement('div'); actions.className = 'review-actions';
-        const repBtn = document.createElement('button'); repBtn.className = 'icon-btn'; repBtn.textContent = '🔁 分解琶音';
-        repBtn.onclick = () => playArpeggio(item.root, item.intervals); actions.appendChild(repBtn);
+        const repBtn = document.createElement('button'); repBtn.className = 'icon-btn'; repBtn.textContent = '🔁 上行＋和聲';
+        repBtn.onclick = () => playAscendingHarmonic(item.root, item.intervals); actions.appendChild(repBtn);
         if(!item.corrected){
           const corBtn = document.createElement('button'); corBtn.className = 'icon-btn'; corBtn.textContent = '✎ 重新作答';
           corBtn.onclick = () => {
-            const l = LEVELS.find(x=>x.id===item.levelId)||LEVELS[6];
+            const l = LEVELS.find(x=>x.id===item.levelId)||LEVELS[3];
             const old = row.querySelector('.correction-grid'); if(old) old.remove();
             const grid = document.createElement('div'); grid.className = 'correction-grid';
             l.pool.forEach(k => {
@@ -659,22 +648,22 @@ function showPage(pageId) {
       });
     }
     function updateDictCaption(){
-      const btn = document.getElementById('chr-dictPlayBtn'); if(!dictSession){ btn.disabled=true; return; }
+      const btn = document.getElementById('int-dictPlayBtn'); if(!dictSession){ btn.disabled=true; return; }
       const rm = dictSession.replaysLeft === Infinity ? '不限' : dictSession.replaysLeft;
-      btn.textContent = `▶ 播放整段（共 ${dictSession.questions.length} 題，剩餘 ${rm} 次）`;
+      btn.textContent = `▶ 播放整段和聲音程（共 ${dictSession.questions.length} 題，剩餘 ${rm} 次）`;
       btn.disabled = !pianoInstrument || dictSession.submitted || dictSession.replaysLeft <= 0;
     }
     function renderDictBoard(){
-      const dots = document.getElementById('chr-dictDots'); dots.innerHTML = '';
-      dictSession.questions.forEach((q,i) => { dots.innerHTML += `<div class="dict-dot" id="chr-dot-${i}">${i+1}</div>`; });
-      const bank = document.getElementById('chr-dictBank'); bank.innerHTML = '';
+      const dots = document.getElementById('int-dictDots'); dots.innerHTML = '';
+      dictSession.questions.forEach((q,i) => { dots.innerHTML += `<div class="dict-dot" id="int-dot-${i}">${i+1}</div>`; });
+      const bank = document.getElementById('int-dictBank'); bank.innerHTML = '';
       curLevel.pool.forEach(k => {
         const tag = document.createElement('div'); tag.className = 'dict-tag'; tag.draggable = true; tag.dataset.key = k; tag.textContent = QUALITIES[k].label;
         tag.ondragstart = e => e.dataTransfer.setData('text/plain', k); bank.appendChild(tag);
       });
-      const slots = document.getElementById('chr-dictSlots'); slots.innerHTML = '';
+      const slots = document.getElementById('int-dictSlots'); slots.innerHTML = '';
       dictSession.questions.forEach((q,i) => {
-        const slot = document.createElement('div'); slot.className = 'dict-slot'; slot.id = `chr-slot-${i}`; slot.innerHTML = `<div class="dict-slot-label">第 ${i+1} 題</div>`;
+        const slot = document.createElement('div'); slot.className = 'dict-slot'; slot.id = `int-slot-${i}`; slot.innerHTML = `<div class="dict-slot-label">第 ${i+1} 題</div>`;
         slot.ondragover = e => e.preventDefault();
         slot.ondrop = e => {
           e.preventDefault(); if(dictSession.submitted) return;
@@ -684,101 +673,93 @@ function showPage(pageId) {
         };
         slots.appendChild(slot);
       });
-      document.getElementById('chr-dictSlots').onclick = e => { if(!dictSession||dictSession.submitted)return; const tag = e.target.closest('.dict-tag'); if(tag)tag.remove(); };
+      document.getElementById('int-dictSlots').onclick = e => { if(!dictSession||dictSession.submitted)return; const tag = e.target.closest('.dict-tag'); if(tag)tag.remove(); };
       updateDictCaption();
-      document.getElementById('chr-dictBank').classList.add('locked-pending'); document.getElementById('chr-dictSlots').classList.add('locked-pending');
-      document.getElementById('chr-dictSubmitBtn').disabled = true;
+      document.getElementById('int-dictBank').classList.add('locked-pending'); document.getElementById('int-dictSlots').classList.add('locked-pending');
+      document.getElementById('int-dictSubmitBtn').disabled = true;
     }
 
     return {
       init: function(){
         renderCustom(); renderTabs(); updateScore(); renderRev(); updateSettingsVis();
-        document.querySelectorAll('#chr-modeSwitch .mode-btn').forEach(b => b.onclick = () => { mode = b.dataset.mode; document.querySelectorAll('#chr-modeSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b)); updateSettingsVis(); });
-        document.querySelectorAll('#chr-qtypeSwitch .mode-btn').forEach(b => b.onclick = () => { qtype = b.dataset.qtype; document.querySelectorAll('#chr-qtypeSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b)); updateSettingsVis(); });
-        document.getElementById('chr-inversionToggle').onchange = e => { inversion = e.target.checked; };
-        document.querySelectorAll('input[name="chr-dictRepeat"]').forEach(r => r.onchange = updateDictCount);
-        document.getElementById('chr-enterBtn').onclick = () => {
+        document.querySelectorAll('#int-modeSwitch .mode-btn').forEach(b => b.onclick = () => { mode = b.dataset.mode; document.querySelectorAll('#int-modeSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b)); updateSettingsVis(); });
+        document.querySelectorAll('#int-qtypeSwitch .mode-btn').forEach(b => b.onclick = () => { qtype = b.dataset.qtype; document.querySelectorAll('#int-qtypeSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b)); updateSettingsVis(); });
+        document.getElementById('int-compoundToggle').onchange = e => { compound = e.target.checked; };
+        document.querySelectorAll('input[name="int-dictRepeat"]').forEach(r => r.onchange = updateDictCount);
+        document.getElementById('int-enterBtn').onclick = () => {
           if(curLevel.id === CUSTOM_ID && curLevel.pool.length < 2) return;
           window.stopAllPlayback(); testSession = null; dictSession = null;
-          document.getElementById('chr-questionPanel').style.display = qtype === 'single' ? 'block' : 'none';
-          document.getElementById('chr-dictPanel').style.display = qtype === 'dictation' ? 'block' : 'none';
-          document.getElementById('chr-testSummary').style.display = 'none'; document.getElementById('chr-dictSummary').style.display = 'none';
-          document.getElementById('chr-scoreBoxWrap').style.display = (qtype === 'single' && mode === 'practice') ? 'block' : 'none';
+          document.getElementById('int-questionPanel').style.display = qtype === 'single' ? 'block' : 'none';
+          document.getElementById('int-dictPanel').style.display = qtype === 'dictation' ? 'block' : 'none';
+          document.getElementById('int-testSummary').style.display = 'none'; document.getElementById('int-dictSummary').style.display = 'none';
+          document.getElementById('int-scoreBoxWrap').style.display = (qtype === 'single' && mode === 'practice') ? 'block' : 'none';
           if(qtype === 'single'){
             if(mode === 'practice'){ qIndex = 1; newQ(); }
-            else { const v = document.getElementById('chr-testReplaySelect').value; const max = v==='inf'?Infinity:parseInt(v,10); testSession={total:TEST_TOTAL,index:1,correct:0,maxReplays:max,replaysLeft:max,finished:false}; newTestQ(); }
+            else { const v = document.getElementById('int-testReplaySelect').value; const max = v==='inf'?Infinity:parseInt(v,10); testSession={total:TEST_TOTAL,index:1,correct:0,maxReplays:max,replaysLeft:max,finished:false}; newTestQ(); }
           } else {
-            const v = document.getElementById('chr-dictReplaySelect').value; const max = mode==='test'?(v==='inf'?Infinity:parseInt(v,10)):Infinity;
-            const styleVal = document.querySelector('input[name="chr-playbackStyle"]:checked').value;
-            const allowRepeat = document.querySelector('input[name="chr-dictRepeat"]:checked').value === 'allow';
-            const count = allowRepeat ? parseInt(document.getElementById('chr-dictationCountInput').value,10)||10 : curLevel.pool.length;
-            dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, playbackStyle: styleVal, hasPlayed: false };
+            const v = document.getElementById('int-dictReplaySelect').value; const max = mode==='test'?(v==='inf'?Infinity:parseInt(v,10)):Infinity;
+            const allowRepeat = document.querySelector('input[name="int-dictRepeat"]:checked').value === 'allow';
+            const count = allowRepeat ? parseInt(document.getElementById('int-dictationCountInput').value,10)||10 : curLevel.pool.length;
+            dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, hasPlayed: false };
             renderDictBoard();
           }
-          showPage('chr-practice'); ensureAudio();
+          showPage('int-practice'); ensureAudio();
         };
-        document.getElementById('chr-playBtn').onclick = () => {
+        document.getElementById('int-playBtn').onclick = () => {
           if(!pianoInstrument || !current) return; window.stopAllPlayback();
           if(mode === 'test' && testSession && !testSession.finished){ if(testSession.replaysLeft<=0)return; if(testSession.replaysLeft!==Infinity)testSession.replaysLeft--; }
-          hasPlayed = true; document.querySelectorAll('#chr-answerGrid .answer-btn').forEach(b=>{b.disabled=false; b.classList.remove('pending-lock');});
+          hasPlayed = true; document.querySelectorAll('#int-answerGrid .answer-btn').forEach(b=>{b.disabled=false; b.classList.remove('pending-lock');});
           playBlock(current.root, current.intervals, 3); updatePlayBtn();
         };
-        document.getElementById('chr-nextBtn').onclick = () => {
+        document.getElementById('int-nextBtn').onclick = () => {
           window.stopAllPlayback();
           if(mode === 'practice'){ qIndex++; newQ(); }
           else if(mode === 'test' && testSession){
             if(testSession.index >= testSession.total){
-              testSession.finished = true; document.getElementById('chr-questionPanel').style.display='none'; document.getElementById('chr-testSummary').style.display='block'; document.getElementById('chr-testScore').textContent=`${testSession.correct} / ${testSession.total}`;
+              testSession.finished = true; document.getElementById('int-questionPanel').style.display='none'; document.getElementById('int-testSummary').style.display='block'; document.getElementById('int-testScore').textContent=`${testSession.correct} / ${testSession.total}`;
             } else { testSession.index++; newTestQ(); }
           }
         };
-        document.getElementById('chr-testAgainBtn').onclick = () => {
-          window.stopAllPlayback(); document.getElementById('chr-testSummary').style.display='none'; document.getElementById('chr-questionPanel').style.display='block';
-          const v = document.getElementById('chr-testReplaySelect').value; const max = v==='inf'?Infinity:parseInt(v,10); testSession={total:TEST_TOTAL,index:1,correct:0,maxReplays:max,replaysLeft:max,finished:false}; newTestQ();
+        document.getElementById('int-testAgainBtn').onclick = () => {
+          window.stopAllPlayback(); document.getElementById('int-testSummary').style.display='none'; document.getElementById('int-questionPanel').style.display='block';
+          const v = document.getElementById('int-testReplaySelect').value; const max = v==='inf'?Infinity:parseInt(v,10); testSession={total:TEST_TOTAL,index:1,correct:0,maxReplays:max,replaysLeft:max,finished:false}; newTestQ();
         };
-        document.getElementById('chr-dictPlayBtn').onclick = () => {
+        document.getElementById('int-dictPlayBtn').onclick = () => {
           if(!pianoInstrument||!dictSession||dictSession.replaysLeft<=0) return; window.stopAllPlayback();
           if(dictSession.replaysLeft!==Infinity) dictSession.replaysLeft--; dictSession.hasPlayed = true;
-          document.getElementById('chr-dictBank').classList.remove('locked-pending'); document.getElementById('chr-dictSlots').classList.remove('locked-pending');
-          document.getElementById('chr-dictSubmitBtn').disabled = false; updateDictCaption(); document.getElementById('chr-dictPlayBtn').disabled = true;
-          const ctx = audioCtx; let t = ctx.currentTime + 0.05; const evs = []; const style = dictSession.playbackStyle;
+          document.getElementById('int-dictBank').classList.remove('locked-pending'); document.getElementById('int-dictSlots').classList.remove('locked-pending');
+          document.getElementById('int-dictSubmitBtn').disabled = false; updateDictCaption(); document.getElementById('int-dictPlayBtn').disabled = true;
+          const ctx = audioCtx; let t = ctx.currentTime + 0.05; const evs = [];
           dictSession.questions.forEach((q,qi) => {
-            if(style === 'blockTriple'){
-              for(let r=0; r<3; r++){
-                evs.push({qi, start: t-ctx.currentTime, dur: CHORD_HOLD_SEC});
-                q.intervals.forEach(iv => pianoInstrument.play(q.root+iv, t, {duration: CHORD_HOLD_SEC, gain:1.3}));
-                t += CHORD_HOLD_SEC + ((r<2)?CHORD_TRIPLE_GAP:DICT_PAUSE_BETWEEN_Q);
-              }
-            } else {
+            for(let r=0; r<3; r++){
               evs.push({qi, start: t-ctx.currentTime, dur: CHORD_HOLD_SEC});
               q.intervals.forEach(iv => pianoInstrument.play(q.root+iv, t, {duration: CHORD_HOLD_SEC, gain:1.3}));
-              t += CHORD_HOLD_SEC + DICT_PAUSE_BETWEEN_Q;
+              t += CHORD_HOLD_SEC + ((r<2)?CHORD_TRIPLE_GAP:DICT_PAUSE_BETWEEN_Q);
             }
           });
           const totalMs = (t - ctx.currentTime)*1000;
           evs.forEach(ev => {
-            trackTimeout(()=>{ const d=document.getElementById(`chr-dot-${ev.qi}`); if(d)d.classList.add('active'); }, ev.start*1000);
-            trackTimeout(()=>{ const d=document.getElementById(`chr-dot-${ev.qi}`); if(d)d.classList.remove('active'); }, (ev.start+ev.dur)*1000);
+            trackTimeout(()=>{ const d=document.getElementById(`int-dot-${ev.qi}`); if(d)d.classList.add('active'); }, ev.start*1000);
+            trackTimeout(()=>{ const d=document.getElementById(`int-dot-${ev.qi}`); if(d)d.classList.remove('active'); }, (ev.start+ev.dur)*1000);
           });
           trackTimeout(() => { updateDictCaption(); }, totalMs + 80);
         };
-        document.getElementById('chr-dictSubmitBtn').onclick = () => {
+        document.getElementById('int-dictSubmitBtn').onclick = () => {
           if(!dictSession||dictSession.submitted) return; window.stopAllPlayback(); let cor = 0;
           dictSession.questions.forEach((q,i) => {
-            const slot = document.getElementById(`chr-slot-${i}`), tag = slot.querySelector('.dict-tag');
+            const slot = document.getElementById(`int-slot-${i}`), tag = slot.querySelector('.dict-tag');
             const uk = tag ? tag.dataset.key : null; const isC = uk === q.qualityKey;
             slot.classList.add(isC ? 'correct' : 'wrong'); if(tag) tag.draggable = false;
             if(isC) cor++; else addToRev(q, uk, i+1);
           });
-          dictSession.submitted = true; document.getElementById('chr-dictPanel').style.display='none'; document.getElementById('chr-dictSummary').style.display='block'; document.getElementById('chr-dictScore').textContent=`${cor} / ${dictSession.questions.length}`;
+          dictSession.submitted = true; document.getElementById('int-dictPanel').style.display='none'; document.getElementById('int-dictSummary').style.display='block'; document.getElementById('int-dictScore').textContent=`${cor} / ${dictSession.questions.length}`;
         };
-        document.getElementById('chr-dictAgainBtn').onclick = () => {
-          window.stopAllPlayback(); document.getElementById('chr-dictSummary').style.display='none'; document.getElementById('chr-dictPanel').style.display='block';
-          const v = document.getElementById('chr-dictReplaySelect').value; const max = mode==='test'?(v==='inf'?Infinity:parseInt(v,10)):Infinity;
-          const styleVal = document.querySelector('input[name="chr-playbackStyle"]:checked').value;
-          const allowRepeat = document.querySelector('input[name="chr-dictRepeat"]:checked').value === 'allow';
-          const count = allowRepeat ? parseInt(document.getElementById('chr-dictationCountInput').value,10)||10 : curLevel.pool.length;
-          dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, playbackStyle: styleVal, hasPlayed: false };
+        document.getElementById('int-dictAgainBtn').onclick = () => {
+          window.stopAllPlayback(); document.getElementById('int-dictSummary').style.display='none'; document.getElementById('int-dictPanel').style.display='block';
+          const v = document.getElementById('int-dictReplaySelect').value; const max = mode==='test'?(v==='inf'?Infinity:parseInt(v,10)):Infinity;
+          const allowRepeat = document.querySelector('input[name="int-dictRepeat"]:checked').value === 'allow';
+          const count = allowRepeat ? parseInt(document.getElementById('int-dictationCountInput').value,10)||10 : curLevel.pool.length;
+          dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, hasPlayed: false };
           renderDictBoard();
         };
       },
@@ -786,7 +767,7 @@ function showPage(pageId) {
     };
   })();
 
-  chrModule.init();
+  intModule.init();
   loadPiano();
 })();
 </script>
