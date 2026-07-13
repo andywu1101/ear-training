@@ -256,65 +256,76 @@ function showPage(pageId) {
 }
 
 (function(){
-  // ================= 嚴格鎖定你提供的圖片順序 (1~8, 1~32) =================
-  const SIMPLE_ORDER = ['4', '2_2', '1_1_1_1', '2_1_1', '1_1_2', '1_2_1', '1_3', '3_1'];
+  // ================= 嚴格依照您提供的圖片與數字編號順序 =================
+  const SIMPLE_ORDER = ['4', '2-2', '1-1-1-1', '2-1-1', '1-1-2', '1-2-1', '1-3', '3-1', '3tuplet'];
   const COMPOUND_ORDER = [
-    '6', '4_2', '2_4', '2_2_2', '2_1_1_2', '2_2_1_1', '1_1_2_2', '2_1_1_1_1',
-    '1_1_2_1_1', '1_1_1_1_2', '1_1_1_1_1_1', '1_5', '5_1', '3_3', '3_2_1', '1_2_3',
-    '1_1_4', '4_1_1', '3_1_1_1', '1_1_1_3', '1_3_2', '2_3_1', '1_2_1_2', '2_1_2_1',
-    '2_1_3', '3_1_2', '1_4_1', '1_2_2_1', '2_1_1_2_alt', '1_1_2_2_alt', '2_2_1_1_alt', '1_1_1_1_2_alt'
+    '6', '4-2', '2-4', '4-1-1', '1-1-4', '2-2-2', '2-2-1-1', '2-1-1-2',
+    '1-1-2-2', '2-1-1-1-1', '1-1-2-1-1', '1-1-1-1-2', '1-1-1-1-1-1', '3-1-1-1', '1-1-1-3', '1-3-1-1',
+    '1-1-3-1', '3-1-2', '3-2-1', '2-3-1', '2-1-3', '1-3-2', '1-2-3', '4~1-1',
+    '1-1~4', '3-3', '2-1-2-1', '1-2-1-2', '1-2-2-1', '1-1~3-1', '1-2-1-1-1', '1-1-1-2-1'
   ];
 
-  // ================= 演算法生成與覆蓋特例 =================
-  function generateRhythmBlocks(total16ths, meterType, fixedOrder) {
-    let blocks = {};
-    let max = 1 << (total16ths - 1);
-    for (let i = 0; i < max; i++) {
-      let bin = i.toString(2).padStart(total16ths - 1, '0');
-      let lengths = []; let currentLen = 1;
-      for (let char of bin) {
-        if (char === '1') { lengths.push(currentLen); currentLen = 1; } 
-        else currentLen++;
+  // ================= 節奏字串自動解析引擎 =================
+  function parsePatternId(id) {
+    if (id === '3tuplet') {
+      return { lengths: [4/3, 4/3, 4/3], tieNext: [false, false, false], isTuplet: true };
+    }
+    let lengths = [];
+    let tieNext = [];
+    let tokens = id.split(/([-\~])/); 
+    for (let i = 0; i < tokens.length; i += 2) {
+      lengths.push(Number(tokens[i]));
+      if (i + 1 < tokens.length) {
+        tieNext.push(tokens[i + 1] === '~');
+      } else {
+        tieNext.push(false);
       }
-      lengths.push(currentLen);
-      let id = lengths.join('_');
-      blocks[id] = { id, lengths, type: meterType, beats: lengths.reduce((a,b)=>a+b,0) / (meterType==='simple'?4:6) };
     }
-    
-    // 針對圖片中具有同等時值分佈，但用延音線 (Tie) 表演的特殊寫法進行補充定義
-    if (meterType === 'compound') {
-      blocks['2_1_1_2_alt'] = { id:'2_1_1_2_alt', lengths:[2,1,1,2], type:'compound', beats:1, altTie:true };
-      blocks['1_1_2_2_alt'] = { id:'1_1_2_2_alt', lengths:[1,1,2,2], type:'compound', beats:1, altTie:true };
-      blocks['2_2_1_1_alt'] = { id:'2_2_1_1_alt', lengths:[2,2,1,1], type:'compound', beats:1, altTie:true };
-      blocks['1_1_1_1_2_alt'] = { id:'1_1_1_1_2_alt', lengths:[1,1,1,1,2], type:'compound', beats:1, altTie:true };
-      blocks['2_3_1'] = { id:'2_3_1', lengths:[2,3,1], type:'compound', beats:1, tieMid:true };
-    }
-
-    return { blocks, order: fixedOrder.filter(id => blocks[id]) };
+    return { lengths, tieNext, isTuplet: false };
   }
 
-  const SIMPLE_DATA = generateRhythmBlocks(4, 'simple', SIMPLE_ORDER);
-  const COMPOUND_DATA = generateRhythmBlocks(6, 'compound', COMPOUND_ORDER);
-  const ALL_BLOCKS = { ...SIMPLE_DATA.blocks, ...COMPOUND_DATA.blocks };
+  const ALL_BLOCKS = {};
+  SIMPLE_ORDER.forEach(id => { ALL_BLOCKS[id] = { id, ...parsePatternId(id), type: 'simple', beats: 1 }; });
+  COMPOUND_ORDER.forEach(id => { ALL_BLOCKS[id] = { id, ...parsePatternId(id), type: 'compound', beats: 1 }; });
 
   const VF = Vex.Flow;
   
+  // 建立強固型延音線：強制增加右側間距 + 設定上方弧度，確保連結線絕對可見且弧度優美
+  function createEnhancedTie(firstNote, lastNote) {
+    if (typeof firstNote.setExtraRightPx === 'function') {
+      firstNote.setExtraRightPx(20);
+    }
+    return new VF.StaveTie({
+      first_note: firstNote,
+      last_note: lastNote,
+      first_indices: [0],
+      last_indices: [0]
+    }).setDirection(VF.Stem.UP);
+  }
+
+  // VexFlow 節點與連結梁/延音線渲染引擎
   function getVexNotes(block, isWrong) {
-    let notes = []; let ties = [];
+    let notes = []; let ties = []; let tuplet = null;
     let lengths = block.lengths;
+    let tieNext = block.tieNext || [];
     
+    if (block.isTuplet) {
+      for(let i=0; i<3; i++) {
+        let n = new VF.StaveNote({keys:['b/4'], duration:'8'});
+        if(isWrong) n.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
+        notes.push(n);
+      }
+      tuplet = new VF.Tuplet(notes, {num_notes: 3, notes_occupied: 2, ratioed: false});
+      let beams = [new VF.Beam(notes)];
+      return { notes, ties, beams, tuplet };
+    }
+
     lengths.forEach((len, idx) => {
       let n1, n2;
+      
       if(len===1) n1 = new VF.StaveNote({keys:['b/4'], duration:'16'});
       else if(len===2) n1 = new VF.StaveNote({keys:['b/4'], duration:'8'});
-      else if(len===3) {
-        if (block.tieMid && idx===1) {
-          n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}); 
-          n2 = new VF.StaveNote({keys:['b/4'], duration:'16'});
-        } else {
-          n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0);
-        }
-      }
+      else if(len===3) n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0);
       else if(len===4) n1 = new VF.StaveNote({keys:['b/4'], duration:'q'});
       else if(len===5) { 
         n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0); 
@@ -327,25 +338,36 @@ function showPage(pageId) {
         if(n2) n2.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
       }
       if (n1) notes.push(n1);
-      if (n2) { notes.push(n2); ties.push({ first: n1, last: n2 }); }
+      if (n2) {
+        notes.push(n2); 
+        ties.push(createEnhancedTie(n1, n2));
+      }
     });
     
+    // 依據 ~ 符號自動綁定跨音符延音線
+    for (let idx = 0; idx < tieNext.length; idx++) {
+      if (tieNext[idx] && idx + 1 < notes.length) {
+        ties.push(createEnhancedTie(notes[idx], notes[idx + 1]));
+      }
+    }
+
     const beamNotes = notes.filter(n => n.duration.includes('8') || n.duration.includes('16'));
     const beams = beamNotes.length > 1 ? [new VF.Beam(beamNotes)] : [];
-    return { notes, ties, beams };
+    return { notes, ties, beams, tuplet };
   }
 
   function drawMiniRhythm(container, blockId) {
     try {
       container.innerHTML = ''; const block = ALL_BLOCKS[blockId];
-      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(160, 80); 
-      const svg = container.querySelector('svg'); svg.setAttribute('viewBox', '0 0 160 80'); svg.style.width = '100%'; svg.style.height = '100%';
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(180, 80); 
+      const svg = container.querySelector('svg'); svg.setAttribute('viewBox', '0 0 180 80'); svg.style.width = '100%'; svg.style.height = '100%';
       const ctx = renderer.getContext();
-      const stave = new VF.Stave(10, 5, 140, { num_lines: 1 }).setContext(ctx).draw();
-      const { notes, ties, beams } = getVexNotes(block, false);
+      const stave = new VF.Stave(10, 5, 160, { num_lines: 1 }).setContext(ctx).draw();
+      const { notes, ties, beams, tuplet } = getVexNotes(block, false);
       VF.Formatter.FormatAndDraw(ctx, stave, notes);
       beams.forEach(b => b.setContext(ctx).draw());
-      ties.forEach(t => new VF.StaveTie({ first_note: t.first, last_note: t.last }).setContext(ctx).draw());
+      ties.forEach(t => t.setContext(ctx).draw());
+      if(tuplet) tuplet.setContext(ctx).draw();
     } catch(e) {}
   }
 
@@ -384,7 +406,7 @@ function showPage(pageId) {
         if (isFirst) stave.addClef('percussion').addTimeSignature(rhyModule.meter);
         stave.setContext(ctx).draw();
 
-        let allNotes = []; let allBeams = []; let allTies = [];
+        let allNotes = []; let allBeams = []; let allTies = []; let allTuplets = [];
         let barKeys = bars[b] || [];
         
         let filledBeats = barKeys.reduce((acc, k) => acc + (k === 'placeholder' ? 1 : ALL_BLOCKS[k].beats), 0);
@@ -395,8 +417,9 @@ function showPage(pageId) {
           if (id !== 'placeholder') {
             const block = ALL_BLOCKS[id];
             let isWrong = correctSeq && (seq[globalIdx] !== correctSeq[globalIdx]);
-            const { notes, ties, beams } = getVexNotes(block, isWrong);
+            const { notes, ties, beams, tuplet } = getVexNotes(block, isWrong);
             allNotes.push(...notes); allBeams.push(...beams); allTies.push(...ties);
+            if(tuplet) allTuplets.push(tuplet);
             firstNoteOfBeat = notes[0];
           } else {
             let ghost = new VF.StaveNote({keys:['b/4'], duration: 'qr'});
@@ -412,7 +435,8 @@ function showPage(pageId) {
         if (allNotes.length > 0) {
           VF.Formatter.FormatAndDraw(ctx, stave, allNotes);
           allBeams.forEach(bm => bm.setContext(ctx).draw());
-          allTies.forEach(t => new VF.StaveTie({ first_note: t.first, last_note: t.last }).setContext(ctx).draw());
+          allTies.forEach(t => t.setContext(ctx).draw());
+          allTuplets.forEach(tp => tp.setContext(ctx).draw());
         }
         xPos += sWidth;
       }
@@ -458,7 +482,7 @@ function showPage(pageId) {
     } catch(e) { console.error("Main Staff Error:", e); }
   }
 
-  // ================= 播放引擎 =================
+  // ================= 播放引擎 (完美支援延音線時值合併) =================
   let audioCtx = null; let pianoInst = null; let pendingTimers = [];
   function clearTimers(){ pendingTimers.forEach(id => clearTimeout(id)); pendingTimers = []; }
   window.rhyStopAll = function() { 
@@ -483,7 +507,7 @@ function showPage(pageId) {
 
     initSettings: function() {
       const grid = document.getElementById('settingsPatternGrid'); grid.innerHTML = '';
-      const order = this.meterType === 'simple' ? SIMPLE_DATA.order : COMPOUND_DATA.order;
+      const order = this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
       this.selectedPatterns.clear();
       order.forEach(id => {
         this.selectedPatterns.add(id);
@@ -536,11 +560,28 @@ function showPage(pageId) {
 
       let currentPitch = this.lockedStartPitch;
       seq.forEach(id => {
-        ALL_BLOCKS[id].lengths.forEach(len => {
-          pianoInst.play(this.pitchMode==='dual'?currentPitch:69, time, { duration: len*secPer16th*0.9, gain: 4.0 });
+        const block = ALL_BLOCKS[id];
+        const lengths = block.lengths;
+        const tieNext = block.tieNext || [];
+        
+        let i = 0;
+        while (i < lengths.length) {
+          let totalLen = lengths[i];
+          let isTied = tieNext[i];
+          let nextIdx = i + 1;
+          
+          while (isTied && nextIdx < lengths.length) {
+            totalLen += lengths[nextIdx];
+            isTied = tieNext[nextIdx];
+            nextIdx++;
+          }
+          
+          pianoInst.play(this.pitchMode==='dual'?currentPitch:69, time, { duration: totalLen * secPer16th * 0.9, gain: 4.0 });
           if(this.pitchMode==='dual') currentPitch = (currentPitch===69) ? 64 : 69;
-          time += len * secPer16th;
-        });
+          
+          time += totalLen * secPer16th;
+          i = nextIdx;
+        }
       });
 
       const timerId = setTimeout(() => { this.isPlaying = false; this.updatePlayBtn(); if(onEnd) onEnd(); }, (time-ctx.currentTime)*1000 + 100);
@@ -573,7 +614,7 @@ function showPage(pageId) {
 
     renderKeypad: function() {
       const pad = document.getElementById('rhy-keypad'); pad.innerHTML = '';
-      const order = this.meterType === 'simple' ? SIMPLE_DATA.order : COMPOUND_DATA.order;
+      const order = this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
       
       order.forEach(id => {
         if (!this.selectedPatterns.has(id)) return;
@@ -670,7 +711,7 @@ function showPage(pageId) {
       });
       
       document.getElementById('selectAllBtn').onclick = () => {
-        const order = this.meterType === 'simple' ? SIMPLE_DATA.order : COMPOUND_DATA.order;
+        const order = this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
         const items = document.querySelectorAll('.pattern-item');
         if (this.selectedPatterns.size === order.length) {
           this.selectedPatterns.clear(); items.forEach(i => i.classList.remove('selected'));
