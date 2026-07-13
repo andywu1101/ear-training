@@ -256,9 +256,18 @@ function showPage(pageId) {
 }
 
 (function(){
-  // ================= 演算法生成節奏型 (嚴格時值長短排序) =================
-  function generateRhythmBlocks(total16ths, meterType) {
-    let blocks = {}; let order = [];
+  // ================= 嚴格鎖定你提供的圖片順序 (1~8, 1~32) =================
+  const SIMPLE_ORDER = ['4', '2_2', '1_1_1_1', '2_1_1', '1_1_2', '1_2_1', '1_3', '3_1'];
+  const COMPOUND_ORDER = [
+    '6', '4_2', '2_4', '2_2_2', '2_1_1_2', '2_2_1_1', '1_1_2_2', '2_1_1_1_1',
+    '1_1_2_1_1', '1_1_1_1_2', '1_1_1_1_1_1', '1_5', '5_1', '3_3', '3_2_1', '1_2_3',
+    '1_1_4', '4_1_1', '3_1_1_1', '1_1_1_3', '1_3_2', '2_3_1', '1_2_1_2', '2_1_2_1',
+    '2_1_3', '3_1_2', '1_4_1', '1_2_2_1', '2_1_1_2_alt', '1_1_2_2_alt', '2_2_1_1_alt', '1_1_1_1_2_alt'
+  ];
+
+  // ================= 演算法生成與覆蓋特例 =================
+  function generateRhythmBlocks(total16ths, meterType, fixedOrder) {
+    let blocks = {};
     let max = 1 << (total16ths - 1);
     for (let i = 0; i < max; i++) {
       let bin = i.toString(2).padStart(total16ths - 1, '0');
@@ -270,31 +279,42 @@ function showPage(pageId) {
       lengths.push(currentLen);
       let id = lengths.join('_');
       blocks[id] = { id, lengths, type: meterType, beats: lengths.reduce((a,b)=>a+b,0) / (meterType==='simple'?4:6) };
-      order.push(id);
     }
-    // 嚴格排序：數量少(長音符)在前。同數量時，前方時值大者在前。
-    order.sort((a, b) => {
-      let la = blocks[a].lengths, lb = blocks[b].lengths;
-      if (la.length !== lb.length) return la.length - lb.length;
-      for(let i=0; i<la.length; i++) { if (la[i] !== lb[i]) return lb[i] - la[i]; }
-      return 0;
-    });
-    return { blocks, order };
+    
+    // 針對圖片中具有同等時值分佈，但用延音線 (Tie) 表演的特殊寫法進行補充定義
+    if (meterType === 'compound') {
+      blocks['2_1_1_2_alt'] = { id:'2_1_1_2_alt', lengths:[2,1,1,2], type:'compound', beats:1, altTie:true };
+      blocks['1_1_2_2_alt'] = { id:'1_1_2_2_alt', lengths:[1,1,2,2], type:'compound', beats:1, altTie:true };
+      blocks['2_2_1_1_alt'] = { id:'2_2_1_1_alt', lengths:[2,2,1,1], type:'compound', beats:1, altTie:true };
+      blocks['1_1_1_1_2_alt'] = { id:'1_1_1_1_2_alt', lengths:[1,1,1,1,2], type:'compound', beats:1, altTie:true };
+      blocks['2_3_1'] = { id:'2_3_1', lengths:[2,3,1], type:'compound', beats:1, tieMid:true };
+    }
+
+    return { blocks, order: fixedOrder.filter(id => blocks[id]) };
   }
 
-  const SIMPLE_DATA = generateRhythmBlocks(4, 'simple');
-  const COMPOUND_DATA = generateRhythmBlocks(6, 'compound');
+  const SIMPLE_DATA = generateRhythmBlocks(4, 'simple', SIMPLE_ORDER);
+  const COMPOUND_DATA = generateRhythmBlocks(6, 'compound', COMPOUND_ORDER);
   const ALL_BLOCKS = { ...SIMPLE_DATA.blocks, ...COMPOUND_DATA.blocks };
 
   const VF = Vex.Flow;
   
-  function getVexNotes(lengths, isWrong, meterType) {
+  function getVexNotes(block, isWrong) {
     let notes = []; let ties = [];
-    lengths.forEach(len => {
+    let lengths = block.lengths;
+    
+    lengths.forEach((len, idx) => {
       let n1, n2;
       if(len===1) n1 = new VF.StaveNote({keys:['b/4'], duration:'16'});
       else if(len===2) n1 = new VF.StaveNote({keys:['b/4'], duration:'8'});
-      else if(len===3) n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0);
+      else if(len===3) {
+        if (block.tieMid && idx===1) {
+          n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}); 
+          n2 = new VF.StaveNote({keys:['b/4'], duration:'16'});
+        } else {
+          n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0);
+        }
+      }
       else if(len===4) n1 = new VF.StaveNote({keys:['b/4'], duration:'q'});
       else if(len===5) { 
         n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0); 
@@ -322,7 +342,7 @@ function showPage(pageId) {
       const svg = container.querySelector('svg'); svg.setAttribute('viewBox', '0 0 160 80'); svg.style.width = '100%'; svg.style.height = '100%';
       const ctx = renderer.getContext();
       const stave = new VF.Stave(10, 5, 140, { num_lines: 1 }).setContext(ctx).draw();
-      const { notes, ties, beams } = getVexNotes(block.lengths, false, block.type);
+      const { notes, ties, beams } = getVexNotes(block, false);
       VF.Formatter.FormatAndDraw(ctx, stave, notes);
       beams.forEach(b => b.setContext(ctx).draw());
       ties.forEach(t => new VF.StaveTie({ first_note: t.first, last_note: t.last }).setContext(ctx).draw());
@@ -375,7 +395,7 @@ function showPage(pageId) {
           if (id !== 'placeholder') {
             const block = ALL_BLOCKS[id];
             let isWrong = correctSeq && (seq[globalIdx] !== correctSeq[globalIdx]);
-            const { notes, ties, beams } = getVexNotes(block.lengths, isWrong, rhyModule.meterType);
+            const { notes, ties, beams } = getVexNotes(block, isWrong);
             allNotes.push(...notes); allBeams.push(...beams); allTies.push(...ties);
             firstNoteOfBeat = notes[0];
           } else {
@@ -422,7 +442,6 @@ function showPage(pageId) {
           slot.style.cursor = 'pointer'; slot.style.pointerEvents = 'auto';
           slot.style.borderRadius = '8px'; slot.style.transition = 'all 0.1s';
           
-          // 若作答游標為 -1 (已全部填滿隱藏)，則不顯示選中框
           if (i === rhyModule.activeSlotIdx && rhyModule.activeSlotIdx !== -1) { 
             slot.style.border = '2px solid var(--accent)'; slot.style.backgroundColor = 'var(--accent-soft)'; slot.style.zIndex = '10'; 
           } else { 
@@ -554,12 +573,16 @@ function showPage(pageId) {
 
     renderKeypad: function() {
       const pad = document.getElementById('rhy-keypad'); pad.innerHTML = '';
-      Array.from(this.selectedPatterns).forEach(id => {
+      const order = this.meterType === 'simple' ? SIMPLE_DATA.order : COMPOUND_DATA.order;
+      
+      order.forEach(id => {
+        if (!this.selectedPatterns.has(id)) return;
         const btn = document.createElement('div'); btn.className = 'rhythm-btn';
-        if(!this.hasPlayed) btn.style.opacity = '0.3';
+        if(!this.hasPlayed || this.activeSlotIdx === -1) btn.style.opacity = '0.3';
         const svgDiv = document.createElement('div'); btn.appendChild(svgDiv);
+        
         btn.onclick = () => {
-          if(!this.hasPlayed || this.activeSlotIdx === -1) return; // 鎖死防誤觸
+          if(!this.hasPlayed || this.activeSlotIdx === -1) return; 
           
           let reqBeats = ALL_BLOCKS[id].beats;
           let available = 0; let removeCount = 0;
@@ -575,7 +598,7 @@ function showPage(pageId) {
             for(let k=0; k<overshot; k++) this.userSeq.splice(this.activeSlotIdx + 1 + k, 0, 'placeholder');
             
             let nextEmpty = this.userSeq.indexOf('placeholder');
-            this.activeSlotIdx = nextEmpty; // 若為 -1 代表填滿，自動隱藏游標
+            this.activeSlotIdx = nextEmpty; 
             this.updateUI();
           }
         };
