@@ -18,188 +18,118 @@
   :root{
     --paper: #efeee6; --panel: #fbfaf6; --panel-border: #ddd8c9; --hairline: #e2ddce;
     --ink: #262420; --ink-soft: #75705f; --accent: #33415c; --accent-soft: rgba(51,65,92,0.08);
-    --accent-line: rgba(51,65,92,0.35); --correct: #4b7a5b; --correct-soft: rgba(75,122,91,0.10);
-    --wrong: #a6493b; --wrong-soft: rgba(166,73,59,0.09); --radius: 16px;
+    --accent-line: rgba(51,65,92,0.35); --correct: #4b7a5b; --wrong: #a6493b; --radius: 16px;
     --font-display: 'Fraunces', serif; --font-body: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace;
   }
-  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body{ margin:0; background: var(--paper); color: var(--ink); font-family: var(--font-body); min-height:100vh; padding: 20px 16px 64px; }
-  .wrap{ max-width: 820px; margin: 0 auto; }
-  .page-view { display: none; animation: fadeIn 0.22s ease-out; }
-  .page-view.active { display: block; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  html, body { height: 100%; margin: 0; overflow: hidden; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
+  .wrap { height: 100%; display: flex; flex-direction: column; max-width: 820px; margin: 0 auto; width: 100%; }
+  
+  .page-view { display: none; height: 100%; flex-direction: column; animation: fadeIn 0.2s ease-out; }
+  .page-view.active { display: flex; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   
-  .nav-back-btn {
-    display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-body);
-    font-size: 13.5px; font-weight: 600; color: var(--ink); background: var(--panel);
-    border: 1px solid var(--panel-border); padding: 10px 18px; border-radius: 999px;
-    cursor: pointer; text-decoration: none; transition: all 0.15s ease;
-    box-shadow: 0 2px 4px rgba(38,36,32,0.04); margin-bottom: 20px; user-select: none; touch-action: manipulation;
+  /* ================= 設定頁 ================= */
+  #pageRhySettings { overflow-y: auto; padding: 20px 16px 64px; }
+  .nav-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .nav-back-btn, .reset-cache-btn {
+    display: inline-flex; align-items: center; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid var(--panel-border); background: var(--panel); color: var(--ink); cursor: pointer; text-decoration: none;
   }
-  .nav-back-btn:hover, .nav-back-btn:active { border-color: var(--accent); background: var(--accent); color: var(--panel); box-shadow: 0 4px 10px rgba(51,65,92,0.15); }
-  .staff-header{ position: relative; height: 70px; margin-bottom: 20px; }
-  .staff-line{ position:absolute; left:0; right:0; height:1px; background: var(--hairline); }
-  .staff-line:nth-child(1){ top: 6px; } .staff-line:nth-child(2){ top: 22px; } .staff-line:nth-child(3){ top: 38px; }
-  .staff-line:nth-child(4){ top: 54px; } .staff-line:nth-child(5){ top: 70px; }
-  .clef-mark{ position:absolute; left: 8px; top: -14px; font-family: var(--font-display); font-size: 74px; font-weight: 400; color: var(--ink); opacity: 0.85; line-height: 1; user-select:none; }
-  h1{ font-family: var(--font-display); font-weight: 600; font-size: 30px; margin: 0 0 8px; letter-spacing: -0.01em; }
-  .subtitle{ color: var(--ink-soft); font-size: 14px; margin: 0 0 22px; line-height: 1.6; }
-
-  .landscape-tip {
-    background: #fff8e6; border: 1px solid #ffd885; color: #8a6d20;
-    padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;
-    margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  }
-  @media (orientation: landscape) { .landscape-tip { display: none !important; } }
-
-  .switch-row{ display:flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-  .switch-group{ display:flex; flex-direction: column; gap: 8px; }
-  .switch-group-label{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); letter-spacing: 0.04em; font-weight: 700; }
-  .switch-btns{ display:flex; gap: 8px; flex-wrap: wrap; }
-  .mode-btn{ font-family: var(--font-body); font-size: 13.5px; font-weight: 600; padding: 10px 16px; border-radius: 10px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); cursor:pointer; transition: all 0.15s ease; touch-action: manipulation; }
-  .mode-btn:hover{ border-color: var(--accent-line); color: var(--ink); }
-  .mode-btn.active{ background: var(--ink); border-color: var(--ink); color: var(--panel); }
-  .replay-select-row{ display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:18px; font-size:13.5px; color:var(--ink-soft); flex-wrap: wrap; }
-  select.replay-select, input.replay-select{ font-family:var(--font-body); font-size:14px; padding:8px 12px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); }
-  .start-big-btn {
-    width: 100%; font-family: var(--font-body); font-weight: 700; font-size: 16px; padding: 16px;
-    border-radius: var(--radius); background: var(--accent); color: var(--panel); border: none;
-    cursor: pointer; transition: all 0.15s ease; box-shadow: 0 6px 20px rgba(51,65,92,0.25);
-    margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; touch-action: manipulation;
-  }
-  .start-big-btn:hover, .start-big-btn:active { filter: brightness(1.12); transform: translateY(-1px); }
-  .start-big-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .top-bar-practice { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
-  .practice-status-badge { font-family: var(--font-mono); font-size: 12px; background: var(--panel); border: 1px solid var(--panel-border); padding: 6px 12px; border-radius: 999px; color: var(--ink-soft); }
-  .score-box{ font-family: var(--font-mono); text-align:right; }
-  .score-box .num{ font-size: 20px; font-weight:700; color: var(--accent); }
-  .score-box .label{ font-size: 11px; color: var(--ink-soft); letter-spacing: 0.03em; }
-  .card{ background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 24px 18px; margin-bottom: 24px; box-shadow: 0 1px 2px rgba(38,36,32,0.04), 0 10px 28px rgba(38,36,32,0.035); }
-
-  .play-area{ display:flex; flex-direction:column; align-items:center; padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--hairline); }
-  .play-btn{ font-family: var(--font-body); font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 999px; background: var(--accent); color: var(--panel); border: none; cursor:pointer; display:flex; align-items:center; gap: 8px; transition: filter 0.12s ease, transform 0.1s ease; box-shadow: 0 4px 12px rgba(51,65,92,0.18); touch-action: manipulation; }
-  .play-btn:hover{ filter: brightness(1.12); }
-  .play-btn:active{ transform: scale(0.98); }
-  .play-btn:disabled{ opacity: 0.5; cursor: wait; box-shadow: none; }
-  .play-caption{ margin-top: 10px; font-size: 13px; color: var(--ink-soft); }
-  .question-count{ margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+  .reset-cache-btn { color: #8a6d20; border-color: #ffd885; background: #fff8e6; margin-left: 8px; }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; margin: 0 0 8px; }
+  .subtitle { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 20px; line-height: 1.5; }
   
-  .countdown-bar-wrap { width: 100%; max-width: 320px; height: 6px; background: var(--hairline); border-radius: 3px; margin-top: 12px; overflow: hidden; display: none; }
-  .countdown-bar { width: 100%; height: 100%; background: var(--accent); transition: width 0.2s linear; }
+  .switch-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .switch-group { display: flex; flex-direction: column; gap: 8px; }
+  .switch-group-label { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); font-weight: 700; }
+  .switch-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mode-btn { font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 10px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); cursor: pointer; }
+  .mode-btn.active { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+  
+  .control-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  .select-box { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--panel-border); font-size: 14px; background: var(--panel); cursor: pointer; }
+  .bpm-slider { flex: 1; min-width: 150px; accent-color: var(--accent); }
+  
+  .pattern-grid-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px; }
+  .select-all-btn { font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--panel-border); background: var(--panel); font-weight: bold; cursor: pointer; }
+  .pattern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 8px; margin-bottom: 24px; }
+  .pattern-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 2px solid var(--panel-border); border-radius: 10px; padding: 4px; cursor: pointer; transition: 0.1s; height: 60px; }
+  .pattern-item.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .pattern-item svg { pointer-events: none; }
+  
+  .start-big-btn { width: 100%; font-weight: 700; font-size: 16px; padding: 16px; border-radius: var(--radius); background: var(--accent); color: var(--panel); border: none; cursor: pointer; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(51,65,92,0.2); transition: filter 0.2s; }
+  .start-big-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  
+  /* ================= 作答頁 (上下分層) ================= */
+  .practice-top-fixed { flex: 0 0 auto; padding: 12px 16px; background: var(--paper); z-index: 10; border-bottom: 1px solid var(--panel-border); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+  .practice-bottom-scroll { flex: 1 1 auto; overflow-y: auto; padding: 16px; background: var(--panel); }
 
-  .staff-scroll-container {
-    width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
-    padding: 10px 4px; margin-bottom: 16px; border: 1px solid var(--hairline);
-    border-radius: 12px; background: #fff; box-shadow: inset 0 0 8px rgba(0,0,0,0.02);
-  }
+  .top-bar-practice { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .score-box { text-align: right; font-family: var(--font-mono); }
+  .score-box .num { font-size: 18px; font-weight: 700; color: var(--accent); line-height: 1; }
+  
+  .play-area { display: flex; flex-direction: column; align-items: center; margin-bottom: 12px; }
+  .play-btn { font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 999px; background: var(--accent); color: var(--panel); border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(51,65,92,0.18); transition: background 0.2s; }
+  .play-btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; background: var(--ink-soft); }
+  .play-caption { font-size: 12px; color: var(--ink-soft); margin-top: 6px; font-weight: 600; }
+  
+  /* 五線譜容器與內嵌覆蓋層 */
+  .staff-scroll-container { width: 100%; background: #fff; border: 1px solid var(--hairline); border-radius: 12px; padding: 14px 4px; box-shadow: inset 0 0 8px rgba(0,0,0,0.02); margin-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .staff-scroll-container::-webkit-scrollbar { height: 6px; }
   .staff-scroll-container::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
-  #rhy-staff-svg { min-width: 100%; display: flex; justify-content: center; }
-
-  .rhythm-slots-container {
-    display: flex; gap: 8px; overflow-x: auto; padding: 10px 4px 16px; margin-bottom: 12px;
-    border-bottom: 1px dashed var(--panel-border);
-  }
-  .rhythm-slot {
-    flex: 0 0 auto; min-width: 54px; height: 54px; border: 2px dashed var(--panel-border);
-    border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: var(--paper); cursor: pointer; transition: all 0.15s ease; padding: 4px;
-  }
-  .rhythm-slot.active-slot { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 2px var(--accent-soft); transform: translateY(-2px); }
-  .rhythm-slot.filled-slot { border-style: solid; border-color: var(--ink-soft); background: #fff; }
-  .rhythm-slot .slot-label { font-size: 18px; font-weight: bold; line-height: 1; }
-  .rhythm-slot .slot-sub { font-size: 10px; font-family: var(--font-mono); color: var(--ink-soft); margin-top: 2px; }
-
-  .keypad-hint { font-size: 12.5px; color: var(--ink-soft); text-align: center; margin-bottom: 10px; }
-  .rhythm-keypad {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 10px; margin-bottom: 20px;
-  }
-  .rhythm-block-btn {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 64px; background: var(--panel); border: 1.5px solid var(--panel-border);
-    border-radius: 12px; padding: 8px 4px; cursor: pointer; transition: all 0.12s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.03); touch-action: manipulation;
-  }
-  .rhythm-block-btn:hover:not(:disabled), .rhythm-block-btn:active:not(:disabled) {
-    border-color: var(--accent); background: var(--accent-soft); transform: scale(0.97);
-  }
-  .rhythm-block-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .rhythm-block-btn .btn-sym { font-size: 20px; font-weight: bold; line-height: 1.1; color: var(--ink); }
-  .rhythm-block-btn .btn-name { font-size: 11px; color: var(--ink-soft); margin-top: 4px; text-align: center; }
-
-  .action-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .action-btn {
-    font-family: var(--font-body); font-weight: 600; font-size: 14px; padding: 12px 24px;
-    border-radius: 999px; cursor: pointer; transition: all 0.15s ease; border: 1px solid transparent; touch-action: manipulation;
-  }
-  .btn-secondary { background: transparent; border-color: var(--ink-soft); color: var(--ink); }
-  .btn-secondary:hover, .btn-secondary:active { background: var(--ink-soft); color: var(--panel); }
-  .btn-submit { background: var(--accent); color: var(--panel); box-shadow: 0 4px 12px rgba(51,65,92,0.2); }
-  .btn-submit:hover, .btn-submit:active { filter: brightness(1.12); }
-  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
-
-  .feedback-panel{ display:none; text-align:center; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--hairline); }
-  .feedback-panel.show{ display:block; }
-  .feedback-text{ font-size: 16px; margin-bottom: 12px; font-weight: 700; }
-  .feedback-text.correct{ color: var(--correct); }
-  .feedback-text.wrong{ color: var(--wrong); }
-  .next-btn{ display:inline-block; margin-top: 12px; font-family: var(--font-body); font-weight: 600; font-size: 14px; padding: 12px 28px; background: var(--ink); color: var(--panel); border: none; border-radius: 999px; cursor:pointer; transition: all 0.15s ease; touch-action: manipulation; }
   
-  .test-summary{ text-align:center; padding: 16px 0; }
-  .test-summary p{ color: var(--ink-soft); font-size: 14px; line-height:1.7; margin: 0 0 22px; }
-  .test-again-btn, .test-back-btn{ font-family: var(--font-body); font-weight: 700; font-size: 14px; padding: 13px 26px; border-radius: 999px; cursor:pointer; margin: 6px; touch-action: manipulation; }
-  .test-again-btn{ background: var(--accent); color: var(--panel); border: none; box-shadow: 0 4px 12px rgba(51,65,92,0.18); }
-  .test-back-btn{ background: transparent; color: var(--ink); border: 1px solid var(--ink); }
-  .test-score-big{ font-family: var(--font-mono); font-size: 44px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
-  .test-score-label{ font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; }
-  
-  .review-section h2{ font-family: var(--font-display); font-size: 20px; font-weight: 600; margin: 0 0 6px; }
-  .review-section .hint{ color: var(--ink-soft); font-size: 13px; margin: 0 0 18px; }
-  .review-empty{ color: var(--ink-soft); font-size: 14px; padding: 28px; text-align:center; border: 1px dashed var(--panel-border); border-radius: 12px; }
-  .review-item{ display:flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; margin-bottom: 12px; }
-  .review-item.corrected{ border-color: var(--correct); background: var(--correct-soft); }
-  .review-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-  .q-num-badge { display: inline-block; font-family: var(--font-mono); font-size: 12px; font-weight: 700; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); padding: 3px 8px; border-radius: 6px; }
-  .review-actions{ display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
-  .icon-btn{ background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; font-weight: 600; cursor:pointer; transition: all 0.15s; touch-action: manipulation; }
-  .icon-btn:hover, .icon-btn:active{ border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-  .corrected-tag{ font-size: 13px; color: var(--correct); font-family: var(--font-mono); font-weight: 700; }
+  .action-row { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+  .action-btn { font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--ink-soft); background: transparent; color: var(--ink); cursor: pointer; }
+  .btn-submit { background: var(--accent); color: var(--panel); border: none; }
+  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .loading-banner{ text-align:center; font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; background: var(--panel); padding: 10px; border-radius: 8px; border: 1px solid var(--panel-border); }
-  @media (max-width: 480px){ h1{ font-size: 26px; } .card{ padding: 18px 12px; } .top-bar-practice { flex-direction: column; align-items: flex-start; gap: 8px; } .score-box { text-align: left; } }
+  .keypad-hint { font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; text-align: center; }
+  .rhythm-keypad { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 10px; padding-bottom: 40px; }
+  .rhythm-btn { background: #fff; border: 2px solid var(--panel-border); border-radius: 12px; padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 60px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+  .rhythm-btn:active { transform: scale(0.94); border-color: var(--accent); }
+  .rhythm-btn:disabled { opacity: 0.3; pointer-events: none; }
+  
+  .feedback-text { text-align: center; font-size: 15px; font-weight: 700; margin-bottom: 12px; display: none; }
+  .feedback-text.correct { color: var(--correct); display: block; }
+  .feedback-text.wrong { color: var(--wrong); display: block; }
+  
+  .review-section { padding: 16px 0; border-top: 1px dashed var(--panel-border); margin-top: 16px; }
+  .review-section h2 { font-family: var(--font-display); font-size: 18px; margin: 0 0 12px; }
+  .review-item { background: #fff; border: 1px solid var(--panel-border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .review-label { font-size: 12px; font-weight: bold; color: var(--ink-soft); margin-bottom: 4px; }
+  .review-staff { background: var(--panel); border-radius: 8px; padding: 10px 4px; margin-bottom: 12px; border: 1px solid var(--hairline); width: 100%; overflow-x: auto; }
+
+  .loading-banner { text-align: center; font-size: 12px; color: var(--ink-soft); background: #fff; padding: 8px; border-radius: 8px; margin-bottom: 16px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="staff-header">
-    <div class="clef-mark">𝄞</div>
-    <div class="staff-line"></div><div class="staff-line"></div><div class="staff-line"></div>
-    <div class="staff-line"></div><div class="staff-line"></div>
-  </div>
-
   <div class="loading-banner" id="loadingBanner">🎹 正在載入高音質鋼琴音色，請稍候…</div>
 
-  <!-- 【節奏練習】設定頁 -->
   <div id="pageRhySettings" class="page-view active">
-    <button class="nav-back-btn" onclick="location.href='index.html'">← 回目錄選單</button>
+    <div class="nav-header-row">
+      <button class="nav-back-btn" onclick="location.href='index.html'">← 離開</button>
+      <button class="reset-cache-btn" onclick="forceResetCache()">🔄 畫面凍結請點此重置</button>
+    </div>
+    
     <h1>節奏練習 — 設定</h1>
-    <p class="subtitle">訓練對拍子與常見節奏型的聽辨與默寫，支援單拍子與副拍子切換及雙音顆粒訓練。</p>
+    <p class="subtitle">訓練對拍子與常見節奏型的聽辨與默寫，支援單/複拍子預備拍系統與雙音顆粒訓練。</p>
 
     <div class="switch-row">
       <div class="switch-group">
         <div class="switch-group-label">練習模式</div>
         <div class="switch-btns" id="rhy-modeSwitch">
-          <button class="mode-btn active" data-mode="practice">練習模式 (次數不限)</button>
-          <button class="mode-btn" data-mode="test">測驗模式 (模擬自動重播)</button>
+          <button class="mode-btn active" data-mode="practice">練習模式</button>
+          <button class="mode-btn" data-mode="test">測驗模式 (自動重播)</button>
         </div>
       </div>
       <div class="switch-group">
         <div class="switch-group-label">音高演奏</div>
         <div class="switch-btns" id="rhy-pitchSwitch">
-          <button class="mode-btn active" data-pitch="single">單音 (鋼琴 A4)</button>
-          <button class="mode-btn" data-pitch="dual">雙音 (隨機起音，A4/E4交替)</button>
+          <button class="mode-btn active" data-pitch="single">單音 (A4)</button>
+          <button class="mode-btn" data-pitch="dual">雙音 (嚴格交替)</button>
         </div>
       </div>
     </div>
@@ -208,622 +138,597 @@
       <div class="switch-group">
         <div class="switch-group-label">拍號 (Meter)</div>
         <div class="switch-btns" id="rhy-meterSwitch">
-          <!-- 單拍子 -->
-          <button class="mode-btn active" data-meter="4/4" data-type="simple">4/4 拍</button>
-          <button class="mode-btn" data-meter="3/4" data-type="simple">3/4 拍</button>
-          <button class="mode-btn" data-meter="2/4" data-type="simple">2/4 拍</button>
-          <!-- 複拍子 -->
-          <button class="mode-btn" data-meter="6/8" data-type="compound">6/8 拍</button>
-          <button class="mode-btn" data-meter="3/8" data-type="compound">3/8 拍</button>
-          <button class="mode-btn" data-meter="12/8" data-type="compound">12/8 拍</button>
+          <button class="mode-btn active" data-meter="4/4" data-type="simple">4/4</button>
+          <button class="mode-btn" data-meter="3/4" data-type="simple">3/4</button>
+          <button class="mode-btn" data-meter="2/4" data-type="simple">2/4</button>
+          <button class="mode-btn" data-meter="6/8" data-type="compound">6/8</button>
+          <button class="mode-btn" data-meter="3/8" data-type="compound">3/8</button>
+          <button class="mode-btn" data-meter="12/8" data-type="compound">12/8</button>
         </div>
       </div>
     </div>
 
-    <div class="replay-select-row">
-      <label for="rhy-barsSelect">小節數 (Bars)：</label>
-      <select id="rhy-barsSelect" class="replay-select">
-        <option value="1">1 小節</option>
-        <option value="2" selected>2 小節</option>
-        <option value="3">3 小節</option>
-        <option value="4">4 小節</option>
-        <option value="6">6 小節</option>
-        <option value="8">8 小節 (上限)</option>
-      </select>
-    </div>
-
-    <div id="rhy-testSettings" style="display:none; background: var(--panel); border: 1px solid var(--panel-border); padding: 16px; border-radius: 12px; margin-bottom: 20px;">
-      <div class="switch-group-label" style="margin-bottom:10px;">測驗模式規則</div>
-      <div class="replay-select-row" style="margin-bottom:6px;">
-        <label for="rhy-testReplaySelect">每題限制重播次數：</label>
-        <select id="rhy-testReplaySelect" class="replay-select">
+    <div class="control-row">
+      <div class="switch-group">
+        <div class="switch-group-label">小節數 (Bars)</div>
+        <select id="rhy-barsSelect" class="select-box">
+          <option value="1">1 小節</option>
+          <option value="2" selected>2 小節</option>
+          <option value="3">3 小節</option>
+          <option value="4">4 小節 (上限)</option>
+        </select>
+      </div>
+      <div class="switch-group" id="testReplayWrapper" style="display:none;">
+        <div class="switch-group-label">測驗重播次數</div>
+        <select id="rhy-testReplaySelect" class="select-box">
           <option value="2">2 次</option>
           <option value="3" selected>3 次</option>
           <option value="5">5 次</option>
         </select>
-        <span style="font-size: 13px; color: var(--ink-soft);">（固定測驗 5 題）</span>
       </div>
-      <div style="font-size: 12.5px; color: #8a6d20; background: #fff8e6; padding: 8px 12px; border-radius: 8px; border: 1px solid #ffd885;">
-        ⏳ 模擬真實測驗：每次播放完畢後，間隔 <b>[5秒 + 小節數]</b> 將自動進行下一次播放！
+      <div class="switch-group" style="flex:1;">
+        <div class="switch-group-label">播放速度: <span id="bpmVal">80</span> BPM</div>
+        <input type="range" id="rhy-bpm" class="bpm-slider" min="40" max="160" value="80" oninput="document.getElementById('bpmVal').innerText = this.value">
       </div>
     </div>
 
-    <button class="start-big-btn" id="rhy-enterBtn">🎯 確認設定，進入節奏訓練區 →</button>
+    <div class="pattern-grid-header">
+      <div class="switch-group-label">勾選測驗節奏型 (以 1 拍為單位，無休止符)</div>
+      <button class="select-all-btn" id="selectAllBtn">☑️ 全選 / 全不選</button>
+    </div>
+    
+    <div class="pattern-grid" id="settingsPatternGrid"></div>
+
+    <button class="start-big-btn" id="rhy-enterBtn" disabled>🎯 開始節奏訓練 →</button>
   </div>
 
-  <!-- 【節奏練習】作答與複習頁 -->
   <div id="pageRhyPractice" class="page-view">
-    <div class="top-bar-practice">
-      <button class="nav-back-btn" style="margin-bottom:0;" onclick="showPage('rhy-settings')">← 返回設定頁</button>
-      <span class="practice-status-badge" id="rhy-statusBadge">4/4拍｜2小節｜單音練習</span>
-      <div class="score-box" id="rhy-scoreBoxWrap">
-        <div class="num" id="rhy-scoreNum">0 / 0</div>
-        <div class="label">正確 / 已作答 連續 <span id="rhy-streakNum">0</span></div>
+    <div class="practice-top-fixed">
+      <div class="top-bar-practice">
+        <button class="nav-back-btn" style="margin:0;" onclick="showPage('rhy-settings')">← 返回</button>
+        <span class="practice-status-badge" id="rhy-statusBadge">4/4拍｜2小節｜80 BPM</span>
+        <div class="score-box"><div class="num" id="rhy-scoreNum">0/0</div></div>
+      </div>
+
+      <div class="play-area">
+        <button class="play-btn" id="rhy-playBtn" disabled>▶ 播放題目 (預備拍)</button>
+        <div class="play-caption" id="rhy-playCaption">請點擊上方按鈕開始聆聽</div>
+      </div>
+      
+      <!-- 五線譜與絕對定位點擊光標容器 -->
+      <div class="staff-scroll-container" id="staffContainerOuter">
+        <div style="min-width: 100%; display: flex; justify-content: center;">
+          <div id="rhy-staff-svg" style="position: relative; display: inline-block;"></div>
+        </div>
+      </div>
+      
+      <div id="rhy-feedbackText" class="feedback-text"></div>
+
+      <div class="action-row" id="rhy-actionRow">
+        <button class="action-btn" id="rhy-backspaceBtn">⌫ 刪除選中拍</button>
+        <button class="action-btn" id="rhy-clearBtn">🗑️ 清空</button>
+        <button class="action-btn btn-submit" id="rhy-submitBtn" disabled>✔ 提交對答案</button>
+      </div>
+      <div class="action-row" id="rhy-nextRow" style="display:none;">
+        <button class="action-btn btn-submit" id="rhy-nextBtn" style="width:100%;">下一題 →</button>
       </div>
     </div>
 
-    <div class="landscape-tip" id="landscapeTip">
-      <span>💡 提示：將手機<b>轉為橫屏作答</b>，樂譜視野更寬廣！</span>
-      <span style="cursor:pointer; font-weight:bold; padding:2px 8px;" onclick="document.getElementById('landscapeTip').style.display='none'">✕</span>
-    </div>
-
-    <div class="card">
-      <div class="test-summary" id="rhy-testSummary" style="display:none;">
-        <div class="test-score-big" id="rhy-testScore">0 / 5</div>
-        <div class="test-score-label">測驗結束</div>
-        <p>答錯的樂句已完整收錄到下方「複習訂正」區，可點擊重播再次對照答錯的小節。</p>
-        <button class="test-again-btn" id="rhy-testAgainBtn">🔁 重新測驗一次</button>
-        <button class="test-back-btn" onclick="showPage('rhy-settings')">↩ 重新調整設定</button>
-      </div>
-
-      <div id="rhy-questionPanel">
-        <div class="play-area">
-          <button class="play-btn" id="rhy-playBtn" disabled>▶ 播放題目 (先敲4拍木魚預備)</button>
-          <div class="play-caption" id="rhy-playCaption">音色載入中，請稍候</div>
-          <div class="question-count" id="rhy-questionCount">第 1 題</div>
-          <div class="countdown-bar-wrap" id="rhy-countdownWrap">
-            <div class="countdown-bar" id="rhy-countdownBar"></div>
-          </div>
-        </div>
-
-        <div class="keypad-hint">👇 樂譜支援左右滑動。點擊已填寫的拍子可進行修改：</div>
-        
-        <div class="staff-scroll-container">
-          <div id="rhy-staff-svg"></div>
-        </div>
-
-        <div class="rhythm-slots-container" id="rhy-slots"></div>
-
+    <div class="practice-bottom-scroll">
+      <div id="rhy-keypadWrapper">
+        <div class="keypad-hint">👇 點擊上方五線譜的「灰色佔位符」選擇位置，再點擊下方節奏填入</div>
         <div class="rhythm-keypad" id="rhy-keypad"></div>
-
-        <div class="feedback-panel" id="rhy-feedbackPanel">
-          <div class="feedback-text" id="rhy-feedbackText"></div>
-          <button class="next-btn" id="rhy-nextBtn">下一題 →</button>
-        </div>
-
-        <div class="action-row" id="rhy-actionRow">
-          <button class="action-btn btn-secondary" id="rhy-backspaceBtn">⌫ 刪除上一拍</button>
-          <button class="action-btn btn-secondary" id="rhy-clearBtn">🗑️ 清空重寫</button>
-          <button class="action-btn btn-submit" id="rhy-submitBtn" disabled>✔ 提交對答案</button>
-        </div>
       </div>
-    </div>
-
-    <div class="review-section">
-      <h2>複習訂正</h2>
-      <p class="hint">答錯的樂句會收錄於此。點擊「🔁 播放正確答案」以聆聽正確的節奏型，並可重新作答訂正。</p>
-      <div id="rhy-reviewList"></div>
+      
+      <div class="review-section" id="rhy-reviewSection" style="display:none;">
+        <h2>複習訂正區</h2>
+        <div id="rhy-reviewList"></div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
+function forceResetCache() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(r => r.forEach(x => x.unregister()));
+  if ('caches' in window) caches.keys().then(n => n.forEach(x => caches.delete(x)));
+  alert("🟢 已清除舊快取，將為您重新載入！"); window.location.reload(true);
+}
 function showPage(pageId) {
   if (window.rhyStopAll) window.rhyStopAll();
   document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
   if (pageId === 'rhy-settings') document.getElementById('pageRhySettings').classList.add('active');
   else if (pageId === 'rhy-practice') document.getElementById('pageRhyPractice').classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 (function(){
-  // --- 100% 編碼相容安全符號池 (完全移除 4-Byte 特殊 Unicode，確保編輯器不報錯) ---
-  const RHYTHM_BLOCKS = {
-    'w':    { name: '全音符',    sym: 'o',   beats: 4, meter: 'simple', vex: [{dur:'w'}] },
-    'h':    { name: '二分音符',  sym: 'd',   beats: 2, meter: 'simple', vex: [{dur:'h'}] },
-    'q':    { name: '四分音符',  sym: '♩',  beats: 1, meter: 'simple', vex: [{dur:'q'}] },
-    '8':    { name: '兩八分音',  sym: '♫',  beats: 1, meter: 'simple', vex: [{dur:'8'}, {dur:'8'}] },
-    '38':   { name: '三連音',    sym: '3連音', beats: 1, meter: 'simple', vex: [{dur:'8',tuplet:3}, {dur:'8',tuplet:3}, {dur:'8',tuplet:3}] },
-    '16':   { name: '四十六分',  sym: '♬',  beats: 1, meter: 'simple', vex: [{dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}] },
-    '8_16': { name: '前八後十六', sym: '♪♬', beats: 1, meter: 'simple', vex: [{dur:'8'}, {dur:'16'}, {dur:'16'}] },
-    '16_8': { name: '前十六後八', sym: '♬♪', beats: 1, meter: 'simple', vex: [{dur:'16'}, {dur:'16'}, {dur:'8'}] },
-    'sync': { name: '切分音',    sym: '♪♩♪', beats: 2, meter: 'simple', vex: [{dur:'8'}, {dur:'q'}, {dur:'8'}] },
-    'qd_8': { name: '附點四+八',  sym: '♩.♪', beats: 2, meter: 'simple', vex: [{dur:'qd'}, {dur:'8'}] },
-    '8_qd': { name: '八+附點四',  sym: '♪♩.', beats: 2, meter: 'simple', vex: [{dur:'8'}, {dur:'qd'}] },
-    'qr':   { name: '四分休止',  sym: '休',  beats: 1, meter: 'simple', vex: [{dur:'qr'}] },
-    'r8_8': { name: '休止+八分', sym: '休♪', beats: 1, meter: 'simple', vex: [{dur:'8r'}, {dur:'8'}] },
-    '8_r8': { name: '八分+休止', sym: '♪休', beats: 1, meter: 'simple', vex: [{dur:'8'}, {dur:'8r'}] },
-
-    'hd':   { name: '附點二分',  sym: 'd.', beats: 2, meter: 'compound', vex: [{dur:'hd'}] },
-    'qd':   { name: '附點四分',  sym: '♩.', beats: 1, meter: 'compound', vex: [{dur:'qd'}] },
-    '8_c':  { name: '三八分音',  sym: '♪♪♪', beats: 1, meter: 'compound', vex: [{dur:'8'}, {dur:'8'}, {dur:'8'}] },
-    'q_8':  { name: '四分+八分', sym: '♩♪', beats: 1, meter: 'compound', vex: [{dur:'q'}, {dur:'8'}] },
-    '8_q':  { name: '八分+四分', sym: '♪♩', beats: 1, meter: 'compound', vex: [{dur:'8'}, {dur:'q'}] },
-    '16_c': { name: '六十六分',  sym: '♬♬', beats: 1, meter: 'compound', vex: [{dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}, {dur:'16'}] },
-    'qdr':  { name: '附四休止',  sym: '休.', beats: 1, meter: 'compound', vex: [{dur:'qdr'}] },
-    'r8_8c':{ name: '休+兩八分', sym: '休♪♪', beats: 1, meter: 'compound', vex: [{dur:'8r'}, {dur:'8'}, {dur:'8'}] }
-  };
-
-  const SIMPLE_ORDER = ['w','h','q','8','38','16','8_16','16_8','sync','qd_8','8_qd','qr','r8_8','8_r8'];
-  const COMPOUND_ORDER = ['hd','qd','8_c','q_8','8_q','16_c','qdr','r8_8c'];
-
-  let audioCtx = null; let pianoInst = null; let pendingTimers = [];
-  function trackTimeout(fn, delay){ const id = setTimeout(fn, delay); pendingTimers.push(id); return id; }
-  function clearTimers(){ pendingTimers.forEach(id => clearTimeout(id)); pendingTimers = []; }
-
-  window.rhyStopAll = function(){
-    if(pianoInst && typeof pianoInst.stop === 'function') pianoInst.stop();
-    clearTimers();
-    const wrap = document.getElementById('rhy-countdownWrap');
-    if(wrap) wrap.style.display = 'none';
-    rhyModule.updatePlayBtnState();
-  };
-
-  function ensureAudio(){
-    try {
-      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if(audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
+  // ================= 演算法生成節奏型 =================
+  function generateRhythmBlocks(total16ths, meterType) {
+    let blocks = {}; let order = [];
+    let max = 1 << (total16ths - 1);
+    for (let i = 0; i < max; i++) {
+      let bin = i.toString(2).padStart(total16ths - 1, '0');
+      let lengths = []; let currentLen = 1;
+      for (let char of bin) {
+        if (char === '1') { lengths.push(currentLen); currentLen = 1; } 
+        else currentLen++;
       }
-    } catch(e) { console.warn("Audio error:", e); }
-    return audioCtx;
+      lengths.push(currentLen);
+      let id = lengths.join('_');
+      blocks[id] = { id, lengths, type: meterType, beats: lengths.reduce((a,b)=>a+b,0) / (meterType==='simple'?4:6) };
+      order.push(id);
+    }
+    order.sort((a, b) => {
+      let la = blocks[a].lengths, lb = blocks[b].lengths;
+      if (la.length !== lb.length) return la.length - lb.length;
+      for(let i=0; i<la.length; i++) { if (la[i] !== lb[i]) return lb[i] - la[i]; }
+      return 0;
+    });
+    return { blocks, order };
   }
 
-  // 彈性音色載入與失敗重試機制
-  window.loadPiano = function(){
-    const banner = document.getElementById('loadingBanner');
-    banner.style.display = 'block';
-    banner.innerHTML = '🎹 正在從 CDN 載入高音質鋼琴音色，請稍候…';
-    
-    const ctx = ensureAudio();
-    if (!ctx) {
-      banner.innerHTML = '⚠️ 您的瀏覽器目前封鎖了音效，請點擊畫面任意處解鎖';
-      return;
-    }
+  const SIMPLE_DATA = generateRhythmBlocks(4, 'simple');
+  const COMPOUND_DATA = generateRhythmBlocks(6, 'compound');
+  const ALL_BLOCKS = { ...SIMPLE_DATA.blocks, ...COMPOUND_DATA.blocks };
 
-    Soundfont.instrument(ctx, 'acoustic_grand_piano').then(inst => {
-      pianoInst = inst;
-      banner.style.display = 'none';
-      rhyModule.updatePlayBtnState();
-    }).catch(() => {
-      banner.innerHTML = '⚠️ 鋼琴音色載入較慢或斷線，請檢查網路後 <button onclick="loadPiano()" style="margin-left:8px;padding:4px 10px;cursor:pointer;border-radius:6px;border:1px solid #ccc;">🔁 點此重試</button>';
-      rhyModule.updatePlayBtnState();
+  const VF = Vex.Flow;
+  
+  function getVexNotes(lengths, isWrong, meterType) {
+    let notes = []; let ties = [];
+    lengths.forEach(len => {
+      let n1, n2;
+      if(len===1) n1 = new VF.StaveNote({keys:['b/4'], duration:'16'});
+      else if(len===2) n1 = new VF.StaveNote({keys:['b/4'], duration:'8'});
+      else if(len===3) n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0);
+      else if(len===4) n1 = new VF.StaveNote({keys:['b/4'], duration:'q'});
+      else if(len===5) { 
+        n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0); 
+        n2 = new VF.StaveNote({keys:['b/4'], duration:'8'}); 
+      }
+      else if(len===6) n1 = new VF.StaveNote({keys:['b/4'], duration:'q'}).addDot(0);
+      
+      if (isWrong) {
+        if(n1) n1.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
+        if(n2) n2.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
+      }
+      if (n1) notes.push(n1);
+      if (n2) { notes.push(n2); ties.push({ first: n1, last: n2 }); }
     });
-  };
+    
+    const beamNotes = notes.filter(n => n.duration.includes('8') || n.duration.includes('16'));
+    const beams = beamNotes.length > 1 ? [new VF.Beam(beamNotes)] : [];
+    return { notes, ties, beams };
+  }
 
-  function playWoodblock(ctx, time, isStrong) {
+  function drawMiniRhythm(container, blockId) {
     try {
-      const osc = ctx.createOscillator(); const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(isStrong ? 1000 : 700, time);
-      gain.gain.setValueAtTime(0.7, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(time); osc.stop(time + 0.08);
+      container.innerHTML = ''; const block = ALL_BLOCKS[blockId];
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(160, 80); 
+      const svg = container.querySelector('svg'); svg.setAttribute('viewBox', '0 0 160 80'); svg.style.width = '100%'; svg.style.height = '100%';
+      const ctx = renderer.getContext();
+      const stave = new VF.Stave(10, 5, 140, { num_lines: 1 }).setContext(ctx).draw();
+      const { notes, ties, beams } = getVexNotes(block.lengths, false, block.type);
+      VF.Formatter.FormatAndDraw(ctx, stave, notes);
+      beams.forEach(b => b.setContext(ctx).draw());
+      ties.forEach(t => new VF.StaveTie({ first_note: t.first, last_note: t.last }).setContext(ctx).draw());
     } catch(e) {}
   }
 
-  const rhyModule = (function(){
-    let mode = 'practice', pitchMode = 'single';
-    let meter = '4/4', meterType = 'simple', barsCount = 2, beatsPerBar = 4;
-    let totalBeats = 8, qIndex = 1, currentQ = [], userAns = [];
-    let activeSlotIdx = 0, isPlaying = false, hasPlayed = false, score = { correct:0, total:0, streak:0 };
-    let testSession = null, reviewItems = [], reviewIdSeq = 1;
-
-    function parseMeterBeats(m) {
-      if (m === '4/4') return 4; if (m === '3/4') return 3; if (m === '2/4') return 2;
-      if (m === '6/8') return 2; if (m === '3/8') return 1; if (m === '12/8') return 4;
-      return 4;
-    }
-
-    function generateQuestion() {
-      const pool = meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
-      let seq = []; let currentBarBeats = 0;
-      for (let b = 0; b < barsCount; b++) {
-        currentBarBeats = 0;
-        while (currentBarBeats < beatsPerBar) {
-          const remain = beatsPerBar - currentBarBeats;
-          const validKeys = pool.filter(k => RHYTHM_BLOCKS[k].beats <= remain);
-          const chosenKey = validKeys[Math.floor(Math.random() * validKeys.length)];
-          seq.push(chosenKey);
-          currentBarBeats += RHYTHM_BLOCKS[chosenKey].beats;
-        }
-      }
-      return seq;
-    }
-
-    function playRhythmSequence(seq, onComplete) {
-      if (!pianoInst || isPlaying) return;
-      isPlaying = true; updatePlayBtnState();
-      const ctx = ensureAudio(); let startTime = ctx.currentTime + 0.1;
-      const bpm = meterType === 'simple' ? 84 : 76;
-      const secPerBeat = 60 / bpm;
-
-      for (let i = 0; i < 4; i++) {
-        playWoodblock(ctx, startTime + i * secPerBeat, i === 0);
-      }
-      startTime += 4 * secPerBeat;
-
-      let currentPitch = Math.random() < 0.5 ? 69 : 64;
-
-      seq.forEach(key => {
-        const block = RHYTHM_BLOCKS[key];
-        const blockDurSec = block.beats * secPerBeat;
-        const notesCount = block.vex.length;
-        const subDurSec = blockDurSec / notesCount;
-
-        block.vex.forEach((n, idx) => {
-          const noteTime = startTime + idx * subDurSec;
-          const isRest = n.dur.includes('r');
-          if (!isRest) {
-            pianoInst.play(pitchMode === 'dual' ? currentPitch : 69, noteTime, { duration: subDurSec * 0.9, gain: 1.4 });
-            if (pitchMode === 'dual') currentPitch = (currentPitch === 69) ? 64 : 69;
-          }
-        });
-        startTime += blockDurSec;
-      });
-
-      const totalMs = (startTime - ctx.currentTime) * 1000;
-      trackTimeout(() => {
-        isPlaying = false; updatePlayBtnState();
-        if (onComplete) onComplete();
-      }, totalMs + 100);
-    }
-
-    function renderStaff(containerId, seq, isAnswered, correctSeq) {
+  // 渲染滿版五線譜與精準光標定位層
+  function renderMainStaff(containerId, seq, interactive = false, correctSeq = null) {
+    try {
       const container = document.getElementById(containerId);
-      if (!container) return;
-      container.innerHTML = '';
-      if (!seq || seq.length === 0) return;
-
-      const VF = Vex.Flow;
-      let bars = []; let currentBar = []; let currentBeats = 0;
-      seq.forEach(key => {
-        currentBar.push(key);
-        currentBeats += RHYTHM_BLOCKS[key].beats;
-        if (currentBeats >= beatsPerBar) {
-          bars.push(currentBar); currentBar = []; currentBeats = 0;
-        }
-      });
-      if (currentBar.length > 0) bars.push(currentBar);
-
-      const barWidth = 200; const totalWidth = Math.max(300, bars.length * barWidth + 60);
-      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-      renderer.resize(totalWidth, 130);
-      const context = renderer.getContext();
-
-      let xPos = 10;
-      bars.forEach((barKeys, barIdx) => {
-        const staveWidth = (barIdx === 0) ? barWidth + 40 : barWidth;
-        const stave = new VF.Stave(xPos, 15, staveWidth);
-        if (barIdx === 0) {
-          stave.addClef('percussion').addTimeSignature(meter);
-        }
-        stave.setContext(context).draw();
-
-        let vfNotes = [];
-        barKeys.forEach((key, kIdx) => {
-          const block = RHYTHM_BLOCKS[key];
-          let isWrongBlock = false;
-          if (isAnswered && correctSeq) {
-            const flatUser = seq; const flatCorrect = correctSeq;
-            if (flatUser[barIdx * beatsPerBar + kIdx] !== flatCorrect[barIdx * beatsPerBar + kIdx]) isWrongBlock = true;
-          }
-
-          block.vex.forEach(n => {
-            const isRest = n.dur.includes('r');
-            const note = new VF.StaveNote({
-              clef: 'percussion', keys: ['b/4'], duration: n.dur + (isRest ? 'r' : '')
-            });
-            if (n.dur.includes('d')) note.addModifier(new VF.Dot(), 0);
-            if (isWrongBlock) note.setStyle({ fillStyle: '#a6493b', strokeStyle: '#a6493b' });
-            vfNotes.push(note);
-          });
-        });
-
-        const beams = VF.Beam.generateBeams(vfNotes, { groups: [new VF.Fraction(meterType==='simple'?1:3, meterType==='simple'?4:8)] });
-        VF.Formatter.FormatAndDraw(context, stave, vfNotes);
-        beams.forEach(b => b.setContext(context).draw());
-
-        xPos += staveWidth;
-      });
-    }
-
-    function renderSlots() {
-      const wrap = document.getElementById('rhy-slots');
-      if (!wrap) return;
-      wrap.innerHTML = '';
-      let accumBeats = 0;
-      userAns.forEach((key, idx) => {
-        const block = RHYTHM_BLOCKS[key];
-        const slot = document.createElement('div');
-        slot.className = 'rhythm-slot filled-slot' + (idx === activeSlotIdx ? ' active-slot' : '');
-        slot.innerHTML = `<div class="slot-label">${block.sym}</div><div class="slot-sub">${block.beats}拍</div>`;
-        slot.onclick = () => { if(!hasPlayed) return; activeSlotIdx = idx; renderSlots(); };
-        wrap.appendChild(slot);
-        accumBeats += block.beats;
-      });
-
-      if (accumBeats < totalBeats) {
-        const emptySlot = document.createElement('div');
-        emptySlot.className = 'rhythm-slot active-slot';
-        emptySlot.innerHTML = `<div class="slot-label" style="color:var(--ink-soft)">?</div><div class="slot-sub">待填入</div>`;
-        wrap.appendChild(emptySlot);
-        activeSlotIdx = userAns.length;
-      }
-
-      const subBtn = document.getElementById('rhy-submitBtn');
-      if(subBtn) subBtn.disabled = !hasPlayed || (accumBeats !== totalBeats);
-    }
-
-    function renderKeypad() {
-      const keypad = document.getElementById('rhy-keypad');
-      if (!keypad) return;
-      keypad.innerHTML = '';
-      const pool = meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
+      if (!container) return; container.innerHTML = '';
       
-      let currentBeats = userAns.reduce((sum, key) => sum + RHYTHM_BLOCKS[key].beats, 0);
-      const remainBeats = totalBeats - currentBeats;
+      const parentWidth = container.parentElement.clientWidth || 300;
+      const totalWidth = Math.max(parentWidth - 10, 300);
+      const usableWidth = totalWidth - 10;
+      
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+      renderer.resize(totalWidth, 100);
+      const ctx = renderer.getContext();
+      
+      let xPos = 5;
+      const barWidth = (usableWidth - 40) / rhyModule.barsCount; 
 
-      pool.forEach(key => {
-        const block = RHYTHM_BLOCKS[key];
-        const isTooBig = block.beats > remainBeats || block.beats > beatsPerBar;
-        const btn = document.createElement('button');
-        btn.className = 'rhythm-block-btn';
-        btn.disabled = !hasPlayed || isTooBig;
-        btn.innerHTML = `<span class="btn-sym">${block.sym}</span><span class="btn-name">${block.name} (${block.beats}拍)</span>`;
-        btn.onclick = () => {
-          if (!hasPlayed || isTooBig) return;
-          if (activeSlotIdx < userAns.length) {
-            userAns[activeSlotIdx] = key;
-          } else {
-            userAns.push(key);
-          }
-          let sum = 0; let validAns = [];
-          for (let k of userAns) {
-            if (sum + RHYTHM_BLOCKS[k].beats <= totalBeats) {
-              validAns.push(k); sum += RHYTHM_BLOCKS[k].beats;
-            } else break;
-          }
-          userAns = validAns;
-          activeSlotIdx = userAns.length;
-          renderSlots(); renderStaff('rhy-staff-svg', userAns);
-          renderKeypad();
-        };
-        keypad.appendChild(btn);
+      let bars = []; let currentBar = []; let currentBeats = 0;
+      seq.forEach(id => {
+        currentBar.push(id);
+        let b = id === 'placeholder' ? 1 : ALL_BLOCKS[id].beats;
+        currentBeats += b;
+        if (currentBeats >= rhyModule.beatsPerBar) { bars.push(currentBar); currentBar = []; currentBeats = 0; }
       });
-    }
+      while(bars.length < rhyModule.barsCount) bars.push([]);
 
-    function updatePlayBtnState() {
-      const btn = document.getElementById('rhy-playBtn');
-      if (!btn) return;
-      if (isPlaying) {
-        btn.textContent = '🔊 正在播放題目與預備拍...'; btn.disabled = true;
-      } else if (mode === 'test' && testSession && !testSession.finished) {
-        btn.textContent = `▶ 播放題目 (剩餘 ${testSession.replaysLeft} 次)`;
-        btn.disabled = !pianoInst || testSession.replaysLeft <= 0;
-      } else {
-        btn.textContent = '▶ 播放題目 (先敲4拍木魚預備)'; btn.disabled = !pianoInst;
-      }
-    }
+      let globalIdx = 0;
+      let beatFirstNotes = []; // 紀錄每一拍第一個音的 VexFlow 節點，用於座標定位
 
-    function newQuestion() {
-      window.rhyStopAll(); hasPlayed = false; currentQ = generateQuestion(); userAns = []; activeSlotIdx = 0;
-      document.getElementById('rhy-feedbackPanel').classList.remove('show');
-      document.getElementById('rhy-actionRow').style.display = 'flex';
-      document.getElementById('rhy-playCaption').textContent = pianoInst ? '點擊上方播放按鈕，聆聽節奏樂句' : '音色載入中，請稍候';
-      document.getElementById('rhy-questionCount').textContent = `第 ${qIndex} 題`;
-      renderSlots(); renderStaff('rhy-staff-svg', userAns); renderKeypad(); updatePlayBtnState();
-    }
+      for (let b = 0; b < rhyModule.barsCount; b++) {
+        const isFirst = (b === 0);
+        const sWidth = isFirst ? barWidth + 40 : barWidth;
+        const stave = new VF.Stave(xPos, 5, sWidth, { num_lines: 1 });
+        if (isFirst) stave.addClef('percussion').addTimeSignature(rhyModule.meter);
+        stave.setContext(ctx).draw();
 
-    function newTestQuestion() {
-      window.rhyStopAll(); hasPlayed = false; currentQ = generateQuestion(); userAns = []; activeSlotIdx = 0;
-      testSession.replaysLeft = testSession.maxReplays;
-      document.getElementById('rhy-feedbackPanel').classList.remove('show');
-      document.getElementById('rhy-actionRow').style.display = 'flex';
-      document.getElementById('rhy-questionCount').textContent = `第 ${testSession.index} / ${testSession.total} 題 目前正確 ${testSession.correct} 題`;
-      renderSlots(); renderStaff('rhy-staff-svg', userAns); renderKeypad(); updatePlayBtnState();
-    }
-
-    function handleSubmit() {
-      if (!hasPlayed) return;
-      window.rhyStopAll();
-      const isCorrect = JSON.stringify(userAns) === JSON.stringify(currentQ);
-      const fp = document.getElementById('rhy-feedbackPanel'); const ft = document.getElementById('rhy-feedbackText');
-      fp.classList.add('show');
-      document.getElementById('rhy-actionRow').style.display = 'none';
-
-      if (isCorrect) {
-        ft.textContent = '🎉 恭喜完全正確！聽力與節奏感超級順！'; ft.className = 'feedback-text correct';
-      } else {
-        ft.textContent = '❌ 節奏有出入喔！紅色為你填錯的比對位置，以下是正確答案：'; ft.className = 'feedback-text wrong';
-        renderStaff('rhy-staff-svg', currentQ);
-        addToReview(currentQ, userAns, mode === 'test' ? testSession.index : null);
-      }
-
-      if (mode === 'practice') {
-        score.total++; if (isCorrect) score.correct++; score.streak = isCorrect ? score.streak + 1 : 0;
-        document.getElementById('rhy-scoreNum').textContent = `${score.correct} / ${score.total}`;
-        document.getElementById('rhy-streakNum').textContent = score.streak;
-      } else if (mode === 'test' && testSession) {
-        if (isCorrect) testSession.correct++;
-        document.getElementById('rhy-questionCount').textContent = `第 ${testSession.index} / ${testSession.total} 題 目前正確 ${testSession.correct} 題`;
-        document.getElementById('rhy-nextBtn').textContent = testSession.index >= testSession.total ? '查看測驗成績' : '下一題 →';
-      }
-    }
-
-    function addToReview(correctSeq, userSeq, qNum) {
-      reviewItems.push({ id: reviewIdSeq++, correctSeq, userSeq, qNum, corrected: false });
-      renderReviewList();
-    }
-
-    function renderReviewList() {
-      const list = document.getElementById('rhy-reviewList');
-      if (!list) return;
-      list.innerHTML = '';
-      if (reviewItems.length === 0) {
-        list.innerHTML = '<div class="review-empty">🎉 目前沒有錯題，繼續保持完美的節奏感！</div>'; return;
-      }
-      reviewItems.forEach(item => {
-        const box = document.createElement('div'); box.className = 'review-item' + (item.corrected ? ' corrected' : '');
-        const header = document.createElement('div'); header.className = 'review-header';
-        header.innerHTML = `<div>${item.qNum ? `<span class="q-num-badge">【第 ${item.qNum} 題】</span> ` : ''}<span style="font-size:13.5px; font-weight:bold;">${meter} 拍節奏型</span></div>`;
-        const actions = document.createElement('div'); actions.className = 'review-actions';
-        const playBtn = document.createElement('button'); playBtn.className = 'icon-btn'; playBtn.textContent = '🔁 播放正確答案';
-        playBtn.onclick = () => playRhythmSequence(item.correctSeq); actions.appendChild(playBtn);
-        if (item.corrected) actions.innerHTML += '<span class="corrected-tag">✓ 已復習訂正</span>';
-        header.appendChild(actions); box.appendChild(header);
-
-        const staffDiv = document.createElement('div'); staffDiv.id = `rev-staff-${item.id}`; staffDiv.style.overflowX = 'auto';
-        box.appendChild(staffDiv); list.appendChild(box);
-        setTimeout(() => renderStaff(`rev-staff-${item.id}`, item.correctSeq), 50);
-      });
-    }
-
-    return {
-      init: function() {
-        renderReviewList();
+        let allNotes = []; let allBeams = []; let allTies = [];
+        let barKeys = bars[b] || [];
         
-        // 綁定按鈕監聽 (獨立執行，不受音色載入影響)
-        document.querySelectorAll('#rhy-modeSwitch .mode-btn').forEach(b => b.onclick = () => {
-          mode = b.dataset.mode; document.querySelectorAll('#rhy-modeSwitch .mode-btn').forEach(x => x.classList.toggle('active', x === b));
-          document.getElementById('rhy-testSettings').style.display = mode === 'test' ? 'block' : 'none';
-        });
-        document.querySelectorAll('#rhy-pitchSwitch .mode-btn').forEach(b => b.onclick = () => {
-          pitchMode = b.dataset.pitch; document.querySelectorAll('#rhy-pitchSwitch .mode-btn').forEach(x => x.classList.toggle('active', x === b));
-        });
-        document.querySelectorAll('#rhy-meterSwitch .mode-btn').forEach(b => b.onclick = () => {
-          meter = b.dataset.meter; meterType = b.dataset.type;
-          document.querySelectorAll('#rhy-meterSwitch .mode-btn').forEach(x => x.classList.toggle('active', x === b));
-        });
+        let filledBeats = barKeys.reduce((acc, k) => acc + (k === 'placeholder' ? 1 : ALL_BLOCKS[k].beats), 0);
+        while(filledBeats < rhyModule.beatsPerBar) { barKeys.push('placeholder'); filledBeats++; }
 
-        const enterBtn = document.getElementById('rhy-enterBtn');
-        if (enterBtn) {
-          enterBtn.onclick = () => {
-            ensureAudio(); // 點擊時強制解鎖音效權限
-            window.rhyStopAll(); testSession = null;
-            barsCount = parseInt(document.getElementById('rhy-barsSelect').value, 10);
-            beatsPerBar = parseMeterBeats(meter); totalBeats = barsCount * beatsPerBar;
-            
-            document.getElementById('rhy-statusBadge').textContent = `${meter}拍｜${barsCount}小節｜${pitchMode==='dual'?'雙音交替':'單音'} (${mode==='test'?'測驗':'練習'})`;
-            document.getElementById('rhy-scoreBoxWrap').style.display = mode === 'practice' ? 'block' : 'none';
-            document.getElementById('rhy-testSummary').style.display = 'none';
-            document.getElementById('rhy-questionPanel').style.display = 'block';
-
-            if (mode === 'practice') { qIndex = 1; newQuestion(); }
-            else {
-              const maxRep = parseInt(document.getElementById('rhy-testReplaySelect').value, 10);
-              testSession = { total: 5, index: 1, correct: 0, maxReplays: maxRep, replaysLeft: maxRep, finished: false };
-              newTestQuestion();
-            }
-            showPage('rhy-practice');
-          };
+        barKeys.forEach(id => {
+          let firstNoteOfBeat = null;
+          if (id !== 'placeholder') {
+            const block = ALL_BLOCKS[id];
+            let isWrong = correctSeq && (seq[globalIdx] !== correctSeq[globalIdx]);
+            const { notes, ties, beams } = getVexNotes(block.lengths, isWrong, rhyModule.meterType);
+            allNotes.push(...notes); allBeams.push(...beams); allTies.push(...ties);
+            firstNoteOfBeat = notes[0];
+          } else {
+            let ghost = new VF.StaveNote({keys:['b/4'], duration: 'qr'});
+            if(rhyModule.meterType==='compound') ghost.addDot(0);
+            ghost.setStyle({fillStyle: '#e0e0e0', strokeStyle: '#e0e0e0'});
+            allNotes.push(ghost);
+            firstNoteOfBeat = ghost;
+          }
+          beatFirstNotes[globalIdx] = firstNoteOfBeat;
+          globalIdx++;
+        });
+        
+        if (allNotes.length > 0) {
+          VF.Formatter.FormatAndDraw(ctx, stave, allNotes);
+          allBeams.forEach(bm => bm.setContext(ctx).draw());
+          allTies.forEach(t => new VF.StaveTie({ first_note: t.first, last_note: t.last }).setContext(ctx).draw());
         }
+        xPos += sWidth;
+      }
 
-        const playBtn = document.getElementById('rhy-playBtn');
-        if (playBtn) {
-          playBtn.onclick = () => {
-            ensureAudio();
-            if (!pianoInst || isPlaying) return;
-            if (mode === 'test' && testSession && !testSession.finished) {
-              if (testSession.replaysLeft <= 0) return;
-              testSession.replaysLeft--;
-            }
-            hasPlayed = true; renderSlots(); renderKeypad();
-            
-            playRhythmSequence(currentQ, () => {
-              if (mode === 'test' && testSession && !testSession.finished && testSession.replaysLeft > 0) {
-                const waitSec = 5 + barsCount;
-                const wrap = document.getElementById('rhy-countdownWrap'); const bar = document.getElementById('rhy-countdownBar');
-                wrap.style.display = 'block'; bar.style.width = '100%';
-                document.getElementById('rhy-playCaption').textContent = `⏳ 距離自動重播還剩 ${waitSec} 秒...`;
-                
-                let elapsed = 0;
-                const intervalId = setInterval(() => {
-                  elapsed += 0.2; const pct = Math.max(0, 100 - (elapsed / waitSec) * 100);
-                  bar.style.width = `${pct}%`;
-                  if (elapsed >= waitSec) {
-                    clearInterval(intervalId); wrap.style.display = 'none';
-                    document.getElementById('rhy-playBtn').click();
-                  }
-                }, 200);
-                pendingTimers.push(intervalId);
-              }
-            });
-          };
+      // 如果需要互動，則在此覆蓋精準的隱形作答光標
+      if (interactive && rhyModule.hasPlayed) {
+        let overlay = document.createElement('div');
+        overlay.style.position = 'absolute'; overlay.style.top = '0'; overlay.style.left = '0';
+        overlay.style.width = '100%'; overlay.style.height = '100%';
+        overlay.style.pointerEvents = 'none'; // 底層不擋點擊，讓子元素獨立接收
+        container.appendChild(overlay);
+        
+        for(let i=0; i<beatFirstNotes.length; i++) {
+          let firstNote = beatFirstNotes[i];
+          let nextNote = beatFirstNotes[i+1];
+          let stave = firstNote.getStave();
+          if(!stave) continue;
+          
+          let nx = typeof firstNote.getAbsoluteX === 'function' ? firstNote.getAbsoluteX() : stave.getX() + firstNote.getTickContext().getX();
+          let x = nx - 12; // 稍微往左包覆音符頭
+          let y = stave.getYForLine(0) - 20; 
+          let h = 90; let w = 30;
+          
+          if (nextNote && nextNote.getStave() === stave) {
+            let n2x = typeof nextNote.getAbsoluteX === 'function' ? nextNote.getAbsoluteX() : stave.getX() + nextNote.getTickContext().getX();
+            w = n2x - nx;
+          } else {
+            w = stave.getX() + stave.getWidth() - nx + 10;
+          }
+          
+          let slot = document.createElement('div');
+          slot.style.position = 'absolute'; slot.style.left = x + 'px'; slot.style.top = y + 'px';
+          slot.style.width = Math.max(w, 20) + 'px'; slot.style.height = h + 'px';
+          slot.style.cursor = 'pointer'; slot.style.pointerEvents = 'auto';
+          slot.style.borderRadius = '8px'; slot.style.transition = 'all 0.15s ease';
+          
+          if (i === rhyModule.activeSlotIdx) {
+            slot.style.border = '2px solid var(--accent)';
+            slot.style.backgroundColor = 'var(--accent-soft)';
+            slot.style.zIndex = '10';
+          } else {
+            slot.style.border = '1px dashed transparent';
+            slot.style.zIndex = '1';
+          }
+          
+          slot.onmouseover = () => { if(i !== rhyModule.activeSlotIdx) slot.style.border = '1px dashed var(--accent-line)'; };
+          slot.onmouseout = () => { if(i !== rhyModule.activeSlotIdx) slot.style.border = '1px dashed transparent'; };
+          slot.onclick = () => { rhyModule.activeSlotIdx = i; rhyModule.updateUI(); };
+          
+          overlay.appendChild(slot);
         }
+      }
+    } catch(e) { console.error("Main Staff Error:", e); }
+  }
 
-        const backBtn = document.getElementById('rhy-backspaceBtn');
-        if (backBtn) backBtn.onclick = () => {
-          if (!hasPlayed || userAns.length === 0) return;
-          userAns.pop(); activeSlotIdx = userAns.length;
-          renderSlots(); renderStaff('rhy-staff-svg', userAns); renderKeypad();
+  // ================= 播放引擎 =================
+  let audioCtx = null; let pianoInst = null; let pendingTimers = [];
+  function clearTimers(){ pendingTimers.forEach(id => clearTimeout(id)); pendingTimers = []; }
+  window.rhyStopAll = function() { 
+    if(pianoInst) pianoInst.stop(); 
+    clearTimers(); rhyModule.testSession.isRunning = false; rhyModule.isPlaying = false; rhyModule.updatePlayBtn(); 
+  };
+
+  function ensureAudio(){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} return audioCtx; }
+  window.loadPiano = function(){
+    const ctx = ensureAudio(); if(!ctx) return;
+    Soundfont.instrument(ctx, 'acoustic_grand_piano').then(inst => {
+      pianoInst = inst; document.getElementById('loadingBanner').style.display = 'none'; rhyModule.updatePlayBtn();
+    }).catch(()=>{ document.getElementById('loadingBanner').innerHTML = '⚠️ 載入失敗，請重試 <button onclick="loadPiano()">🔁</button>'; });
+  };
+
+  const rhyModule = {
+    mode: 'practice', pitchMode: 'single', meter: '4/4', meterType: 'simple', barsCount: 2, beatsPerBar: 4, bpm: 80, totalBeats: 8,
+    selectedPatterns: new Set(), questionSeq: [], userSeq: [], lockedStartPitch: 69, isPlaying: false, hasPlayed: false,
+    activeSlotIdx: 0, score: { c:0, t:0 },
+    testSession: { isRunning: false, replaysLeft: 0, totalPlays: 0 },
+    reviewItems: [],
+
+    initSettings: function() {
+      const grid = document.getElementById('settingsPatternGrid'); grid.innerHTML = '';
+      const order = this.meterType === 'simple' ? SIMPLE_DATA.order : COMPOUND_DATA.order;
+      this.selectedPatterns.clear();
+      order.forEach(id => {
+        this.selectedPatterns.add(id);
+        const item = document.createElement('div'); item.className = 'pattern-item selected';
+        const svgContainer = document.createElement('div'); item.appendChild(svgContainer);
+        item.onclick = () => {
+          if (this.selectedPatterns.has(id)) { this.selectedPatterns.delete(id); item.classList.remove('selected'); }
+          else { this.selectedPatterns.add(id); item.classList.add('selected'); }
+          document.getElementById('rhy-enterBtn').disabled = this.selectedPatterns.size === 0;
         };
+        grid.appendChild(item); setTimeout(() => drawMiniRhythm(svgContainer, id), 10); 
+      });
+      document.getElementById('rhy-enterBtn').disabled = false;
+    },
 
-        const clearBtn = document.getElementById('rhy-clearBtn');
-        if (clearBtn) clearBtn.onclick = () => {
-          if (!hasPlayed || userAns.length === 0) return;
-          userAns = []; activeSlotIdx = 0;
-          renderSlots(); renderStaff('rhy-staff-svg', userAns); renderKeypad();
-        };
+    generateQuestion: function() {
+      this.questionSeq = []; const pool = Array.from(this.selectedPatterns);
+      for(let i=0; i<this.totalBeats; i++) this.questionSeq.push(pool[Math.floor(Math.random() * pool.length)]);
+      this.lockedStartPitch = Math.random() < 0.5 ? 69 : 64; 
+    },
 
-        const subBtn = document.getElementById('rhy-submitBtn');
-        if (subBtn) subBtn.onclick = handleSubmit;
+    playSequence: function(seq, onEnd) {
+      if(!pianoInst || this.isPlaying) return;
+      this.isPlaying = true; this.updatePlayBtn();
+      const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;
+      const secPerBeat = 60 / this.bpm;
+      const beat16th = this.meterType === 'simple' ? 4 : 6;
+      const secPer16th = secPerBeat / beat16th;
 
-        const nextBtn = document.getElementById('rhy-nextBtn');
-        if (nextBtn) nextBtn.onclick = () => {
-          window.rhyStopAll();
-          if (mode === 'practice') { qIndex++; newQuestion(); }
-          else if (mode === 'test' && testSession) {
-            if (testSession.index >= testSession.total) {
-              testSession.finished = true;
-              document.getElementById('rhy-questionPanel').style.display = 'none';
-              document.getElementById('rhy-testSummary').style.display = 'block';
-              document.getElementById('rhy-testScore').textContent = `${testSession.correct} / ${testSession.total}`;
-            } else { testSession.index++; newTestQuestion(); }
+      let numerator = parseInt(this.meter.split('/')[0], 10);
+
+      // 動態預備拍邏輯
+      if (this.meterType === 'simple') {
+        for(let i=0; i<numerator; i++) {
+          let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; 
+          o.frequency.value = i===0 ? 1000 : 700;
+          g.gain.setValueAtTime(0.2, time+i*secPerBeat); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPerBeat+0.05);
+          o.connect(g); g.connect(ctx.destination); o.start(time+i*secPerBeat); o.stop(time+i*secPerBeat+0.05);
+        }
+        time += numerator * secPerBeat;
+      } else {
+        // 複拍子以八分音符速度敲擊，並每三拍下重音
+        let secPer8th = secPerBeat / 3;
+        for(let i=0; i<numerator; i++) {
+          let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; 
+          o.frequency.value = (i%3 === 0) ? 1000 : 700;
+          g.gain.setValueAtTime(0.2, time+i*secPer8th); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPer8th+0.05);
+          o.connect(g); g.connect(ctx.destination); o.start(time+i*secPer8th); o.stop(time+i*secPer8th+0.05);
+        }
+        time += numerator * secPer8th;
+      }
+
+      let currentPitch = this.lockedStartPitch;
+      seq.forEach(id => {
+        ALL_BLOCKS[id].lengths.forEach(len => {
+          pianoInst.play(this.pitchMode==='dual'?currentPitch:69, time, { duration: len*secPer16th*0.9, gain: 4.0 });
+          if(this.pitchMode==='dual') currentPitch = (currentPitch===69) ? 64 : 69;
+          time += len * secPer16th;
+        });
+      });
+
+      const timerId = setTimeout(() => { this.isPlaying = false; this.updatePlayBtn(); if(onEnd) onEnd(); }, (time-ctx.currentTime)*1000 + 100);
+      pendingTimers.push(timerId);
+    },
+
+    runTestLoop: function() {
+      if (!this.testSession.isRunning || this.testSession.replaysLeft <= 0) {
+        this.testSession.isRunning = false; this.updatePlayBtn(); return;
+      }
+      const currentRound = this.testSession.totalPlays - this.testSession.replaysLeft + 1;
+      document.getElementById('rhy-playCaption').textContent = `🔊 正在進行第 ${currentRound} 次播放...`;
+      this.playSequence(this.questionSeq, () => {
+        this.testSession.replaysLeft--;
+        if (this.testSession.replaysLeft > 0 && this.testSession.isRunning) this.startTestCountdown();
+        else { this.testSession.isRunning = false; document.getElementById('rhy-playCaption').textContent = `✅ 播放完畢，請作答！`; this.updatePlayBtn(); }
+      });
+    },
+
+    startTestCountdown: function() {
+      let waitSec = 5 + this.barsCount; let elapsed = 0;
+      const intervalId = setInterval(() => {
+        if (!this.testSession.isRunning) { clearInterval(intervalId); return; }
+        elapsed += 0.2; let remain = Math.ceil(waitSec - elapsed);
+        document.getElementById('rhy-playCaption').textContent = `⏳ 距離下次播放還剩 ${remain} 秒...`;
+        if (elapsed >= waitSec) { clearInterval(intervalId); this.runTestLoop(); }
+      }, 200);
+      pendingTimers.push(intervalId);
+    },
+
+    renderKeypad: function() {
+      const pad = document.getElementById('rhy-keypad'); pad.innerHTML = '';
+      Array.from(this.selectedPatterns).forEach(id => {
+        const btn = document.createElement('div'); btn.className = 'rhythm-btn';
+        if(!this.hasPlayed) btn.style.opacity = '0.3';
+        const svgDiv = document.createElement('div'); btn.appendChild(svgDiv);
+        btn.onclick = () => {
+          if(!this.hasPlayed) return;
+          
+          let reqBeats = ALL_BLOCKS[id].beats;
+          let available = 0; let removeCount = 0;
+          for (let i = this.activeSlotIdx; i < this.userSeq.length; i++) {
+            available += this.userSeq[i] === 'placeholder' ? 1 : ALL_BLOCKS[this.userSeq[i]].beats;
+            removeCount++;
+            if (available >= reqBeats) break;
+          }
+          
+          if (available >= reqBeats) {
+            this.userSeq.splice(this.activeSlotIdx, removeCount, id);
+            let overshot = available - reqBeats;
+            for(let k=0; k<overshot; k++) this.userSeq.splice(this.activeSlotIdx + 1 + k, 0, 'placeholder');
+            
+            let nextEmpty = this.userSeq.indexOf('placeholder');
+            this.activeSlotIdx = nextEmpty !== -1 ? nextEmpty : Math.min(this.activeSlotIdx + 1, this.userSeq.length - 1);
+            this.updateUI();
           }
         };
+        pad.appendChild(btn); setTimeout(() => drawMiniRhythm(svgDiv, id), 10);
+      });
+    },
 
-        const againBtn = document.getElementById('rhy-testAgainBtn');
-        if (againBtn) againBtn.onclick = () => {
-          window.rhyStopAll(); document.getElementById('rhy-testSummary').style.display = 'none';
-          document.getElementById('rhy-questionPanel').style.display = 'block';
-          const maxRep = parseInt(document.getElementById('rhy-testReplaySelect').value, 10);
-          testSession = { total: 5, index: 1, correct: 0, maxReplays: maxRep, replaysLeft: maxRep, finished: false };
-          newTestQuestion();
-        };
-      },
-      updatePlayBtnState: updatePlayBtnState
-    };
-  })();
+    updateUI: function() {
+      renderMainStaff('rhy-staff-svg', this.userSeq, true);
+      document.getElementById('rhy-submitBtn').disabled = !this.hasPlayed || this.userSeq.includes('placeholder');
+      document.querySelectorAll('.rhythm-btn').forEach(b => b.style.opacity = this.hasPlayed ? '1' : '0.3');
+    },
 
-  // 1. 頁面載入時立刻掛載按鈕監聽 (不管音色有沒有載入成功，介面保證可點擊)
-  rhyModule.init();
-  // 2. 隨後在背景嘗試載入鋼琴音色
-  loadPiano();
+    updatePlayBtn: function() {
+      const b = document.getElementById('rhy-playBtn');
+      if (this.testSession.isRunning) { b.textContent = `測驗播放中 (剩餘 ${this.testSession.replaysLeft} 次)`; b.disabled = true; }
+      else if (this.isPlaying) { b.textContent = '🔊 播放中...'; b.disabled = true; } 
+      else { b.textContent = '▶ 播放題目 (聽預備拍)'; b.disabled = !pianoInst; }
+    },
+
+    addToReview: function() {
+      const id = this.reviewItems.length + 1;
+      this.reviewItems.unshift({ id, correctSeq: this.questionSeq, userSeq: this.userSeq });
+      
+      document.getElementById('rhy-reviewSection').style.display = 'block';
+      const list = document.getElementById('rhy-reviewList'); list.innerHTML = '';
+      
+      this.reviewItems.forEach(item => {
+        const box = document.createElement('div'); box.className = 'review-item';
+        box.innerHTML = `
+          <div style="font-size:13px; font-weight:bold; margin-bottom:12px; display:flex; justify-content:space-between;">
+            <span>❌ 錯題 #${item.id}</span>
+            <button class="select-all-btn" onclick="rhyModule.playSequence(['${item.correctSeq.join("','")}'])">🔁 聽正解</button>
+          </div>
+          <div class="review-label">你的作答 (紅色為錯誤)：</div>
+          <div class="review-staff"><div id="rev-user-${item.id}"></div></div>
+          <div class="review-label" style="margin-top:8px;">正確解答：</div>
+          <div class="review-staff"><div id="rev-correct-${item.id}"></div></div>
+        `;
+        list.appendChild(box);
+        setTimeout(() => {
+          renderMainStaff(`rev-user-${item.id}`, item.userSeq, false, item.correctSeq);
+          renderMainStaff(`rev-correct-${item.id}`, item.correctSeq, false);
+        }, 50);
+      });
+    },
+
+    setupEvents: function() {
+      document.querySelectorAll('#rhy-modeSwitch .mode-btn').forEach(b => b.onclick = () => {
+        this.mode = b.dataset.mode; document.querySelectorAll('#rhy-modeSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b));
+        document.getElementById('testReplayWrapper').style.display = this.mode === 'test' ? 'flex' : 'none';
+      });
+      document.querySelectorAll('#rhy-pitchSwitch .mode-btn').forEach(b => b.onclick = () => {
+        this.pitchMode = b.dataset.pitch; document.querySelectorAll('#rhy-pitchSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b));
+      });
+      document.querySelectorAll('#rhy-meterSwitch .mode-btn').forEach(b => b.onclick = () => {
+        this.meter = b.dataset.meter; this.meterType = b.dataset.type;
+        document.querySelectorAll('#rhy-meterSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b));
+        this.initSettings();
+      });
+      
+      document.getElementById('selectAllBtn').onclick = () => {
+        const order = this.meterType === 'simple' ? SIMPLE_DATA.order : COMPOUND_DATA.order;
+        const items = document.querySelectorAll('.pattern-item');
+        if (this.selectedPatterns.size === order.length) {
+          this.selectedPatterns.clear(); items.forEach(i => i.classList.remove('selected'));
+        } else {
+          order.forEach(id => this.selectedPatterns.add(id)); items.forEach(i => i.classList.add('selected'));
+        }
+        document.getElementById('rhy-enterBtn').disabled = this.selectedPatterns.size === 0;
+      };
+
+      document.getElementById('rhy-enterBtn').onclick = () => {
+        ensureAudio(); window.rhyStopAll();
+        this.barsCount = parseInt(document.getElementById('rhy-barsSelect').value, 10);
+        this.beatsPerBar = parseInt(this.meter.split('/')[0], 10);
+        if(this.meterType==='compound') this.beatsPerBar /= 3;
+        this.totalBeats = this.barsCount * this.beatsPerBar;
+        this.bpm = parseInt(document.getElementById('rhy-bpm').value, 10);
+
+        document.getElementById('rhy-statusBadge').textContent = `${this.meter}拍｜${this.barsCount}小節｜${this.bpm}BPM`;
+        
+        this.userSeq = Array(this.totalBeats).fill('placeholder');
+        this.hasPlayed = false; this.activeSlotIdx = 0; this.generateQuestion();
+        
+        document.getElementById('rhy-feedbackText').className = 'feedback-text';
+        document.getElementById('rhy-actionRow').style.display = 'flex';
+        document.getElementById('rhy-nextRow').style.display = 'none';
+        document.getElementById('rhy-playCaption').textContent = '請點擊上方按鈕開始聆聽';
+
+        this.renderKeypad(); showPage('rhy-practice');
+        setTimeout(() => this.updateUI(), 150); // 確保容器寬度計算完畢再渲染樂譜
+      };
+
+      document.getElementById('rhy-playBtn').onclick = () => {
+        ensureAudio(); if(!pianoInst || this.isPlaying || this.testSession.isRunning) return;
+        this.hasPlayed = true; this.updateUI();
+        
+        if (this.mode === 'test') {
+          this.testSession.totalPlays = parseInt(document.getElementById('rhy-testReplaySelect').value, 10);
+          this.testSession.replaysLeft = this.testSession.totalPlays;
+          this.testSession.isRunning = true; this.runTestLoop();
+        } else {
+          document.getElementById('rhy-playCaption').textContent = '🔊 播放中...';
+          this.playSequence(this.questionSeq, () => document.getElementById('rhy-playCaption').textContent = '✅ 播放完畢，請作答！');
+        }
+      };
+
+      document.getElementById('rhy-backspaceBtn').onclick = () => { 
+        if(!this.hasPlayed) return;
+        let t = this.activeSlotIdx;
+        if(this.userSeq[t] === 'placeholder' && t > 0) { t--; this.activeSlotIdx = t; }
+        if(this.userSeq[t] !== 'placeholder') {
+          let b = ALL_BLOCKS[this.userSeq[t]].beats;
+          this.userSeq.splice(t, 1);
+          for(let k=0; k<b; k++) this.userSeq.splice(t, 0, 'placeholder');
+          this.activeSlotIdx = t; this.updateUI();
+        }
+      };
+      
+      document.getElementById('rhy-clearBtn').onclick = () => { 
+        if(!this.hasPlayed) return; 
+        this.userSeq = Array(this.totalBeats).fill('placeholder'); 
+        this.activeSlotIdx = 0; this.updateUI(); 
+      };
+      
+      document.getElementById('rhy-submitBtn').onclick = () => {
+        window.rhyStopAll();
+        const isCorrect = JSON.stringify(this.userSeq) === JSON.stringify(this.questionSeq);
+        const ft = document.getElementById('rhy-feedbackText');
+        document.getElementById('rhy-actionRow').style.display = 'none';
+        document.getElementById('rhy-nextRow').style.display = 'flex';
+        
+        if (isCorrect) { 
+          ft.textContent = '🎉 完全正確！'; ft.className = 'feedback-text correct'; this.score.c++; 
+        } else { 
+          ft.textContent = '❌ 有錯喔！請往下滑查看訂正區'; ft.className = 'feedback-text wrong'; 
+          renderMainStaff('rhy-staff-svg', this.questionSeq, false, this.userSeq);
+          this.addToReview();
+        }
+        this.score.t++; document.getElementById('rhy-scoreNum').textContent = `${this.score.c}/${this.score.t}`;
+        document.getElementById('rhy-playCaption').textContent = '✅ 作答結束';
+      };
+
+      document.getElementById('rhy-nextBtn').onclick = () => document.getElementById('rhy-enterBtn').click();
+      
+      window.addEventListener('resize', () => { if(document.getElementById('pageRhyPractice').classList.contains('active')) this.updateUI(); });
+    }
+  };
+
+  rhyModule.initSettings(); rhyModule.setupEvents(); loadPiano();
 })();
 </script>
 
 <script>
-  if('serviceWorker' in navigator){
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js').catch(() => {});
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) { refreshing = true; window.location.reload(); }
-      });
-    });
-  }
+  if('serviceWorker' in navigator){ window.addEventListener('load', () => { navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }); }
 </script>
 </body>
 </html>
