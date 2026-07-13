@@ -70,20 +70,17 @@
   .score-box { text-align: right; font-family: var(--font-mono); }
   .score-box .num { font-size: 18px; font-weight: 700; color: var(--accent); line-height: 1; }
   
-  .play-area { display: flex; flex-direction: column; align-items: center; margin-bottom: 12px; }
-  .play-btn { font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 999px; background: var(--accent); color: var(--panel); border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(51,65,92,0.18); transition: background 0.2s; }
-  .play-btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; background: var(--ink-soft); }
-  .play-caption { font-size: 12px; color: var(--ink-soft); margin-top: 6px; font-weight: 600; }
-  
-  /* 五線譜容器與內嵌覆蓋層 */
-  .staff-scroll-container { width: 100%; background: #fff; border: 1px solid var(--hairline); border-radius: 12px; padding: 14px 4px; box-shadow: inset 0 0 8px rgba(0,0,0,0.02); margin-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* 樂譜容器：絕對禁止 Y 軸滾動 */
+  .staff-scroll-container { width: 100%; background: #fff; border: 1px solid var(--hairline); border-radius: 12px; padding: 10px 4px; box-shadow: inset 0 0 8px rgba(0,0,0,0.02); margin-bottom: 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
   .staff-scroll-container::-webkit-scrollbar { height: 6px; }
   .staff-scroll-container::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
   
-  .action-row { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
-  .action-btn { font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--ink-soft); background: transparent; color: var(--ink); cursor: pointer; }
-  .btn-submit { background: var(--accent); color: var(--panel); border: none; }
-  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+  .unified-action-row { display: flex; gap: 8px; justify-content: center; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .action-btn, .play-btn { font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 999px; cursor: pointer; transition: all 0.2s; }
+  .action-btn { border: 1px solid var(--ink-soft); background: transparent; color: var(--ink); }
+  .play-btn, .btn-submit { background: var(--accent); color: var(--panel); border: none; }
+  .play-btn:disabled, .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; background: var(--ink-soft); }
+  .play-caption { font-size: 12px; color: var(--ink-soft); font-weight: 600; text-align: center; }
 
   .keypad-hint { font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; text-align: center; }
   .rhythm-keypad { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 10px; padding-bottom: 40px; }
@@ -91,7 +88,7 @@
   .rhythm-btn:active { transform: scale(0.94); border-color: var(--accent); }
   .rhythm-btn:disabled { opacity: 0.3; pointer-events: none; }
   
-  .feedback-text { text-align: center; font-size: 15px; font-weight: 700; margin-bottom: 12px; display: none; }
+  .feedback-text { text-align: center; font-size: 14px; font-weight: 700; margin-bottom: 6px; display: none; }
   .feedback-text.correct { color: var(--correct); display: block; }
   .feedback-text.wrong { color: var(--wrong); display: block; }
   
@@ -99,9 +96,30 @@
   .review-section h2 { font-family: var(--font-display); font-size: 18px; margin: 0 0 12px; }
   .review-item { background: #fff; border: 1px solid var(--panel-border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
   .review-label { font-size: 12px; font-weight: bold; color: var(--ink-soft); margin-bottom: 4px; }
-  .review-staff { background: var(--panel); border-radius: 8px; padding: 10px 4px; margin-bottom: 12px; border: 1px solid var(--hairline); width: 100%; overflow-x: auto; }
+  .review-staff { background: var(--panel); border-radius: 8px; padding: 10px 4px; margin-bottom: 12px; border: 1px solid var(--hairline); width: 100%; overflow-x: auto; overflow-y: hidden; }
 
   .loading-banner { text-align: center; font-size: 12px; color: var(--ink-soft); background: #fff; padding: 8px; border-radius: 8px; margin-bottom: 16px; }
+
+  /* ================= PC 版與寬螢幕優化 ================= */
+  @media (min-width: 768px) {
+    .wrap { border-left: 1px solid var(--hairline); border-right: 1px solid var(--hairline); background: var(--paper); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+    .practice-top-fixed { padding: 20px 40px; }
+    .practice-bottom-scroll { padding: 20px 40px; }
+    .rhythm-keypad { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 16px; }
+    .rhythm-btn { height: 75px; }
+    .action-btn, .play-btn { font-size: 14px; padding: 12px 20px; }
+  }
+
+  /* ================= 手機橫向極致壓縮模式 ================= */
+  @media (orientation: landscape) and (max-width: 900px) {
+    .practice-top-fixed { padding: 4px 10px; }
+    .top-bar-practice { margin-bottom: 4px; }
+    .score-box .num { font-size: 16px; }
+    .staff-scroll-container { margin-bottom: 4px; padding: 4px; }
+    .unified-action-row { margin-bottom: 4px; }
+    .play-caption { margin-top: 0; }
+    .rhythm-btn { height: 48px; } 
+  }
 </style>
 </head>
 <body>
@@ -167,7 +185,7 @@
         </select>
       </div>
       <div class="switch-group" style="flex:1;">
-        <div class="switch-group-label">播放速度: <span id="bpmVal">80</span> BPM</div>
+        <div class="switch-group-label">播放速度: <span id="bpmSym">♩</span> = <span id="bpmVal">80</span> BPM</div>
         <input type="range" id="rhy-bpm" class="bpm-slider" min="40" max="160" value="80" oninput="document.getElementById('bpmVal').innerText = this.value">
       </div>
     </div>
@@ -189,13 +207,7 @@
         <span class="practice-status-badge" id="rhy-statusBadge">4/4拍｜2小節｜80 BPM</span>
         <div class="score-box"><div class="num" id="rhy-scoreNum">0/0</div></div>
       </div>
-
-      <div class="play-area">
-        <button class="play-btn" id="rhy-playBtn" disabled>▶ 播放題目 (預備拍)</button>
-        <div class="play-caption" id="rhy-playCaption">請點擊上方按鈕開始聆聽</div>
-      </div>
       
-      <!-- 五線譜與絕對定位點擊光標容器 -->
       <div class="staff-scroll-container" id="staffContainerOuter">
         <div style="min-width: 100%; display: flex; justify-content: center;">
           <div id="rhy-staff-svg" style="position: relative; display: inline-block;"></div>
@@ -204,19 +216,21 @@
       
       <div id="rhy-feedbackText" class="feedback-text"></div>
 
-      <div class="action-row" id="rhy-actionRow">
-        <button class="action-btn" id="rhy-backspaceBtn">⌫ 刪除選中拍</button>
-        <button class="action-btn" id="rhy-clearBtn">🗑️ 清空</button>
-        <button class="action-btn btn-submit" id="rhy-submitBtn" disabled>✔ 提交對答案</button>
+      <div class="unified-action-row">
+        <button class="play-btn" id="rhy-playBtn" disabled>▶ 播放題目</button>
+        <span id="rhy-editBtns" style="display:flex; gap:8px;">
+          <button class="action-btn" id="rhy-backspaceBtn">⌫ 刪除</button>
+          <button class="action-btn" id="rhy-clearBtn">🗑️ 清空</button>
+          <button class="action-btn btn-submit" id="rhy-submitBtn" disabled>✔ 提交</button>
+        </span>
+        <button class="action-btn btn-submit" id="rhy-nextBtn" style="display:none; flex:1;">下一題 →</button>
       </div>
-      <div class="action-row" id="rhy-nextRow" style="display:none;">
-        <button class="action-btn btn-submit" id="rhy-nextBtn" style="width:100%;">下一題 →</button>
-      </div>
+      <div class="play-caption" id="rhy-playCaption">請點擊上方播放按鈕</div>
     </div>
 
     <div class="practice-bottom-scroll">
       <div id="rhy-keypadWrapper">
-        <div class="keypad-hint">👇 點擊上方五線譜的「灰色佔位符」選擇位置，再點擊下方節奏填入</div>
+        <div class="keypad-hint">👇 點擊上方五線譜選擇位置，再點擊下方節奏填寫</div>
         <div class="rhythm-keypad" id="rhy-keypad"></div>
       </div>
       
@@ -242,7 +256,7 @@ function showPage(pageId) {
 }
 
 (function(){
-  // ================= 演算法生成節奏型 =================
+  // ================= 演算法生成節奏型 (嚴格時值長短排序) =================
   function generateRhythmBlocks(total16ths, meterType) {
     let blocks = {}; let order = [];
     let max = 1 << (total16ths - 1);
@@ -258,6 +272,7 @@ function showPage(pageId) {
       blocks[id] = { id, lengths, type: meterType, beats: lengths.reduce((a,b)=>a+b,0) / (meterType==='simple'?4:6) };
       order.push(id);
     }
+    // 嚴格排序：數量少(長音符)在前。同數量時，前方時值大者在前。
     order.sort((a, b) => {
       let la = blocks[a].lengths, lb = blocks[b].lengths;
       if (la.length !== lb.length) return la.length - lb.length;
@@ -314,7 +329,6 @@ function showPage(pageId) {
     } catch(e) {}
   }
 
-  // 渲染滿版五線譜與精準光標定位層
   function renderMainStaff(containerId, seq, interactive = false, correctSeq = null) {
     try {
       const container = document.getElementById(containerId);
@@ -325,7 +339,7 @@ function showPage(pageId) {
       const usableWidth = totalWidth - 10;
       
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-      renderer.resize(totalWidth, 100);
+      renderer.resize(totalWidth, 90);
       const ctx = renderer.getContext();
       
       let xPos = 5;
@@ -341,7 +355,7 @@ function showPage(pageId) {
       while(bars.length < rhyModule.barsCount) bars.push([]);
 
       let globalIdx = 0;
-      let beatFirstNotes = []; // 紀錄每一拍第一個音的 VexFlow 節點，用於座標定位
+      let beatFirstNotes = [];
 
       for (let b = 0; b < rhyModule.barsCount; b++) {
         const isFirst = (b === 0);
@@ -383,49 +397,40 @@ function showPage(pageId) {
         xPos += sWidth;
       }
 
-      // 如果需要互動，則在此覆蓋精準的隱形作答光標
       if (interactive && rhyModule.hasPlayed) {
         let overlay = document.createElement('div');
         overlay.style.position = 'absolute'; overlay.style.top = '0'; overlay.style.left = '0';
         overlay.style.width = '100%'; overlay.style.height = '100%';
-        overlay.style.pointerEvents = 'none'; // 底層不擋點擊，讓子元素獨立接收
+        overlay.style.pointerEvents = 'none'; 
         container.appendChild(overlay);
         
         for(let i=0; i<beatFirstNotes.length; i++) {
-          let firstNote = beatFirstNotes[i];
-          let nextNote = beatFirstNotes[i+1];
-          let stave = firstNote.getStave();
-          if(!stave) continue;
+          let firstNote = beatFirstNotes[i]; let nextNote = beatFirstNotes[i+1];
+          let stave = firstNote.getStave(); if(!stave) continue;
           
           let nx = typeof firstNote.getAbsoluteX === 'function' ? firstNote.getAbsoluteX() : stave.getX() + firstNote.getTickContext().getX();
-          let x = nx - 12; // 稍微往左包覆音符頭
-          let y = stave.getYForLine(0) - 20; 
-          let h = 90; let w = 30;
+          let x = nx - 12; let y = stave.getYForLine(0) - 20; let h = 80; let w = 30;
           
           if (nextNote && nextNote.getStave() === stave) {
             let n2x = typeof nextNote.getAbsoluteX === 'function' ? nextNote.getAbsoluteX() : stave.getX() + nextNote.getTickContext().getX();
             w = n2x - nx;
-          } else {
-            w = stave.getX() + stave.getWidth() - nx + 10;
-          }
+          } else w = stave.getX() + stave.getWidth() - nx + 10;
           
           let slot = document.createElement('div');
           slot.style.position = 'absolute'; slot.style.left = x + 'px'; slot.style.top = y + 'px';
           slot.style.width = Math.max(w, 20) + 'px'; slot.style.height = h + 'px';
           slot.style.cursor = 'pointer'; slot.style.pointerEvents = 'auto';
-          slot.style.borderRadius = '8px'; slot.style.transition = 'all 0.15s ease';
+          slot.style.borderRadius = '8px'; slot.style.transition = 'all 0.1s';
           
-          if (i === rhyModule.activeSlotIdx) {
-            slot.style.border = '2px solid var(--accent)';
-            slot.style.backgroundColor = 'var(--accent-soft)';
-            slot.style.zIndex = '10';
-          } else {
-            slot.style.border = '1px dashed transparent';
-            slot.style.zIndex = '1';
+          // 若作答游標為 -1 (已全部填滿隱藏)，則不顯示選中框
+          if (i === rhyModule.activeSlotIdx && rhyModule.activeSlotIdx !== -1) { 
+            slot.style.border = '2px solid var(--accent)'; slot.style.backgroundColor = 'var(--accent-soft)'; slot.style.zIndex = '10'; 
+          } else { 
+            slot.style.border = '1px dashed transparent'; slot.style.zIndex = '1'; 
           }
           
-          slot.onmouseover = () => { if(i !== rhyModule.activeSlotIdx) slot.style.border = '1px dashed var(--accent-line)'; };
-          slot.onmouseout = () => { if(i !== rhyModule.activeSlotIdx) slot.style.border = '1px dashed transparent'; };
+          slot.onmouseover = () => { if(i !== rhyModule.activeSlotIdx && rhyModule.activeSlotIdx !== -1) slot.style.border = '1px dashed var(--accent-line)'; };
+          slot.onmouseout = () => { if(i !== rhyModule.activeSlotIdx && rhyModule.activeSlotIdx !== -1) slot.style.border = '1px dashed transparent'; };
           slot.onclick = () => { rhyModule.activeSlotIdx = i; rhyModule.updateUI(); };
           
           overlay.appendChild(slot);
@@ -485,31 +490,29 @@ function showPage(pageId) {
       if(!pianoInst || this.isPlaying) return;
       this.isPlaying = true; this.updatePlayBtn();
       const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;
-      const secPerBeat = 60 / this.bpm;
-      const beat16th = this.meterType === 'simple' ? 4 : 6;
-      const secPer16th = secPerBeat / beat16th;
-
+      
+      let secPerUnit = 60 / this.bpm; 
       let numerator = parseInt(this.meter.split('/')[0], 10);
+      let secPer16th;
 
-      // 動態預備拍邏輯
       if (this.meterType === 'simple') {
+        secPer16th = secPerUnit / 4;
         for(let i=0; i<numerator; i++) {
           let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; 
           o.frequency.value = i===0 ? 1000 : 700;
-          g.gain.setValueAtTime(0.2, time+i*secPerBeat); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPerBeat+0.05);
-          o.connect(g); g.connect(ctx.destination); o.start(time+i*secPerBeat); o.stop(time+i*secPerBeat+0.05);
+          g.gain.setValueAtTime(0.2, time+i*secPerUnit); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPerUnit+0.05);
+          o.connect(g); g.connect(ctx.destination); o.start(time+i*secPerUnit); o.stop(time+i*secPerUnit+0.05);
         }
-        time += numerator * secPerBeat;
+        time += numerator * secPerUnit;
       } else {
-        // 複拍子以八分音符速度敲擊，並每三拍下重音
-        let secPer8th = secPerBeat / 3;
+        secPer16th = secPerUnit / 2;
         for(let i=0; i<numerator; i++) {
           let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; 
           o.frequency.value = (i%3 === 0) ? 1000 : 700;
-          g.gain.setValueAtTime(0.2, time+i*secPer8th); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPer8th+0.05);
-          o.connect(g); g.connect(ctx.destination); o.start(time+i*secPer8th); o.stop(time+i*secPer8th+0.05);
+          g.gain.setValueAtTime(0.2, time+i*secPerUnit); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPerUnit+0.05);
+          o.connect(g); g.connect(ctx.destination); o.start(time+i*secPerUnit); o.stop(time+i*secPerUnit+0.05);
         }
-        time += numerator * secPer8th;
+        time += numerator * secPerUnit;
       }
 
       let currentPitch = this.lockedStartPitch;
@@ -556,7 +559,7 @@ function showPage(pageId) {
         if(!this.hasPlayed) btn.style.opacity = '0.3';
         const svgDiv = document.createElement('div'); btn.appendChild(svgDiv);
         btn.onclick = () => {
-          if(!this.hasPlayed) return;
+          if(!this.hasPlayed || this.activeSlotIdx === -1) return; // 鎖死防誤觸
           
           let reqBeats = ALL_BLOCKS[id].beats;
           let available = 0; let removeCount = 0;
@@ -572,7 +575,7 @@ function showPage(pageId) {
             for(let k=0; k<overshot; k++) this.userSeq.splice(this.activeSlotIdx + 1 + k, 0, 'placeholder');
             
             let nextEmpty = this.userSeq.indexOf('placeholder');
-            this.activeSlotIdx = nextEmpty !== -1 ? nextEmpty : Math.min(this.activeSlotIdx + 1, this.userSeq.length - 1);
+            this.activeSlotIdx = nextEmpty; // 若為 -1 代表填滿，自動隱藏游標
             this.updateUI();
           }
         };
@@ -583,14 +586,14 @@ function showPage(pageId) {
     updateUI: function() {
       renderMainStaff('rhy-staff-svg', this.userSeq, true);
       document.getElementById('rhy-submitBtn').disabled = !this.hasPlayed || this.userSeq.includes('placeholder');
-      document.querySelectorAll('.rhythm-btn').forEach(b => b.style.opacity = this.hasPlayed ? '1' : '0.3');
+      document.querySelectorAll('.rhythm-btn').forEach(b => b.style.opacity = (this.hasPlayed && this.activeSlotIdx !== -1) ? '1' : '0.3');
     },
 
     updatePlayBtn: function() {
       const b = document.getElementById('rhy-playBtn');
       if (this.testSession.isRunning) { b.textContent = `測驗播放中 (剩餘 ${this.testSession.replaysLeft} 次)`; b.disabled = true; }
       else if (this.isPlaying) { b.textContent = '🔊 播放中...'; b.disabled = true; } 
-      else { b.textContent = '▶ 播放題目 (聽預備拍)'; b.disabled = !pianoInst; }
+      else { b.textContent = '▶ 播放題目'; b.disabled = !pianoInst; }
     },
 
     addToReview: function() {
@@ -602,17 +605,25 @@ function showPage(pageId) {
       
       this.reviewItems.forEach(item => {
         const box = document.createElement('div'); box.className = 'review-item';
-        box.innerHTML = `
-          <div style="font-size:13px; font-weight:bold; margin-bottom:12px; display:flex; justify-content:space-between;">
-            <span>❌ 錯題 #${item.id}</span>
-            <button class="select-all-btn" onclick="rhyModule.playSequence(['${item.correctSeq.join("','")}'])">🔁 聽正解</button>
-          </div>
-          <div class="review-label">你的作答 (紅色為錯誤)：</div>
-          <div class="review-staff"><div id="rev-user-${item.id}"></div></div>
-          <div class="review-label" style="margin-top:8px;">正確解答：</div>
-          <div class="review-staff"><div id="rev-correct-${item.id}"></div></div>
-        `;
+        
+        const header = document.createElement('div');
+        header.style.cssText = "font-size:13px; font-weight:bold; margin-bottom:12px; display:flex; justify-content:space-between;";
+        header.innerHTML = `<span>❌ 錯題 #${item.id}</span>`;
+        
+        const playBtn = document.createElement('button');
+        playBtn.className = 'select-all-btn'; playBtn.textContent = '🔁 聽正解';
+        playBtn.onclick = () => this.playSequence(item.correctSeq);
+        header.appendChild(playBtn);
+        box.appendChild(header);
+        
+        const uLabel = document.createElement('div'); uLabel.className = 'review-label'; uLabel.textContent = '你的作答 (紅色為錯誤)：';
+        const uStaff = document.createElement('div'); uStaff.className = 'review-staff'; uStaff.innerHTML = `<div id="rev-user-${item.id}"></div>`;
+        const cLabel = document.createElement('div'); cLabel.className = 'review-label'; cLabel.style.marginTop = '8px'; cLabel.textContent = '正確解答：';
+        const cStaff = document.createElement('div'); cStaff.className = 'review-staff'; cStaff.innerHTML = `<div id="rev-correct-${item.id}"></div>`;
+
+        box.appendChild(uLabel); box.appendChild(uStaff); box.appendChild(cLabel); box.appendChild(cStaff);
         list.appendChild(box);
+        
         setTimeout(() => {
           renderMainStaff(`rev-user-${item.id}`, item.userSeq, false, item.correctSeq);
           renderMainStaff(`rev-correct-${item.id}`, item.correctSeq, false);
@@ -631,6 +642,7 @@ function showPage(pageId) {
       document.querySelectorAll('#rhy-meterSwitch .mode-btn').forEach(b => b.onclick = () => {
         this.meter = b.dataset.meter; this.meterType = b.dataset.type;
         document.querySelectorAll('#rhy-meterSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b));
+        document.getElementById('bpmSym').textContent = this.meterType === 'simple' ? '♩' : '♪';
         this.initSettings();
       });
       
@@ -659,12 +671,12 @@ function showPage(pageId) {
         this.hasPlayed = false; this.activeSlotIdx = 0; this.generateQuestion();
         
         document.getElementById('rhy-feedbackText').className = 'feedback-text';
-        document.getElementById('rhy-actionRow').style.display = 'flex';
-        document.getElementById('rhy-nextRow').style.display = 'none';
-        document.getElementById('rhy-playCaption').textContent = '請點擊上方按鈕開始聆聽';
+        document.getElementById('rhy-editBtns').style.display = 'flex';
+        document.getElementById('rhy-nextBtn').style.display = 'none';
+        document.getElementById('rhy-playCaption').textContent = '請點擊播放按鈕聆聽';
 
         this.renderKeypad(); showPage('rhy-practice');
-        setTimeout(() => this.updateUI(), 150); // 確保容器寬度計算完畢再渲染樂譜
+        setTimeout(() => this.updateUI(), 150); 
       };
 
       document.getElementById('rhy-playBtn').onclick = () => {
@@ -684,8 +696,16 @@ function showPage(pageId) {
       document.getElementById('rhy-backspaceBtn').onclick = () => { 
         if(!this.hasPlayed) return;
         let t = this.activeSlotIdx;
-        if(this.userSeq[t] === 'placeholder' && t > 0) { t--; this.activeSlotIdx = t; }
-        if(this.userSeq[t] !== 'placeholder') {
+        if (t === -1) {
+          for (let i = this.userSeq.length - 1; i >= 0; i--) {
+            if (this.userSeq[i] !== 'placeholder') { t = i; break; }
+          }
+        } else {
+          if (this.userSeq[t] === 'placeholder' && t > 0) {
+            t--; while(t > 0 && this.userSeq[t] === 'placeholder') t--;
+          }
+        }
+        if(t >= 0 && this.userSeq[t] !== 'placeholder') {
           let b = ALL_BLOCKS[this.userSeq[t]].beats;
           this.userSeq.splice(t, 1);
           for(let k=0; k<b; k++) this.userSeq.splice(t, 0, 'placeholder');
@@ -703,8 +723,8 @@ function showPage(pageId) {
         window.rhyStopAll();
         const isCorrect = JSON.stringify(this.userSeq) === JSON.stringify(this.questionSeq);
         const ft = document.getElementById('rhy-feedbackText');
-        document.getElementById('rhy-actionRow').style.display = 'none';
-        document.getElementById('rhy-nextRow').style.display = 'flex';
+        document.getElementById('rhy-editBtns').style.display = 'none';
+        document.getElementById('rhy-nextBtn').style.display = 'block';
         
         if (isCorrect) { 
           ft.textContent = '🎉 完全正確！'; ft.className = 'feedback-text correct'; this.score.c++; 
