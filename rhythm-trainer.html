@@ -70,7 +70,8 @@
   .score-box { text-align: right; font-family: var(--font-mono); }
   .score-box .num { font-size: 18px; font-weight: 700; color: var(--accent); line-height: 1; }
   
-  .staff-scroll-container { width: 100%; background: #fff; border: 1px solid var(--hairline); border-radius: 12px; padding: 10px 4px; box-shadow: inset 0 0 8px rgba(0,0,0,0.02); margin-bottom: 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+  /* 【關鍵修復】拔除 scroll-behavior: smooth，避免瀏覽器在恢復捲軸時強制加入動畫造成亂閃 */
+  .staff-scroll-container { width: 100%; background: #fff; border: 1px solid var(--hairline); border-radius: 12px; padding: 10px 4px; box-shadow: inset 0 0 8px rgba(0,0,0,0.02); margin-bottom: 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
   .staff-scroll-container::-webkit-scrollbar { height: 6px; }
   .staff-scroll-container::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
   
@@ -210,7 +211,7 @@
       </div>
       
       <div class="staff-scroll-container" id="staffContainerOuter">
-        <div style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%;">
+        <div id="staffInnerWrapper" style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%;">
           <div id="rhy-staff-svg" style="position: relative; display: inline-block; width: 100%;"></div>
         </div>
       </div>
@@ -393,7 +394,19 @@ function showPage(pageId) {
   function renderMainStaff(containerId, seq, interactive = false, correctSeq = null, startPitch = 69) {
     try {
       const container = document.getElementById(containerId);
-      if (!container) return; container.innerHTML = '';
+      if (!container) return; 
+      
+      const outerContainer = document.getElementById('staffContainerOuter');
+      const innerWrapper = document.getElementById('staffInnerWrapper');
+      let currentScrollLeft = 0;
+      
+      // 【防坍塌機制】在清空畫布前，記下目前的捲軸位置，並將內容寬度「鎖死」
+      if (outerContainer && interactive && innerWrapper) {
+          currentScrollLeft = outerContainer.scrollLeft;
+          innerWrapper.style.minWidth = innerWrapper.scrollWidth + 'px';
+      }
+      
+      container.innerHTML = '';
       
       const minMeasureWidth = 240; 
       const requiredWidth = (minMeasureWidth * rhyModule.barsCount) + 60;
@@ -503,6 +516,13 @@ function showPage(pageId) {
           overlay.appendChild(slot);
         }
       }
+      
+      // 【防坍塌機制】畫布重繪完畢，瞬間塞回捲軸位置，並解除寬度鎖定
+      if (outerContainer && interactive && innerWrapper) {
+          outerContainer.scrollLeft = currentScrollLeft;
+          innerWrapper.style.minWidth = '';
+      }
+      
     } catch(e) { console.error("Main Staff Error:", e); }
   }
 
@@ -557,11 +577,10 @@ function showPage(pageId) {
       if(!pianoInst || this.isPlaying) return;
       this.isPlaying = true; this.updatePlayBtn();
       
-      // ================= 操作優化: 播放鍵自帶視角重置功能 =================
-      // 同時把框框強制切回第一格，達到「單一資料源」完美控制畫面
+      // 狀態歸一化：按下播放，強制把焦點拉回第一拍。更新介面時捲軸就會自動跟隨回 0。
       this.activeSlotIdx = 0;
-      this.updateUI(); // 根據新的 activeSlotIdx 重畫並平滑滾動回開頭
-
+      this.updateUI();
+      
       const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;
       
       let secPerUnit = 60 / this.bpm; 
@@ -642,7 +661,6 @@ function showPage(pageId) {
       pendingTimers.push(intervalId);
     },
 
-    // ================= 邏輯優化 3: 作答框永遠接續，到底才消失 =================
     renderKeypad: function() {
       const pad = document.getElementById('rhy-keypad'); pad.innerHTML = '';
       const order = this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
@@ -685,16 +703,13 @@ function showPage(pageId) {
     },
 
     updateUI: function() {
-      // 傳入目前的作答進度與鎖定起點畫出五線譜
       renderMainStaff('rhy-staff-svg', this.userSeq, true, null, this.lockedStartPitch);
       document.getElementById('rhy-submitBtn').disabled = !this.hasPlayed || this.userSeq.includes('placeholder');
-      
-      // 控制鍵盤透明度
       document.querySelectorAll('.rhythm-btn').forEach(b => {
           b.style.opacity = (this.hasPlayed && this.activeSlotIdx !== -1) ? '1' : '0.3';
       });
 
-      // 如果有作用中的框框，而且已經超出目前視角範圍，自動平滑滾動到置中
+      // 狀態驅動視圖：根據目前的藍色框框，讓捲軸精準對齊
       if (this.activeSlotIdx !== -1) {
           const containerOuter = document.getElementById('staffContainerOuter');
           const activeSlotEl = document.getElementById('rhy-slot-' + this.activeSlotIdx);
@@ -704,7 +719,8 @@ function showPage(pageId) {
               const containerWidth = containerOuter.clientWidth;
               const currentScroll = containerOuter.scrollLeft;
 
-              if (slotLeft + slotWidth > currentScroll + containerWidth || slotLeft < currentScroll) {
+              // 如果框框超出左邊界或右邊界，透過 JS 的平滑滾動拉回來
+              if (slotLeft < currentScroll || (slotLeft + slotWidth) > (currentScroll + containerWidth)) {
                   containerOuter.scrollTo({
                       left: slotLeft - (containerWidth / 2) + (slotWidth / 2),
                       behavior: 'smooth'
