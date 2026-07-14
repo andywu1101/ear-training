@@ -390,7 +390,6 @@ function showPage(pageId) {
     } catch(e) {}
   }
 
-  // 修改 updateUI 加入一個防衝突旗標 isPlayingAction
   function renderMainStaff(containerId, seq, interactive = false, correctSeq = null, startPitch = 69) {
     try {
       const container = document.getElementById(containerId);
@@ -401,13 +400,6 @@ function showPage(pageId) {
       const parentWidth = container.parentElement.clientWidth || 300;
       const totalWidth = Math.max(parentWidth - 10, requiredWidth);
       const usableWidth = totalWidth - 10;
-      
-      // 在重畫五線譜前，先記下當下的捲軸位置，避免重畫時被瀏覽器強迫歸零
-      const outerContainer = document.getElementById('staffContainerOuter');
-      let currentScrollLeft = 0;
-      if (outerContainer && interactive) {
-          currentScrollLeft = outerContainer.scrollLeft;
-      }
       
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
       renderer.resize(totalWidth, 130);
@@ -511,12 +503,6 @@ function showPage(pageId) {
           overlay.appendChild(slot);
         }
       }
-      
-      // 無縫視角鎖定：把剛才記下來的滾動位置塞回去
-      if (outerContainer && interactive) {
-          outerContainer.scrollLeft = currentScrollLeft;
-      }
-      
     } catch(e) { console.error("Main Staff Error:", e); }
   }
 
@@ -569,19 +555,14 @@ function showPage(pageId) {
 
     playSequence: function(seq, onEnd) {
       if(!pianoInst || this.isPlaying) return;
-      this.isPlaying = true; 
-      
-      // 更新播放按鈕介面，並帶入 true 告訴系統「這是播放引發的更新，不要去追蹤藍框框」
-      this.updateUI(true); 
-      this.updatePlayBtn();
-      
-      const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;
+      this.isPlaying = true; this.updatePlayBtn();
       
       // ================= 操作優化: 播放鍵自帶視角重置功能 =================
-      const containerOuter = document.getElementById('staffContainerOuter');
-      if (containerOuter) {
-          containerOuter.scrollTo({ left: 0, behavior: 'smooth' });
-      }
+      // 同時把框框強制切回第一格，達到「單一資料源」完美控制畫面
+      this.activeSlotIdx = 0;
+      this.updateUI(); // 根據新的 activeSlotIdx 重畫並平滑滾動回開頭
+
+      const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;
       
       let secPerUnit = 60 / this.bpm; 
       let numerator = parseInt(this.meter.split('/')[0], 10);
@@ -661,6 +642,7 @@ function showPage(pageId) {
       pendingTimers.push(intervalId);
     },
 
+    // ================= 邏輯優化 3: 作答框永遠接續，到底才消失 =================
     renderKeypad: function() {
       const pad = document.getElementById('rhy-keypad'); pad.innerHTML = '';
       const order = this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
@@ -687,12 +669,13 @@ function showPage(pageId) {
             let overshot = available - reqBeats;
             for(let k=0; k<overshot; k++) this.userSeq.splice(this.activeSlotIdx + 1 + k, 0, 'placeholder');
             
+            // 永遠順著往下走一格
             let nextSlot = this.activeSlotIdx + 1;
             if (nextSlot < this.userSeq.length) {
                 this.activeSlotIdx = nextSlot;
             } else {
-                let firstEmpty = this.userSeq.indexOf('placeholder');
-                this.activeSlotIdx = firstEmpty; 
+                // 如果已經填到最後一格之外了，框框直接隱藏 (設為 -1)，絕不回頭
+                this.activeSlotIdx = -1; 
             }
             this.updateUI();
           }
@@ -701,13 +684,18 @@ function showPage(pageId) {
       });
     },
 
-    updateUI: function(isPlayingAction = false) {
+    updateUI: function() {
+      // 傳入目前的作答進度與鎖定起點畫出五線譜
       renderMainStaff('rhy-staff-svg', this.userSeq, true, null, this.lockedStartPitch);
       document.getElementById('rhy-submitBtn').disabled = !this.hasPlayed || this.userSeq.includes('placeholder');
-      document.querySelectorAll('.rhythm-btn').forEach(b => b.style.opacity = (this.hasPlayed && this.activeSlotIdx !== -1) ? '1' : '0.3');
+      
+      // 控制鍵盤透明度
+      document.querySelectorAll('.rhythm-btn').forEach(b => {
+          b.style.opacity = (this.hasPlayed && this.activeSlotIdx !== -1) ? '1' : '0.3';
+      });
 
-      // 只有「不是因為按播放鍵」而觸發的更新，才去追蹤藍色框框，避免與播放回歸起點的滾動衝突
-      if (!isPlayingAction && this.activeSlotIdx !== -1) {
+      // 如果有作用中的框框，而且已經超出目前視角範圍，自動平滑滾動到置中
+      if (this.activeSlotIdx !== -1) {
           const containerOuter = document.getElementById('staffContainerOuter');
           const activeSlotEl = document.getElementById('rhy-slot-' + this.activeSlotIdx);
           if (containerOuter && activeSlotEl) {
