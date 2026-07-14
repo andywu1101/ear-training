@@ -54,8 +54,6 @@
   
   .pattern-grid-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px; }
   .select-all-btn { font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--panel-border); background: var(--panel); font-weight: bold; cursor: pointer; }
-  
-  /* 視覺優化: 將選單寬度拉寬並壓縮高度，呈現長方形 */
   .pattern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-bottom: 24px; }
   .pattern-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 2px solid var(--panel-border); border-radius: 10px; padding: 4px; cursor: pointer; transition: 0.1s; height: 60px; overflow: hidden; }
   .pattern-item.selected { border-color: var(--accent); background: var(--accent-soft); }
@@ -303,7 +301,6 @@ function showPage(pageId) {
     }).setDirection(1); // 1 代表 VF.Stem.UP
   }
 
-  // 特例判斷：為這四個最容易擠壓的選項大幅擴充間距
   const EXTRA_SPACING_IDS = ['4-1-1', '1-1-4', '4~1-1', '1-1~4'];
 
   function getVexNotes(block, isWrong, pitchState) {
@@ -354,7 +351,6 @@ function showPage(pageId) {
       
       if (isWrong) n1.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
       
-      // 特例增距：強行撐開 4-1-1, 1-1-4 等所有內部音符距離
       if (needsExtraSpacing && typeof n1.setExtraRightPx === 'function') {
           n1.setExtraRightPx(25);
       }
@@ -373,14 +369,12 @@ function showPage(pageId) {
     return { notes, ties, beams, tuplet };
   }
 
-  // ================= 視覺優化: viewBox 上下裁切與排版 =================
   function drawMiniRhythm(container, blockId) {
     try {
       container.innerHTML = ''; const block = ALL_BLOCKS[blockId];
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(260, 110); 
       const svg = container.querySelector('svg'); 
       
-      // 關鍵裁切: 調整 Y 軸從 20 開始，高度限制在 65 內，完美切掉五線譜上下的多餘透明邊距
       svg.setAttribute('viewBox', '0 20 260 65'); 
       svg.style.width = '100%'; svg.style.height = '100%';
       
@@ -563,6 +557,12 @@ function showPage(pageId) {
       if(!pianoInst || this.isPlaying) return;
       this.isPlaying = true; this.updatePlayBtn();
       const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;
+      
+      // ================= 操作優化: 播放鍵自帶視角重置功能 =================
+      const containerOuter = document.getElementById('staffContainerOuter');
+      if (containerOuter) {
+          containerOuter.scrollTo({ left: 0, behavior: 'smooth' });
+      }
       
       let secPerUnit = 60 / this.bpm; 
       let numerator = parseInt(this.meter.split('/')[0], 10);
