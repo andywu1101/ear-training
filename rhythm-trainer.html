@@ -55,7 +55,7 @@
   .pattern-grid-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px; }
   .select-all-btn { font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--panel-border); background: var(--panel); font-weight: bold; cursor: pointer; }
   .pattern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 8px; margin-bottom: 24px; }
-  .pattern-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 2px solid var(--panel-border); border-radius: 10px; padding: 4px; cursor: pointer; transition: 0.1s; height: 60px; }
+  .pattern-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 2px solid var(--panel-border); border-radius: 10px; padding: 4px; cursor: pointer; transition: 0.1s; height: 75px; }
   .pattern-item.selected { border-color: var(--accent); background: var(--accent-soft); }
   .pattern-item svg { pointer-events: none; }
   
@@ -70,7 +70,7 @@
   .score-box { text-align: right; font-family: var(--font-mono); }
   .score-box .num { font-size: 18px; font-weight: 700; color: var(--accent); line-height: 1; }
   
-  /* 樂譜容器：絕對禁止 Y 軸滾動 */
+  /* 樂譜容器：允許 Y 軸不動，但 X 軸可以左右滑動以防擠壓 */
   .staff-scroll-container { width: 100%; background: #fff; border: 1px solid var(--hairline); border-radius: 12px; padding: 10px 4px; box-shadow: inset 0 0 8px rgba(0,0,0,0.02); margin-bottom: 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
   .staff-scroll-container::-webkit-scrollbar { height: 6px; }
   .staff-scroll-container::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
@@ -84,7 +84,7 @@
 
   .keypad-hint { font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; text-align: center; }
   .rhythm-keypad { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 10px; padding-bottom: 40px; }
-  .rhythm-btn { background: #fff; border: 2px solid var(--panel-border); border-radius: 12px; padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 60px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+  .rhythm-btn { background: #fff; border: 2px solid var(--panel-border); border-radius: 12px; padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 75px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
   .rhythm-btn:active { transform: scale(0.94); border-color: var(--accent); }
   .rhythm-btn:disabled { opacity: 0.3; pointer-events: none; }
   
@@ -106,7 +106,7 @@
     .practice-top-fixed { padding: 20px 40px; }
     .practice-bottom-scroll { padding: 20px 40px; }
     .rhythm-keypad { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 16px; }
-    .rhythm-btn { height: 75px; }
+    .rhythm-btn { height: 85px; }
     .action-btn, .play-btn { font-size: 14px; padding: 12px 20px; }
   }
 
@@ -118,7 +118,7 @@
     .staff-scroll-container { margin-bottom: 4px; padding: 4px; }
     .unified-action-row { margin-bottom: 4px; }
     .play-caption { margin-top: 0; }
-    .rhythm-btn { height: 48px; } 
+    .rhythm-btn { height: 60px; } 
   }
 </style>
 </head>
@@ -209,8 +209,8 @@
       </div>
       
       <div class="staff-scroll-container" id="staffContainerOuter">
-        <div style="min-width: 100%; display: flex; justify-content: center;">
-          <div id="rhy-staff-svg" style="position: relative; display: inline-block;"></div>
+        <div style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%;">
+          <div id="rhy-staff-svg" style="position: relative; display: inline-block; width: 100%;"></div>
         </div>
       </div>
       
@@ -256,8 +256,8 @@ function showPage(pageId) {
 }
 
 (function(){
-  // ================= 嚴格依照您提供的圖片與數字編號順序 =================
-  const SIMPLE_ORDER = ['4', '2-2', '1-1-1-1', '2-1-1', '1-1-2', '1-2-1', '1-3', '3-1', '3tuplet'];
+  // ================= 修正順序：7號為 3-1，8號為 1-3 =================
+  const SIMPLE_ORDER = ['4', '2-2', '1-1-1-1', '2-1-1', '1-1-2', '1-2-1', '3-1', '1-3', '3tuplet'];
   const COMPOUND_ORDER = [
     '6', '4-2', '2-4', '4-1-1', '1-1-4', '2-2-2', '2-2-1-1', '2-1-1-2',
     '1-1-2-2', '2-1-1-1-1', '1-1-2-1-1', '1-1-1-1-2', '1-1-1-1-1-1', '3-1-1-1', '1-1-1-3', '1-3-1-1',
@@ -265,7 +265,6 @@ function showPage(pageId) {
     '1-1~4', '3-3', '2-1-2-1', '1-2-1-2', '1-2-2-1', '1-1~3-1', '1-2-1-1-1', '1-1-1-2-1'
   ];
 
-  // ================= 節奏字串自動解析引擎 =================
   function parsePatternId(id) {
     if (id === '3tuplet') {
       return { lengths: [4/3, 4/3, 4/3], tieNext: [false, false, false], isTuplet: true };
@@ -290,30 +289,44 @@ function showPage(pageId) {
 
   const VF = Vex.Flow;
   
-  // 建立強固型延音線：強制增加右側間距 + 設定上方弧度，確保連結線絕對可見且弧度優美
+  // 建立強固型延音線：翻轉回原本向上的預設弧線方向，僅加上安全間隔
   function createEnhancedTie(firstNote, lastNote) {
     if (typeof firstNote.setExtraRightPx === 'function') {
-      firstNote.setExtraRightPx(20);
+      firstNote.setExtraRightPx(15);
     }
     return new VF.StaveTie({
       first_note: firstNote,
       last_note: lastNote,
       first_indices: [0],
       last_indices: [0]
-    }).setDirection(VF.Stem.UP);
+    }).setDirection(1); // 1 代表 VF.Stem.UP，恢復原始向上自然弧線
   }
 
-  // VexFlow 節點與連結梁/延音線渲染引擎
-  function getVexNotes(block, isWrong) {
+  // 支援五線譜上高低音符交替呈現 (E4 第一線, A4 第二間)
+  function getVexNotes(block, isWrong, pitchState) {
     let notes = []; let ties = []; let tuplet = null;
     let lengths = block.lengths;
     let tieNext = block.tieNext || [];
     
+    let currentK = 'a/4'; 
+    let updatePitch = () => {
+       if (pitchState) {
+           currentK = pitchState.currentPitch === 69 ? 'a/4' : 'e/4';
+       }
+    };
+    let advancePitch = () => {
+       if (pitchState && pitchState.isDual) {
+           pitchState.currentPitch = pitchState.currentPitch === 69 ? 64 : 69;
+       }
+    };
+
     if (block.isTuplet) {
       for(let i=0; i<3; i++) {
-        let n = new VF.StaveNote({keys:['b/4'], duration:'8'});
+        updatePitch();
+        let n = new VF.StaveNote({keys:[currentK], duration:'8'});
         if(isWrong) n.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
         notes.push(n);
+        advancePitch();
       }
       tuplet = new VF.Tuplet(notes, {num_notes: 3, notes_occupied: 2, ratioed: false});
       let beams = [new VF.Beam(notes)];
@@ -321,30 +334,23 @@ function showPage(pageId) {
     }
 
     lengths.forEach((len, idx) => {
-      let n1, n2;
+      let tiedFromPrev = (idx > 0 && tieNext[idx-1]);
+      if (!tiedFromPrev) {
+          updatePitch();
+          advancePitch();
+      }
       
-      if(len===1) n1 = new VF.StaveNote({keys:['b/4'], duration:'16'});
-      else if(len===2) n1 = new VF.StaveNote({keys:['b/4'], duration:'8'});
-      else if(len===3) n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0);
-      else if(len===4) n1 = new VF.StaveNote({keys:['b/4'], duration:'q'});
-      else if(len===5) { 
-        n1 = new VF.StaveNote({keys:['b/4'], duration:'8'}).addDot(0); 
-        n2 = new VF.StaveNote({keys:['b/4'], duration:'8'}); 
-      }
-      else if(len===6) n1 = new VF.StaveNote({keys:['b/4'], duration:'q'}).addDot(0);
+      let n1;
+      if(len===1) n1 = new VF.StaveNote({keys:[currentK], duration:'16'});
+      else if(len===2) n1 = new VF.StaveNote({keys:[currentK], duration:'8'});
+      else if(len===3) n1 = new VF.StaveNote({keys:[currentK], duration:'8'}).addDot(0);
+      else if(len===4) n1 = new VF.StaveNote({keys:[currentK], duration:'q'});
+      else if(len===6) n1 = new VF.StaveNote({keys:[currentK], duration:'q'}).addDot(0);
       
-      if (isWrong) {
-        if(n1) n1.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
-        if(n2) n2.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
-      }
-      if (n1) notes.push(n1);
-      if (n2) {
-        notes.push(n2); 
-        ties.push(createEnhancedTie(n1, n2));
-      }
+      if (isWrong) n1.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
+      notes.push(n1);
     });
     
-    // 依據 ~ 符號自動綁定跨音符延音線
     for (let idx = 0; idx < tieNext.length; idx++) {
       if (tieNext[idx] && idx + 1 < notes.length) {
         ties.push(createEnhancedTie(notes[idx], notes[idx + 1]));
@@ -359,11 +365,14 @@ function showPage(pageId) {
   function drawMiniRhythm(container, blockId) {
     try {
       container.innerHTML = ''; const block = ALL_BLOCKS[blockId];
-      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(180, 80); 
-      const svg = container.querySelector('svg'); svg.setAttribute('viewBox', '0 0 180 80'); svg.style.width = '100%'; svg.style.height = '100%';
+      // 放大縮圖繪圖區寬度，讓 16 分音符有足夠距離畫出向上的延音線
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(220, 90); 
+      const svg = container.querySelector('svg'); svg.setAttribute('viewBox', '0 0 220 90'); svg.style.width = '100%'; svg.style.height = '100%';
       const ctx = renderer.getContext();
-      const stave = new VF.Stave(10, 5, 160, { num_lines: 1 }).setContext(ctx).draw();
-      const { notes, ties, beams, tuplet } = getVexNotes(block, false);
+      
+      // 給予五線譜 200px 寬度，徹底防範擠壓
+      const stave = new VF.Stave(10, 5, 200).setContext(ctx).draw();
+      const { notes, ties, beams, tuplet } = getVexNotes(block, false, null);
       VF.Formatter.FormatAndDraw(ctx, stave, notes);
       beams.forEach(b => b.setContext(ctx).draw());
       ties.forEach(t => t.setContext(ctx).draw());
@@ -371,21 +380,23 @@ function showPage(pageId) {
     } catch(e) {}
   }
 
-  function renderMainStaff(containerId, seq, interactive = false, correctSeq = null) {
+  function renderMainStaff(containerId, seq, interactive = false, correctSeq = null, startPitch = 69) {
     try {
       const container = document.getElementById(containerId);
       if (!container) return; container.innerHTML = '';
       
+      const minMeasureWidth = 220;
+      const requiredWidth = (minMeasureWidth * rhyModule.barsCount) + 60;
       const parentWidth = container.parentElement.clientWidth || 300;
-      const totalWidth = Math.max(parentWidth - 10, 300);
+      const totalWidth = Math.max(parentWidth - 10, requiredWidth);
       const usableWidth = totalWidth - 10;
       
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-      renderer.resize(totalWidth, 90);
+      renderer.resize(totalWidth, 130);
       const ctx = renderer.getContext();
       
       let xPos = 5;
-      const barWidth = (usableWidth - 40) / rhyModule.barsCount; 
+      const barWidth = (usableWidth - 60) / rhyModule.barsCount; 
 
       let bars = []; let currentBar = []; let currentBeats = 0;
       seq.forEach(id => {
@@ -398,12 +409,13 @@ function showPage(pageId) {
 
       let globalIdx = 0;
       let beatFirstNotes = [];
+      let pitchState = { isDual: rhyModule.pitchMode === 'dual', currentPitch: startPitch };
 
       for (let b = 0; b < rhyModule.barsCount; b++) {
         const isFirst = (b === 0);
-        const sWidth = isFirst ? barWidth + 40 : barWidth;
-        const stave = new VF.Stave(xPos, 5, sWidth, { num_lines: 1 });
-        if (isFirst) stave.addClef('percussion').addTimeSignature(rhyModule.meter);
+        const sWidth = isFirst ? barWidth + 60 : barWidth;
+        const stave = new VF.Stave(xPos, 15, sWidth);
+        if (isFirst) stave.addClef('treble').addTimeSignature(rhyModule.meter);
         stave.setContext(ctx).draw();
 
         let allNotes = []; let allBeams = []; let allTies = []; let allTuplets = [];
@@ -417,12 +429,13 @@ function showPage(pageId) {
           if (id !== 'placeholder') {
             const block = ALL_BLOCKS[id];
             let isWrong = correctSeq && (seq[globalIdx] !== correctSeq[globalIdx]);
-            const { notes, ties, beams, tuplet } = getVexNotes(block, isWrong);
+            const { notes, ties, beams, tuplet } = getVexNotes(block, isWrong, pitchState);
             allNotes.push(...notes); allBeams.push(...beams); allTies.push(...ties);
             if(tuplet) allTuplets.push(tuplet);
             firstNoteOfBeat = notes[0];
           } else {
-            let ghost = new VF.StaveNote({keys:['b/4'], duration: 'qr'});
+            let currentK = pitchState.currentPitch === 69 ? 'a/4' : 'e/4';
+            let ghost = new VF.StaveNote({keys:[currentK], duration: 'qr'});
             if(rhyModule.meterType==='compound') ghost.addDot(0);
             ghost.setStyle({fillStyle: '#e0e0e0', strokeStyle: '#e0e0e0'});
             allNotes.push(ghost);
@@ -453,7 +466,7 @@ function showPage(pageId) {
           let stave = firstNote.getStave(); if(!stave) continue;
           
           let nx = typeof firstNote.getAbsoluteX === 'function' ? firstNote.getAbsoluteX() : stave.getX() + firstNote.getTickContext().getX();
-          let x = nx - 12; let y = stave.getYForLine(0) - 20; let h = 80; let w = 30;
+          let x = nx - 12; let y = stave.getYForLine(0) - 20; let h = 110; let w = 30;
           
           if (nextNote && nextNote.getStave() === stave) {
             let n2x = typeof nextNote.getAbsoluteX === 'function' ? nextNote.getAbsoluteX() : stave.getX() + nextNote.getTickContext().getX();
@@ -482,7 +495,7 @@ function showPage(pageId) {
     } catch(e) { console.error("Main Staff Error:", e); }
   }
 
-  // ================= 播放引擎 (完美支援延音線時值合併) =================
+  // ================= 播放引擎 (延音線時值合併) =================
   let audioCtx = null; let pianoInst = null; let pendingTimers = [];
   function clearTimers(){ pendingTimers.forEach(id => clearTimeout(id)); pendingTimers = []; }
   window.rhyStopAll = function() { 
@@ -648,7 +661,7 @@ function showPage(pageId) {
     },
 
     updateUI: function() {
-      renderMainStaff('rhy-staff-svg', this.userSeq, true);
+      renderMainStaff('rhy-staff-svg', this.userSeq, true, null, this.lockedStartPitch);
       document.getElementById('rhy-submitBtn').disabled = !this.hasPlayed || this.userSeq.includes('placeholder');
       document.querySelectorAll('.rhythm-btn').forEach(b => b.style.opacity = (this.hasPlayed && this.activeSlotIdx !== -1) ? '1' : '0.3');
     },
@@ -662,7 +675,7 @@ function showPage(pageId) {
 
     addToReview: function() {
       const id = this.reviewItems.length + 1;
-      this.reviewItems.unshift({ id, correctSeq: this.questionSeq, userSeq: this.userSeq });
+      this.reviewItems.unshift({ id, correctSeq: [...this.questionSeq], userSeq: [...this.userSeq], startPitch: this.lockedStartPitch });
       
       document.getElementById('rhy-reviewSection').style.display = 'block';
       const list = document.getElementById('rhy-reviewList'); list.innerHTML = '';
@@ -689,8 +702,8 @@ function showPage(pageId) {
         list.appendChild(box);
         
         setTimeout(() => {
-          renderMainStaff(`rev-user-${item.id}`, item.userSeq, false, item.correctSeq);
-          renderMainStaff(`rev-correct-${item.id}`, item.correctSeq, false);
+          renderMainStaff(`rev-user-${item.id}`, item.userSeq, false, item.correctSeq, item.startPitch);
+          renderMainStaff(`rev-correct-${item.id}`, item.correctSeq, false, null, item.startPitch);
         }, 50);
       });
     },
@@ -794,7 +807,7 @@ function showPage(pageId) {
           ft.textContent = '🎉 完全正確！'; ft.className = 'feedback-text correct'; this.score.c++; 
         } else { 
           ft.textContent = '❌ 有錯喔！請往下滑查看訂正區'; ft.className = 'feedback-text wrong'; 
-          renderMainStaff('rhy-staff-svg', this.questionSeq, false, this.userSeq);
+          renderMainStaff('rhy-staff-svg', this.questionSeq, false, this.userSeq, this.lockedStartPitch);
           this.addToReview();
         }
         this.score.t++; document.getElementById('rhy-scoreNum').textContent = `${this.score.c}/${this.score.t}`;
