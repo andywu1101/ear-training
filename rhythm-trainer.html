@@ -411,7 +411,7 @@ function showPage(pageId) {
       const minMeasureWidth = 240; 
       const requiredWidth = (minMeasureWidth * rhyModule.barsCount) + 60;
       const parentWidth = container.parentElement.clientWidth || 300;
-      const totalWidth = Math.max(parentWidth - 10, requiredWidth);
+      const totalWidth = requiredWidth;
       const usableWidth = totalWidth - 10;
       
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
