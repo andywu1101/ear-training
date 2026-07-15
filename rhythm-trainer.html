@@ -18,7 +18,7 @@
   :root{
     --paper: #efeee6; --panel: #fbfaf6; --panel-border: #ddd8c9; --hairline: #e2ddce;
     --ink: #262420; --ink-soft: #75705f; --accent: #33415c; --accent-soft: rgba(51,65,92,0.08);
-    --accent-line: rgba(51,65,92,0.35); --correct: #4b7a5b; --wrong: #a6493b; --radius: 16px;
+    --accent-line: rgba(51,65,92,0.35); --correct: #4b7a5b; --wrong: #a6493b; --wrong-soft: rgba(166,73,59,0.09); --radius: 16px;
     --font-display: 'Fraunces', serif; --font-body: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -158,11 +158,11 @@
       <div class="switch-group">
         <div class="switch-group-label">拍號 (Meter)</div>
         <div class="switch-btns" id="rhy-meterSwitch">
-          <button class="mode-btn active" data-meter="4/4" data-type="simple">4/4</button>
+          <button class="mode-btn active" data-meter="2/4" data-type="simple">2/4</button>
           <button class="mode-btn" data-meter="3/4" data-type="simple">3/4</button>
-          <button class="mode-btn" data-meter="2/4" data-type="simple">2/4</button>
-          <button class="mode-btn" data-meter="6/8" data-type="compound">6/8</button>
+          <button class="mode-btn" data-meter="4/4" data-type="simple">4/4</button>
           <button class="mode-btn" data-meter="3/8" data-type="compound">3/8</button>
+          <button class="mode-btn" data-meter="6/8" data-type="compound">6/8</button>
           <button class="mode-btn" data-meter="12/8" data-type="compound">12/8</button>
         </div>
       </div>
@@ -206,7 +206,7 @@
     <div class="practice-top-fixed">
       <div class="top-bar-practice">
         <button class="nav-back-btn" style="margin:0;" onclick="showPage('rhy-settings')">← 返回</button>
-        <span class="practice-status-badge" id="rhy-statusBadge">4/4拍｜2小節｜80 BPM</span>
+        <span class="practice-status-badge" id="rhy-statusBadge">2/4拍｜2小節｜80 BPM</span>
         <div class="score-box"><div class="num" id="rhy-scoreNum">0/0</div></div>
       </div>
       
@@ -543,7 +543,7 @@ function showPage(pageId) {
   };
 
   const rhyModule = {
-    mode: 'practice', pitchMode: 'single', meter: '4/4', meterType: 'simple', barsCount: 2, beatsPerBar: 4, bpm: 80, totalBeats: 8,
+    mode: 'practice', pitchMode: 'single', meter: '2/4', meterType: 'simple', barsCount: 2, beatsPerBar: 2, bpm: 80, totalBeats: 4,
     selectedPatterns: new Set(), questionSeq: [], userSeq: [], lockedStartPitch: 69, isPlaying: false, hasPlayed: false,
     activeSlotIdx: 0, score: { c:0, t:0 },
     testSession: { isRunning: false, replaysLeft: 0, totalPlays: 0 },
@@ -748,13 +748,29 @@ function showPage(pageId) {
         const box = document.createElement('div'); box.className = 'review-item';
         
         const header = document.createElement('div');
-        header.style.cssText = "font-size:13px; font-weight:bold; margin-bottom:12px; display:flex; justify-content:space-between;";
-        header.innerHTML = `<span>❌ 錯題 #${item.id}</span>`;
+        header.style.cssText = "font-size:13px; font-weight:bold; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;";
         
-        const playBtn = document.createElement('button');
-        playBtn.className = 'select-all-btn'; playBtn.textContent = '🔁 聽正解';
-        playBtn.onclick = () => this.playSequence(item.correctSeq);
-        header.appendChild(playBtn);
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = `❌ 錯題 #${item.id}`;
+        
+        const btnGroup = document.createElement('div');
+        btnGroup.style.cssText = "display:flex; gap:8px;";
+        
+        const playUserBtn = document.createElement('button');
+        playUserBtn.className = 'select-all-btn';
+        playUserBtn.style.cssText = "color: var(--wrong); border-color: var(--wrong); background: var(--wrong-soft);";
+        playUserBtn.textContent = '🔊 聽你的作答';
+        playUserBtn.onclick = () => this.playSequence(item.userSeq);
+        
+        const playCorrectBtn = document.createElement('button');
+        playCorrectBtn.className = 'select-all-btn';
+        playCorrectBtn.textContent = '🔁 聽正解';
+        playCorrectBtn.onclick = () => this.playSequence(item.correctSeq);
+        
+        btnGroup.appendChild(playUserBtn);
+        btnGroup.appendChild(playCorrectBtn);
+        header.appendChild(titleSpan);
+        header.appendChild(btnGroup);
         box.appendChild(header);
         
         const uLabel = document.createElement('div'); uLabel.className = 'review-label'; uLabel.textContent = '你的作答 (紅色為錯誤)：';
@@ -800,6 +816,12 @@ function showPage(pageId) {
 
       document.getElementById('rhy-enterBtn').onclick = () => {
         ensureAudio(); window.rhyStopAll();
+        
+        // 清除訂正區內容
+        this.reviewItems = [];
+        document.getElementById('rhy-reviewSection').style.display = 'none';
+        document.getElementById('rhy-reviewList').innerHTML = '';
+
         this.barsCount = parseInt(document.getElementById('rhy-barsSelect').value, 10);
         this.beatsPerBar = parseInt(this.meter.split('/')[0], 10);
         if(this.meterType==='compound') this.beatsPerBar /= 3;
@@ -878,7 +900,21 @@ function showPage(pageId) {
         document.getElementById('rhy-playCaption').textContent = '✅ 作答結束';
       };
 
-      document.getElementById('rhy-nextBtn').onclick = () => document.getElementById('rhy-enterBtn').click();
+      document.getElementById('rhy-nextBtn').onclick = () => {
+          // 在進入下一題前，不清除設定，直接進入下一題的初始化
+          ensureAudio(); window.rhyStopAll();
+          
+          this.userSeq = Array(this.totalBeats).fill('placeholder');
+          this.hasPlayed = false; this.activeSlotIdx = 0; this.generateQuestion();
+          
+          document.getElementById('rhy-feedbackText').className = 'feedback-text';
+          document.getElementById('rhy-editBtns').style.display = 'flex';
+          document.getElementById('rhy-nextBtn').style.display = 'none';
+          document.getElementById('rhy-playCaption').textContent = '請點擊播放按鈕聆聽';
+  
+          this.renderKeypad();
+          setTimeout(() => this.updateUI(), 150);
+      };
       
       window.addEventListener('resize', () => { if(document.getElementById('pageRhyPractice').classList.contains('active')) this.updateUI(); });
     }
