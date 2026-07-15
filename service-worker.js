@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v5'; // 升級為 v5
+const CACHE_NAME = 'ear-training-shell-v6'; // 升級為 v6
 const APP_SHELL = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const APP_SHELL = [
   './interval-trainer.html',
   './rhythm-trainer.html',
   './melody-trainer.html',
+  './two-part-trainer.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
@@ -20,7 +21,7 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   self.clients.claim(); // 立刻接管所有開啟的網頁
-  // 刪除舊版 (v1 到 v4) 的快取垃圾
+  // 刪除舊版 (v1 到 v5) 的快取垃圾
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
