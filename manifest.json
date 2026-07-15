@@ -1,7 +1,7 @@
 {
   "name": "音樂聽力練習",
   "short_name": "聽力練習",
-  "description": "鋼琴聽力訓練工具：和絃辨認、音程、節奏與更多",
+  "description": "鋼琴聽力訓練工具：音程、和絃、節奏與單旋律聽寫",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
