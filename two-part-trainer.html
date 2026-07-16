@@ -78,24 +78,21 @@
   .action-btn, .play-btn { font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 999px; cursor: pointer; transition: all 0.2s; border: none; }
   .action-btn { border: 1px solid var(--ink-soft); background: transparent; color: var(--ink); }
   .play-btn { background: var(--accent); color: var(--panel); }
-  .play-btn.sub-play { background: #6b7a99; font-size: 12px; padding: 10px 12px; } /* 副播放鈕 */
+  .play-btn.sub-play { background: #6b7a99; font-size: 12px; padding: 10px 12px; } 
   .btn-submit { background: var(--accent); color: var(--panel); }
   .play-btn:disabled, .action-btn:disabled, .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
   .play-caption { font-size: 12px; color: var(--ink-soft); font-weight: 600; text-align: center; margin-top: 4px; }
 
-  /* 膠囊分頁卡設計 */
   .editor-tabs-container { display: flex; justify-content: center; align-items: center; margin-bottom: 14px; position: relative; }
   .editor-tabs { display: inline-flex; background: var(--paper); border: 1px solid var(--panel-border); border-radius: 999px; padding: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
   .tab-btn { font-size: 13.5px; font-weight: 700; padding: 8px 22px; border-radius: 999px; border: none; background: transparent; color: var(--ink-soft); cursor: pointer; transition: all 0.15s; }
   .tab-btn.active { background: var(--accent); color: var(--panel); box-shadow: 0 2px 8px rgba(51,65,92,0.25); }
   .part-indicator { position: absolute; right: 0; font-family: var(--font-mono); font-size: 11px; font-weight: 700; background: #fff; padding: 4px 8px; border: 1px solid var(--accent-line); border-radius: 6px; color: var(--accent); }
 
-  /* 節奏鍵盤 */
   .rhythm-keypad { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; padding-bottom: 40px; }
   .rhythm-btn { background: #fff; border: 2px solid var(--panel-border); border-radius: 12px; padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 60px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); overflow: hidden; transition: all 0.1s; }
   .rhythm-btn:active { transform: scale(0.94); border-color: var(--accent); }
   
-  /* 音高鍵盤 */
   .pitch-keypad { display: flex; flex-direction: column; gap: 8px; max-width: 500px; margin: 0 auto; padding-bottom: 40px; }
   .pitch-row-acc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .pitch-row-notes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -162,7 +159,7 @@
         <div class="switch-group-label">練習模式</div>
         <div class="switch-btns" id="tp-modeSwitch">
           <button class="mode-btn active" data-mode="practice">練習模式</button>
-          <button class="mode-btn" data-mode="test">測驗模式 (自動重播)</button>
+          <button class="mode-btn" data-mode="test">測驗模式 (限制次數)</button>
         </div>
       </div>
     </div>
@@ -192,12 +189,19 @@
         </select>
       </div>
       <div class="switch-group" id="testReplayWrapper" style="display:none;">
-        <div class="switch-group-label">測驗重播次數</div>
-        <select id="tp-testReplaySelect" class="select-box">
-          <option value="2">2 次</option>
-          <option value="3" selected>3 次</option>
-          <option value="5">5 次</option>
-        </select>
+        <div class="switch-group-label">限制重播次數</div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <select id="tp-testReplaySelect" class="select-box">
+            <option value="1">1 次</option>
+            <option value="2">2 次</option>
+            <option value="3" selected>3 次</option>
+            <option value="4">4 次</option>
+            <option value="5">5 次</option>
+            <option value="6">6 次</option>
+            <option value="custom">自定義...</option>
+          </select>
+          <input type="number" id="tp-testReplayInput" class="select-box" style="display:none; width: 75px; text-align: center; cursor: text;" min="1" max="20" value="10" placeholder="次數">
+        </div>
       </div>
       <div class="switch-group" style="flex:1;">
         <div class="switch-group-label">播放速度: <span id="bpmSym">♩</span> = <span id="bpmVal">80</span> BPM</div>
@@ -235,7 +239,6 @@
         <button class="play-btn sub-play" id="tp-playBtn-top" disabled>高音</button>
         <button class="play-btn sub-play" id="tp-playBtn-bot" disabled>低音</button>
       </div>
-      <!-- 修正此處的 id 確保可以被 JS 控制隱藏顯示 -->
       <div class="unified-action-row" id="tp-editBtns" style="margin-top: 6px;">
         <button class="action-btn" id="tp-backspaceBtn">⌫ 退格</button>
         <button class="action-btn" id="tp-clearBtn">🗑️ 清空(此聲部)</button>
@@ -443,12 +446,16 @@ function showPage(pageId) {
       }
       container.innerHTML = '';
       
-      const minMeasureWidth = 240; const requiredWidth = (minMeasureWidth * tpModule.barsCount) + 60;
-      const totalWidth = requiredWidth; const usableWidth = totalWidth - 10;
+      // 修復左側連桿被裁切：向右平移並補償寬度
+      const minMeasureWidth = 240; 
+      const requiredWidth = (minMeasureWidth * tpModule.barsCount) + 80;
+      const totalWidth = requiredWidth; 
+      const usableWidth = totalWidth - 30; // 扣除右邊界
       
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(totalWidth, 230);
       const ctx = renderer.getContext();
-      let xPos = 5; const barWidth = (usableWidth - 60) / tpModule.barsCount; 
+      let xPos = 25; // 起始位移，確保連桿空間
+      const barWidth = (usableWidth - 60) / tpModule.barsCount; 
 
       let buildBars = (seq) => {
         let bs = []; let cb = []; let cbeats = 0;
@@ -617,7 +624,7 @@ function showPage(pageId) {
     questionSeq: { top: [], bottom: [] }, questionPitch: { top: [], bottom: [] }, 
     userSeq: { top: [], bottom: [] }, userPitch: { top: [], bottom: [] },
     isPlaying: false, hasPlayed: false, activeTab: 'rhythm', 
-    activePart: 'top', // 'top' or 'bottom'
+    activePart: 'top', 
     activeSlotIdx: { top: 0, bottom: 0 }, activeNoteIdx: { top: 0, bottom: 0 }, 
     lastEditedNoteIdx: { top: null, bottom: null }, currentAccidental: 'n', currentOctave: 4,
     score: { c:0, t:0 }, testSession: { isRunning: false, replaysLeft: 0, totalPlays: 0 }, reviewItems: [],
@@ -879,30 +886,6 @@ function showPage(pageId) {
       pendingTimers.push(timerId);
     },
 
-    runTestLoop: function() {
-      if(!this.testSession.isRunning || this.testSession.replaysLeft <= 0) {
-        this.testSession.isRunning = false; this.updatePlayBtn(); return;
-      }
-      const currentRound = this.testSession.totalPlays - this.testSession.replaysLeft + 1;
-      document.getElementById('tp-playCaption').textContent = `🔊 正在進行第 ${currentRound} 次播放...`;
-      this.playSequence('both', this.questionSeq.top, this.questionSeq.bottom, this.questionPitch.top, this.questionPitch.bottom, () => {
-        this.testSession.replaysLeft--;
-        if(this.testSession.replaysLeft > 0 && this.testSession.isRunning) this.startTestCountdown();
-        else { this.testSession.isRunning = false; document.getElementById('tp-playCaption').textContent = `✅ 播放完畢，請作答！`; this.updatePlayBtn(); }
-      });
-    },
-
-    startTestCountdown: function() {
-      let waitSec = 5 + this.barsCount; let elapsed = 0;
-      const intervalId = setInterval(() => {
-        if(!this.testSession.isRunning) { clearInterval(intervalId); return; }
-        elapsed += 0.2; let remain = Math.ceil(waitSec - elapsed);
-        document.getElementById('tp-playCaption').textContent = `⏳ 距離下次播放還剩 ${remain} 秒...`;
-        if(elapsed >= waitSec) { clearInterval(intervalId); this.runTestLoop(); }
-      }, 200);
-      pendingTimers.push(intervalId);
-    },
-
     renderKeypad: function() {
       const pad = document.getElementById('tp-keypad'); pad.innerHTML = '';
       const order = this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
@@ -964,15 +947,22 @@ function showPage(pageId) {
       const b_top = document.getElementById('tp-playBtn-top');
       const b_bot = document.getElementById('tp-playBtn-bot');
       
-      if(this.testSession.isRunning) { 
-          b_both.textContent = `測驗中(${this.testSession.replaysLeft})`; b_both.disabled = true; 
-          b_top.disabled = true; b_bot.disabled = true;
-      } else if(this.isPlaying) { 
+      if(this.isPlaying) { 
           b_both.textContent = '🔊 播放中...'; b_both.disabled = true; 
           b_top.disabled = true; b_bot.disabled = true;
       } else { 
-          b_both.textContent = '▶ 雙聲部'; 
-          b_both.disabled = !pianoInst; b_top.disabled = !pianoInst; b_bot.disabled = !pianoInst;
+          if (this.mode === 'test') {
+              if (this.testSession.replaysLeft > 0) {
+                  b_both.textContent = `▶ 雙聲部 (剩 ${this.testSession.replaysLeft} 次)`; 
+                  b_both.disabled = !pianoInst; b_top.disabled = !pianoInst; b_bot.disabled = !pianoInst;
+              } else {
+                  b_both.textContent = '🚫 次數用盡';
+                  b_both.disabled = true; b_top.disabled = true; b_bot.disabled = true;
+              }
+          } else {
+              b_both.textContent = '▶ 雙聲部'; 
+              b_both.disabled = !pianoInst; b_top.disabled = !pianoInst; b_bot.disabled = !pianoInst;
+          }
       }
     },
 
@@ -1027,6 +1017,11 @@ function showPage(pageId) {
         this.mode = b.dataset.mode; document.querySelectorAll('#tp-modeSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b));
         document.getElementById('testReplayWrapper').style.display = this.mode === 'test' ? 'flex' : 'none';
       });
+      
+      document.getElementById('tp-testReplaySelect').onchange = (e) => {
+        document.getElementById('tp-testReplayInput').style.display = (e.target.value === 'custom') ? 'inline-block' : 'none';
+      };
+
       document.querySelectorAll('#tp-meterSwitch .mode-btn').forEach(b => b.onclick = () => {
         this.meter = b.dataset.meter; this.meterType = b.dataset.type;
         document.querySelectorAll('#tp-meterSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b));
@@ -1052,6 +1047,22 @@ function showPage(pageId) {
         if(this.meterType==='compound') this.beatsPerBar /= 3;
         this.totalBeats = this.barsCount * this.beatsPerBar;
         this.bpm = parseInt(document.getElementById('tp-bpm').value, 10);
+        
+        if (this.mode === 'test') {
+            let selectVal = document.getElementById('tp-testReplaySelect').value;
+            let plays = 3;
+            if (selectVal === 'custom') {
+                let customVal = parseInt(document.getElementById('tp-testReplayInput').value, 10);
+                if (isNaN(customVal) || customVal < 1) customVal = 1;
+                if (customVal > 20) customVal = 20;
+                document.getElementById('tp-testReplayInput').value = customVal;
+                plays = customVal;
+            } else {
+                plays = parseInt(selectVal, 10);
+            }
+            this.testSession.totalPlays = plays;
+            this.testSession.replaysLeft = this.testSession.totalPlays;
+        }
 
         document.getElementById('tp-statusBadge').textContent = `大譜表｜${this.meter}拍｜${this.barsCount}小節｜${this.bpm}BPM`;
         this.userSeq.top = Array(this.totalBeats).fill('placeholder'); this.userSeq.bottom = Array(this.totalBeats).fill('placeholder');
@@ -1067,34 +1078,30 @@ function showPage(pageId) {
         document.getElementById('tp-nextBtn').style.display = 'none';
         document.getElementById('tp-playCaption').textContent = '請點擊上方播放按鈕聆聽';
 
+        this.updatePlayBtn();
         this.renderKeypad(); showPage('tp-practice');
         this.switchTab('rhythm');
         setTimeout(() => this.updateUI(), 150); 
       };
 
-      document.getElementById('tp-playBtn-both').onclick = () => {
-        ensureAudio(); if(!pianoInst || this.isPlaying || this.testSession.isRunning) return;
-        this.hasPlayed = true; 
-        if(this.mode === 'test') {
-          this.testSession.totalPlays = parseInt(document.getElementById('tp-testReplaySelect').value, 10);
-          this.testSession.replaysLeft = this.testSession.totalPlays;
-          this.testSession.isRunning = true; this.runTestLoop();
-        } else {
-          document.getElementById('tp-playCaption').textContent = '🔊 播放中...';
-          this.playSequence('both', this.questionSeq.top, this.questionSeq.bottom, this.questionPitch.top, this.questionPitch.bottom, () => document.getElementById('tp-playCaption').textContent = '✅ 播放完畢，請作答！');
-        }
+      let handlePlay = (modeStr) => {
+          ensureAudio(); if(!pianoInst || this.isPlaying) return;
+          if(this.mode === 'test' && this.testSession.replaysLeft <= 0) return;
+          
+          this.hasPlayed = true; 
+          if (this.mode === 'test') this.testSession.replaysLeft--;
+          
+          let captionMap = {'both': '雙軌', 'top': '高音孤立', 'bottom': '低音孤立'};
+          document.getElementById('tp-playCaption').textContent = `🔊 播放中 (${captionMap[modeStr]})...`;
+          
+          this.playSequence(modeStr, this.questionSeq.top, this.questionSeq.bottom, this.questionPitch.top, this.questionPitch.bottom, () => {
+              document.getElementById('tp-playCaption').textContent = '✅ 播放完畢，請作答！';
+          });
       };
-      
-      document.getElementById('tp-playBtn-top').onclick = () => {
-          ensureAudio(); if(!pianoInst || this.isPlaying || this.testSession.isRunning) return;
-          this.hasPlayed = true; document.getElementById('tp-playCaption').textContent = '🔊 播放中 (高音孤立)...';
-          this.playSequence('top', this.questionSeq.top, this.questionSeq.bottom, this.questionPitch.top, this.questionPitch.bottom, () => document.getElementById('tp-playCaption').textContent = '✅ 播放完畢，請作答！');
-      };
-      document.getElementById('tp-playBtn-bot').onclick = () => {
-          ensureAudio(); if(!pianoInst || this.isPlaying || this.testSession.isRunning) return;
-          this.hasPlayed = true; document.getElementById('tp-playCaption').textContent = '🔊 播放中 (低音孤立)...';
-          this.playSequence('bottom', this.questionSeq.top, this.questionSeq.bottom, this.questionPitch.top, this.questionPitch.bottom, () => document.getElementById('tp-playCaption').textContent = '✅ 播放完畢，請作答！');
-      };
+
+      document.getElementById('tp-playBtn-both').onclick = () => handlePlay('both');
+      document.getElementById('tp-playBtn-top').onclick = () => handlePlay('top');
+      document.getElementById('tp-playBtn-bot').onclick = () => handlePlay('bottom');
 
       document.getElementById('tp-backspaceBtn').onclick = () => { 
         if(!this.hasPlayed) return;
@@ -1182,11 +1189,16 @@ function showPage(pageId) {
           this.generateQuestion();
           this.rebuildUserPitchArray('top'); this.rebuildUserPitchArray('bottom');
           
+          if (this.mode === 'test') {
+              this.testSession.replaysLeft = this.testSession.totalPlays;
+          }
+          
           document.getElementById('tp-feedbackText').className = 'feedback-text';
           document.getElementById('tp-editBtns').style.display = 'flex';
           document.getElementById('tp-nextBtn').style.display = 'none';
           document.getElementById('tp-playCaption').textContent = '請點擊上方播放按鈕聆聽';
   
+          this.updatePlayBtn();
           this.renderKeypad();
           this.switchTab('rhythm');
           setTimeout(() => this.updateUI(), 150);

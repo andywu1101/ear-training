@@ -117,7 +117,6 @@
 
   .loading-banner { text-align: center; font-size: 12px; color: var(--ink-soft); background: #fff; padding: 8px; border-radius: 8px; margin-bottom: 16px; }
 
-  /* ================= PC 版與寬螢幕優化 ================= */
   @media (min-width: 768px) {
     .wrap { border-left: 1px solid var(--hairline); border-right: 1px solid var(--hairline); background: var(--paper); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
     .practice-top-fixed { padding: 20px 40px; }
@@ -128,7 +127,6 @@
     .action-btn, .play-btn { font-size: 14px; padding: 12px 20px; }
   }
 
-  /* ================= 手機橫向極致壓縮模式 ================= */
   @media (orientation: landscape) and (max-width: 900px) {
     .practice-top-fixed { padding: 4px 10px; }
     .top-bar-practice { margin-bottom: 4px; }
@@ -161,7 +159,7 @@
         <div class="switch-group-label">練習模式</div>
         <div class="switch-btns" id="mel-modeSwitch">
           <button class="mode-btn active" data-mode="practice">練習模式</button>
-          <button class="mode-btn" data-mode="test">測驗模式 (自動重播)</button>
+          <button class="mode-btn" data-mode="test">測驗模式 (限制次數)</button>
         </div>
       </div>
       <div class="switch-group">
@@ -198,12 +196,19 @@
         </select>
       </div>
       <div class="switch-group" id="testReplayWrapper" style="display:none;">
-        <div class="switch-group-label">測驗重播次數</div>
-        <select id="mel-testReplaySelect" class="select-box">
-          <option value="2">2 次</option>
-          <option value="3" selected>3 次</option>
-          <option value="5">5 次</option>
-        </select>
+        <div class="switch-group-label">限制重播次數</div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <select id="mel-testReplaySelect" class="select-box">
+            <option value="1">1 次</option>
+            <option value="2">2 次</option>
+            <option value="3" selected>3 次</option>
+            <option value="4">4 次</option>
+            <option value="5">5 次</option>
+            <option value="6">6 次</option>
+            <option value="custom">自定義...</option>
+          </select>
+          <input type="number" id="mel-testReplayInput" class="select-box" style="display:none; width: 75px; text-align: center; cursor: text;" min="1" max="20" value="10" placeholder="次數">
+        </div>
       </div>
       <div class="switch-group" style="flex:1;">
         <div class="switch-group-label">播放速度: <span id="bpmSym">♩</span> = <span id="bpmVal">80</span> BPM</div>
@@ -252,7 +257,6 @@
     <div class="practice-bottom-scroll">
       <div class="editor-tabs-container">
         <div class="editor-tabs">
-          <!-- 注意：所有的 onclick="melModule.xxx" 現在都抓得到大腦了！ -->
           <button class="tab-btn active" id="tab-rhythm" onclick="melModule.switchTab('rhythm')">🎵 1. 編輯節奏</button>
           <button class="tab-btn" id="tab-pitch" onclick="melModule.switchTab('pitch')">🎹 2. 編輯音高</button>
         </div>
@@ -357,7 +361,6 @@ function showPage(pageId) {
     return `${pObj.step.toLowerCase()}/${pObj.oct}`;
   }
 
-  // 強制套用臨時記號，並追蹤小節內狀態以精確畫出還原記號
   function applyAccidental(note, pObj, measureAccState) {
     if(!pObj) return;
     let step = pObj.step.toUpperCase();
@@ -548,7 +551,6 @@ function showPage(pageId) {
           }
         } else if(activeTab === 'pitch') {
           for(let i = 0; i < allIndividualNotes.length; i++) {
-            // 跳過被連結線綁住的後方音符，使其無法被單獨點擊與選取！
             if (melModule.isNoteTiedToPrevious(i)) continue;
             
             let fn = allIndividualNotes[i];
@@ -556,7 +558,6 @@ function showPage(pageId) {
             let nx = typeof fn.getAbsoluteX === 'function' ? fn.getAbsoluteX() : stave.getX() + fn.getTickContext().getX();
             let x = nx - 8; let y = stave.getYForLine(0) - 20; let h = 110; let w = 22;
             
-            // 找出下一個可以點擊的音，來決定點擊區塊的寬度
             let nn = null;
             for (let nextI = i + 1; nextI < allIndividualNotes.length; nextI++) {
                 if (!melModule.isNoteTiedToPrevious(nextI)) { nn = allIndividualNotes[nextI]; break; }
@@ -624,13 +625,11 @@ function showPage(pageId) {
       document.getElementById('mel-enterBtn').disabled = false;
     },
 
-    // 將隨機產生的音高替換為最合理的「同音異名」，避免出現 Cb, B#, Fb, E# 等奇怪寫法
     sanitizePitch: function(p) {
       if (p.step === 'C' && p.acc === 'b') { p.step = 'B'; p.oct -= 1; p.acc = 'n'; }
       if (p.step === 'B' && p.acc === '#') { p.step = 'C'; p.oct += 1; p.acc = 'n'; }
       if (p.step === 'F' && p.acc === 'b') { p.step = 'E'; p.acc = 'n'; }
       if (p.step === 'E' && p.acc === '#') { p.step = 'F'; p.acc = 'n'; }
-      // 統一採用標準黑鍵拼寫
       if (p.step === 'D' && p.acc === 'b') { p.step = 'C'; p.acc = '#'; }
       if (p.step === 'G' && p.acc === 'b') { p.step = 'F'; p.acc = '#'; }
       if (p.step === 'A' && p.acc === '#') { p.step = 'B'; p.acc = 'b'; }
@@ -646,7 +645,7 @@ function showPage(pageId) {
       let baseOct = this.clef === 'treble' ? 4 : 3;
       let lastStepIdx = 0; let lastOct = baseOct;
       
-      let tiedFromPrev = false; // 出題引擎的核心修復：追蹤連結線狀態！
+      let tiedFromPrev = false;
 
       for(let i=0; i<this.totalBeats; i++) {
         let pat = pool[Math.floor(Math.random() * pool.length)];
@@ -656,7 +655,6 @@ function showPage(pageId) {
         for(let k=0; k<numNotes; k++) {
           let newPitch;
           if (tiedFromPrev) {
-             // 如果是連過來的，100% 複製前一個音，絕對不可重新骰音高！
              let prevPitch = this.questionPitch[this.questionPitch.length - 1];
              newPitch = { step: prevPitch.step, oct: prevPitch.oct, acc: prevPitch.acc };
           } else {
@@ -674,8 +672,6 @@ function showPage(pageId) {
           
           this.questionPitch.push(newPitch);
           lastStepIdx = steps.indexOf(newPitch.step); lastOct = newPitch.oct;
-          
-          // 更新狀態：這顆音是不是綁著下一顆音？
           tiedFromPrev = block.tieNext && block.tieNext[k];
         }
       }
@@ -688,7 +684,6 @@ function showPage(pageId) {
       }, 0);
     },
 
-    // 檢查某顆音是否往後連著連結線
     isNoteTiedToNext: function(idx) {
       if (idx < 0) return false;
       let count = 0;
@@ -708,7 +703,6 @@ function showPage(pageId) {
       return false;
     },
 
-    // 檢查某顆音是否是從上一顆音連過來的
     isNoteTiedToPrevious: function(idx) {
       if (idx <= 0) return false;
       return this.isNoteTiedToNext(idx - 1);
@@ -726,7 +720,7 @@ function showPage(pageId) {
 
     switchTab: function(tab) {
       this.activeTab = tab;
-      this.lastEditedNoteIdx = null; // 切換分頁時重置記憶
+      this.lastEditedNoteIdx = null; 
       document.getElementById('tab-rhythm').className = `tab-btn ${tab === 'rhythm' ? 'active' : ''}`;
       document.getElementById('tab-pitch').className = `tab-btn ${tab === 'pitch' ? 'active' : ''}`;
       document.getElementById('panel-rhythm').style.display = tab === 'rhythm' ? 'block' : 'none';
@@ -735,7 +729,6 @@ function showPage(pageId) {
       if(tab === 'rhythm') {
         if(this.activeSlotIdx === -1) this.activeSlotIdx = 0;
       } else {
-        // 智慧轉化：尚未填寫的休止符自動轉為預設音符
         let defPat = this.meterType === 'simple' ? '4' : '6';
         for(let i = 0; i < this.userSeq.length; i++) {
           if(this.userSeq[i] === 'placeholder') this.userSeq[i] = defPat;
@@ -744,7 +737,6 @@ function showPage(pageId) {
         
         if(this.activeNoteIdx < 0 || this.activeNoteIdx >= this.userPitch.length) this.activeNoteIdx = 0;
         
-        // 確保初始定位不會落在被連結線綁住的音上
         let totalNotes = this.getTotalNoteCount(this.userSeq);
         while (this.activeNoteIdx < totalNotes && this.isNoteTiedToPrevious(this.activeNoteIdx)) {
             this.activeNoteIdx++;
@@ -774,7 +766,6 @@ function showPage(pageId) {
       if(this.currentOctave < 2) this.currentOctave = 2; if(this.currentOctave > 6) this.currentOctave = 6;
       this.updateOctaveLabels();
       
-      // 智慧回溯：優先修改剛剛輸入完的上一顆音符
       let targetIdx = (this.lastEditedNoteIdx !== null) ? this.lastEditedNoteIdx : this.activeNoteIdx;
       
       if(targetIdx !== -1 && this.userPitch[targetIdx]) {
@@ -782,7 +773,6 @@ function showPage(pageId) {
         if(this.userPitch[targetIdx].oct < 2) this.userPitch[targetIdx].oct = 2;
         if(this.userPitch[targetIdx].oct > 6) this.userPitch[targetIdx].oct = 6;
         
-        // 同步更新後方相連的所有延留音
         let propagateIdx = targetIdx;
         while(this.isNoteTiedToNext(propagateIdx)) {
           if(propagateIdx + 1 < this.userPitch.length) {
@@ -802,10 +792,9 @@ function showPage(pageId) {
       this.userPitch[this.activeNoteIdx] = { step: step, oct: oct, acc: this.currentAccidental };
       this.currentOctave = oct; this.updateOctaveLabels();
       
-      let accToApply = this.currentAccidental; // 記錄當下所選記號，準備連動給後方的綁定音
-      if(this.currentAccidental !== 'n') this.setAccidental('n'); // 用完立即還原
+      let accToApply = this.currentAccidental;
+      if(this.currentAccidental !== 'n') this.setAccidental('n'); 
       
-      // 處理被連結線綁住的所有音高，使其完全連動（修正：連同變化音一起給！）
       let propagateIdx = this.activeNoteIdx;
       while(this.isNoteTiedToNext(propagateIdx)) {
         if(propagateIdx + 1 < this.userPitch.length) {
@@ -814,13 +803,11 @@ function showPage(pageId) {
         propagateIdx++;
       }
       
-      // 記憶這顆音，方便點擊八度按鍵時回溯修改
       this.lastEditedNoteIdx = this.activeNoteIdx;
       
       let totalNotes = this.getTotalNoteCount(this.userSeq);
       let nextIdx = this.activeNoteIdx + 1;
       
-      // 框框自動跳過所有被連結線綁在後面的音符
       while (nextIdx < totalNotes && this.isNoteTiedToPrevious(nextIdx)) {
           nextIdx++;
       }
@@ -835,7 +822,6 @@ function showPage(pageId) {
       if(!pianoInst || this.isPlaying) return;
       this.isPlaying = true; this.updatePlayBtn();
       
-      // 播放焦點維持機制：編輯音高時框框絕不擅自歸零！
       if(this.activeTab === 'rhythm') { this.activeSlotIdx = 0; }
       this.updateUI();
       
@@ -866,30 +852,6 @@ function showPage(pageId) {
       });
       const timerId = setTimeout(() => { this.isPlaying = false; this.updatePlayBtn(); if(onEnd) onEnd(); }, (time-ctx.currentTime)*1000 + 100);
       pendingTimers.push(timerId);
-    },
-
-    runTestLoop: function() {
-      if(!this.testSession.isRunning || this.testSession.replaysLeft <= 0) {
-        this.testSession.isRunning = false; this.updatePlayBtn(); return;
-      }
-      const currentRound = this.testSession.totalPlays - this.testSession.replaysLeft + 1;
-      document.getElementById('mel-playCaption').textContent = `🔊 正在進行第 ${currentRound} 次播放...`;
-      this.playSequence(this.questionSeq, this.questionPitch, () => {
-        this.testSession.replaysLeft--;
-        if(this.testSession.replaysLeft > 0 && this.testSession.isRunning) this.startTestCountdown();
-        else { this.testSession.isRunning = false; document.getElementById('mel-playCaption').textContent = `✅ 播放完畢，請作答！`; this.updatePlayBtn(); }
-      });
-    },
-
-    startTestCountdown: function() {
-      let waitSec = 5 + this.barsCount; let elapsed = 0;
-      const intervalId = setInterval(() => {
-        if(!this.testSession.isRunning) { clearInterval(intervalId); return; }
-        elapsed += 0.2; let remain = Math.ceil(waitSec - elapsed);
-        document.getElementById('mel-playCaption').textContent = `⏳ 距離下次播放還剩 ${remain} 秒...`;
-        if(elapsed >= waitSec) { clearInterval(intervalId); this.runTestLoop(); }
-      }, 200);
-      pendingTimers.push(intervalId);
     },
 
     renderKeypad: function() {
@@ -940,9 +902,23 @@ function showPage(pageId) {
 
     updatePlayBtn: function() {
       const b = document.getElementById('mel-playBtn');
-      if(this.testSession.isRunning) { b.textContent = `測驗播放中 (剩餘 ${this.testSession.replaysLeft} 次)`; b.disabled = true; }
-      else if(this.isPlaying) { b.textContent = '🔊 播放中...'; b.disabled = true; } 
-      else { b.textContent = '▶ 播放題目'; b.disabled = !pianoInst; }
+      if(this.isPlaying) { 
+          b.textContent = '🔊 播放中...'; 
+          b.disabled = true; 
+      } else {
+          if (this.mode === 'test') {
+              if (this.testSession.replaysLeft > 0) {
+                  b.textContent = `▶ 播放題目 (剩 ${this.testSession.replaysLeft} 次)`;
+                  b.disabled = !pianoInst;
+              } else {
+                  b.textContent = '🚫 次數用盡';
+                  b.disabled = true;
+              }
+          } else {
+              b.textContent = '▶ 播放題目'; 
+              b.disabled = !pianoInst;
+          }
+      }
     },
 
     addToReview: function() {
@@ -964,7 +940,6 @@ function showPage(pageId) {
         const btnGroup = document.createElement('div');
         btnGroup.style.cssText = "display:flex; gap:8px;";
         
-        // 訂正區雙按鈕：紅色按鈕聽錯誤作答，透明按鈕聽正解
         const playUserBtn = document.createElement('button');
         playUserBtn.className = 'select-all-btn';
         playUserBtn.style.cssText = "color: var(--wrong); border-color: var(--wrong); background: var(--wrong-soft);";
@@ -1000,6 +975,11 @@ function showPage(pageId) {
         this.mode = b.dataset.mode; document.querySelectorAll('#mel-modeSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b));
         document.getElementById('testReplayWrapper').style.display = this.mode === 'test' ? 'flex' : 'none';
       });
+      
+      document.getElementById('mel-testReplaySelect').onchange = (e) => {
+        document.getElementById('mel-testReplayInput').style.display = (e.target.value === 'custom') ? 'inline-block' : 'none';
+      };
+
       document.querySelectorAll('#mel-clefSwitch .mode-btn').forEach(b => b.onclick = () => {
         this.clef = b.dataset.clef; document.querySelectorAll('#mel-clefSwitch .mode-btn').forEach(x=>x.classList.toggle('active',x===b));
       });
@@ -1021,7 +1001,6 @@ function showPage(pageId) {
       document.getElementById('mel-enterBtn').onclick = () => {
         ensureAudio(); window.melStopAll();
         
-        // 清除訂正區內容
         this.reviewItems = [];
         document.getElementById('mel-reviewSection').style.display = 'none';
         document.getElementById('mel-reviewList').innerHTML = '';
@@ -1031,6 +1010,22 @@ function showPage(pageId) {
         if(this.meterType==='compound') this.beatsPerBar /= 3;
         this.totalBeats = this.barsCount * this.beatsPerBar;
         this.bpm = parseInt(document.getElementById('mel-bpm').value, 10);
+
+        if (this.mode === 'test') {
+            let selectVal = document.getElementById('mel-testReplaySelect').value;
+            let plays = 3;
+            if (selectVal === 'custom') {
+                let customVal = parseInt(document.getElementById('mel-testReplayInput').value, 10);
+                if (isNaN(customVal) || customVal < 1) customVal = 1;
+                if (customVal > 20) customVal = 20;
+                document.getElementById('mel-testReplayInput').value = customVal;
+                plays = customVal;
+            } else {
+                plays = parseInt(selectVal, 10);
+            }
+            this.testSession.totalPlays = plays;
+            this.testSession.replaysLeft = this.testSession.totalPlays;
+        }
 
         document.getElementById('mel-statusBadge').textContent = `${this.clef === 'treble' ? '高音' : '低音'}｜${this.meter}拍｜${this.barsCount}小節｜${this.bpm}BPM`;
         this.userSeq = Array(this.totalBeats).fill('placeholder');
@@ -1044,22 +1039,21 @@ function showPage(pageId) {
         document.getElementById('mel-nextBtn').style.display = 'none';
         document.getElementById('mel-playCaption').textContent = '請點擊播放按鈕聆聽';
 
+        this.updatePlayBtn();
         this.renderKeypad(); showPage('mel-practice');
         this.switchTab('rhythm');
         setTimeout(() => this.updateUI(), 150); 
       };
 
       document.getElementById('mel-playBtn').onclick = () => {
-        ensureAudio(); if(!pianoInst || this.isPlaying || this.testSession.isRunning) return;
+        ensureAudio(); if(!pianoInst || this.isPlaying) return;
+        if(this.mode === 'test' && this.testSession.replaysLeft <= 0) return;
+        
         this.hasPlayed = true; 
-        if(this.mode === 'test') {
-          this.testSession.totalPlays = parseInt(document.getElementById('mel-testReplaySelect').value, 10);
-          this.testSession.replaysLeft = this.testSession.totalPlays;
-          this.testSession.isRunning = true; this.runTestLoop();
-        } else {
-          document.getElementById('mel-playCaption').textContent = '🔊 播放中...';
-          this.playSequence(this.questionSeq, this.questionPitch, () => document.getElementById('mel-playCaption').textContent = '✅ 播放完畢，請作答！');
-        }
+        if (this.mode === 'test') this.testSession.replaysLeft--;
+        
+        document.getElementById('mel-playCaption').textContent = '🔊 播放中...';
+        this.playSequence(this.questionSeq, this.questionPitch, () => document.getElementById('mel-playCaption').textContent = '✅ 播放完畢，請作答！');
       };
 
       document.getElementById('mel-backspaceBtn').onclick = () => { 
@@ -1074,7 +1068,6 @@ function showPage(pageId) {
             this.activeSlotIdx = t; this.rebuildUserPitchArray(); this.updateUI();
           }
         } else {
-          // 在音高模式按退回，直接略過連結線，將選取框退回上一顆獨立音符並還原為預設音高
           if (this.activeNoteIdx === -1) {
              let prevIdx = this.userPitch.length - 1;
              while (prevIdx >= 0 && this.isNoteTiedToPrevious(prevIdx)) prevIdx--;
@@ -1083,7 +1076,6 @@ function showPage(pageId) {
           } else if(this.userPitch[this.activeNoteIdx]) {
              let defOct = this.clef === 'treble' ? 4 : 3; let defStep = this.clef === 'treble' ? 'A' : 'C';
              this.userPitch[this.activeNoteIdx] = { step: defStep, oct: defOct, acc: 'n' };
-             // 綁定音高同步退回預設
              let propagateIdx = this.activeNoteIdx;
              while(this.isNoteTiedToNext(propagateIdx)) {
                 if(propagateIdx + 1 < this.userPitch.length) {
@@ -1120,7 +1112,6 @@ function showPage(pageId) {
         else {
           let totalNotes = this.getTotalNoteCount(this.userSeq);
           for(let i = 0; i < totalNotes; i++) {
-            // MIDI 絕對數值精準比對，完美支援 D# = Eb 同音異名！
             if(getPitchFromObj(this.userPitch[i]) !== getPitchFromObj(this.questionPitch[i])) { isCorrect = false; break; }
           }
         }
@@ -1138,7 +1129,6 @@ function showPage(pageId) {
       };
 
       document.getElementById('mel-nextBtn').onclick = () => {
-          // 在進入下一題前，不清除設定，直接進入下一題的初始化
           ensureAudio(); window.melStopAll();
           
           this.userSeq = Array(this.totalBeats).fill('placeholder');
@@ -1147,11 +1137,16 @@ function showPage(pageId) {
           this.generateQuestion();
           this.rebuildUserPitchArray();
           
+          if (this.mode === 'test') {
+              this.testSession.replaysLeft = this.testSession.totalPlays;
+          }
+          
           document.getElementById('mel-feedbackText').className = 'feedback-text';
           document.getElementById('mel-editBtns').style.display = 'flex';
           document.getElementById('mel-nextBtn').style.display = 'none';
           document.getElementById('mel-playCaption').textContent = '請點擊播放按鈕聆聽';
   
+          this.updatePlayBtn();
           this.renderKeypad();
           this.switchTab('rhythm');
           setTimeout(() => this.updateUI(), 150);
