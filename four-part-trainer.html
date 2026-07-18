@@ -618,7 +618,7 @@ window.addEventListener('resize', setVH); setVH();
 
       // 結尾盡量用 V 類（各種轉位）接 I；變格終止 IV-I 只保留極低機率（阿們終止另由套組處理）
       let cadType = Math.random() < 0.97 ? 'auth' : 'plag';
-      let picardy = isMinor && levelId === 4 && Math.random() < 0.5;
+      let picardy = isMinor && levelId === 4 && Math.random() < 0.2;
 
       let seq = Array(bars).fill('');
       seq[0] = TONIC;
@@ -709,19 +709,19 @@ window.addEventListener('resize', setVH); setVH();
       let hasLv2Feature = false;
       if (n - 3 >= 3) {
         let startMax = (n - 2) - 3; // 可放置套組的內部起點上限（保留頭尾兩小節）
-        if (startMax >= 1 && Math.random() < 0.5) {
+        if (startMax >= 1 && Math.random() < 0.22) {
           let start = 1 + Math.floor(Math.random() * startMax);
           let bundle = BUNDLES[Math.floor(Math.random() * BUNDLES.length)];
           for (let k = 0; k < 3; k++) { seq[start + k] = bundle[k]; usedIdx.add(start + k); }
           hasLv2Feature = true;
         }
       }
-      // 其餘未被套組佔用的中段三和絃，較高機率升級成轉位（第一轉位為主，偶爾第二轉位作經過）
+      // 其餘未被套組佔用的中段三和絃，較高機率升級成第一轉位；第二轉位 64 僅少量（避免假套組特徵）
       for (let i = 1; i < n - 2; i++) {
         if (usedIdx.has(i)) continue;
         let r = Math.random();
-        if (r < 0.55) { seq[i] = seq[i] + '6'; hasLv2Feature = true; }
-        else if (r < 0.62) { seq[i] = seq[i] + '64'; hasLv2Feature = true; }
+        if (r < 0.58) { seq[i] = seq[i] + '6'; hasLv2Feature = true; }
+        else if (r < 0.60) { seq[i] = seq[i] + '64'; hasLv2Feature = true; }
       }
       // 保底：Lv.2 至少要有一個轉位或固定套組
       if (!hasLv2Feature) {
@@ -755,8 +755,9 @@ window.addEventListener('resize', setVH); setVH();
           seq[i] = base + variant;
           hasLv3Feature = true;
         } else if (r < invProb) {
-          // 保留三和絃但加轉位（Lv.4 幾乎一定加轉位，減少原位三和絃）
-          if (!hadInv) seq[i] = base + (Math.random() < 0.8 ? '6' : '64');
+          // 保留三和絃但加轉位（Lv.4 幾乎一定加轉位，減少原位三和絃）。
+          // 以第一轉位 6 為主，大幅降低第二轉位 64（64 是「經過六四」等假套組特徵的主因）。
+          if (!hadInv) seq[i] = base + (Math.random() < 0.94 ? '6' : '64');
         }
       }
       if (!hasLv3Feature) {
@@ -781,7 +782,7 @@ window.addEventListener('resize', setVH); setVH();
         if (usedIdx.has(idx)) continue;
         // 避免兩個副屬和絃緊鄰
         if (usedIdx.has(idx - 1) || usedIdx.has(idx + 1)) continue;
-        if (Math.random() < 0.55) {
+        if (Math.random() < 0.38) {
           let target = seq[idx + 1].replace(/[0-9]/g, '');
           let inv = ['7', '65', '43', '42'][Math.floor(Math.random() * 4)];
           seq[idx] = 'V' + inv + '/' + target;
@@ -793,7 +794,8 @@ window.addEventListener('resize', setVH); setVH();
 
       // 拿坡里六和絃 N6：屬於下屬功能，古典上必須解決到屬功能 V。
       // 只在「本格是下屬和絃(ii°/iv系列) 且 下一格是 V 級」的位置插入；沒有這種位置就不硬塞。
-      if (Math.random() < 0.5 || !hasLv4Feature) {
+      // 機率約 25%（設 0.28，因部分題目無銜接點而實際落點會略低）。
+      if (Math.random() < 0.28) {
         // 先找現成的「下屬和絃 → V」銜接點
         let n6spots = [];
         for (let i = 1; i < n - 1; i++) {
@@ -820,6 +822,59 @@ window.addEventListener('resize', setVH); setVH();
               usedIdx.add(i); usedIdx.add(i + 1);
               hasLv4Feature = true;
               break;
+            }
+          }
+        }
+      }
+
+      // 下屬功能色彩強化：把未被使用的原位 ii/iv（小調 ii°/iv）較高機率升級成轉位或七和絃，
+      // 補足 N6 減少後的下屬色彩（ii6 / ii65 / iv7 等）。
+      for (let i = 1; i < n - 1; i++) {
+        if (usedIdx.has(i)) continue;
+        let base = seq[i].replace(/[0-9]/g, '');
+        let isSubdom = base === (isMinor ? 'ii°' : 'ii') || base === (isMinor ? 'iv' : 'IV');
+        if (!isSubdom) continue;
+        if (/6|64|7|65|43|42/.test(seq[i])) continue; // 已經是轉位/七和絃就跳過
+        let r = Math.random();
+        if (r < 0.4) seq[i] = base + '65';
+        else if (r < 0.6) seq[i] = base + '7';
+        else if (r < 0.85) seq[i] = base + '6';
+        // 其餘 15% 維持原位
+      }
+
+      // 假終止 V→vi / V→VI：中段主動製造，至少 30% 題目出現一次。
+      {
+        let submediant = isMinor ? 'VI' : 'vi';
+        let alreadyHas = false;
+        for (let i = 1; i < n - 2; i++) {
+          let a = seq[i].replace(/[0-9]/g, '');
+          let b = seq[i + 1].replace(/[0-9]/g, '');
+          if (a === 'V' && b === submediant) { alreadyHas = true; break; }
+        }
+        if (!alreadyHas && Math.random() < 0.5) {
+          // 優先找現成的中段 V 級位置
+          let vSpots = [];
+          for (let i = 1; i < n - 2; i++) {
+            if (usedIdx.has(i) || usedIdx.has(i + 1)) continue;
+            if (seq[i].replace(/[0-9]/g, '') === 'V' && i + 1 < n - 1) vSpots.push(i);
+          }
+          if (vSpots.length > 0) {
+            let idx = vSpots[Math.floor(Math.random() * vSpots.length)];
+            if (!/7|65|43|42/.test(seq[idx]) && Math.random() < 0.5) seq[idx] = 'V7';
+            seq[idx + 1] = submediant;
+            usedIdx.add(idx); usedIdx.add(idx + 1);
+          } else {
+            // 沒有現成 V：主動把中段一對相鄰、未被使用的格子改成 V(7)→vi/VI
+            let pairSpots = [];
+            for (let i = 1; i < n - 2; i++) {
+              if (usedIdx.has(i) || usedIdx.has(i + 1)) continue;
+              if (i + 1 < n - 1) pairSpots.push(i);
+            }
+            if (pairSpots.length > 0) {
+              let idx = pairSpots[Math.floor(Math.random() * pairSpots.length)];
+              seq[idx] = (Math.random() < 0.5) ? 'V7' : 'V';
+              seq[idx + 1] = submediant;
+              usedIdx.add(idx); usedIdx.add(idx + 1);
             }
           }
         }
