@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v6'; // 升級為 v6
+const CACHE_NAME = 'ear-training-shell-v7'; // 升級為 v7（新增四部和聲進行）
 const APP_SHELL = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const APP_SHELL = [
   './rhythm-trainer.html',
   './melody-trainer.html',
   './two-part-trainer.html',
+  './four-part-trainer.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
