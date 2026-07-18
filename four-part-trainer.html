@@ -38,6 +38,11 @@
   .wrap{ max-width: 820px; margin: 0 auto; display:flex; flex-direction:column; height:100%; }
   .page-view { display: none; animation: fadeIn 0.22s ease-out; }
   .page-view.active { display: block; }
+  /* 練習頁上下分層：整頁撐滿可視高度，上層譜例自適應剩餘空間、下層鍵盤固定不壓縮 */
+  .page-view.fpt-practice-layout.active { display: flex; flex-direction: column; min-height: calc(var(--app-vh, 1vh) * 100 - 84px); }
+  .fpt-staff-area { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .fpt-staff-area .staff-scroll-container { flex: 0 0 auto; }
+  .fpt-keyboard-area { flex: 0 0 auto; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   
   .nav-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -116,7 +121,7 @@
   .hitbox-bot { position: absolute; top: 235px; height: 75px; cursor: pointer; z-index: 10; pointer-events: auto; }
 
   /* 模組化作答鍵盤 */
-  .keyboard-panel { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 14px; padding: 12px; margin-bottom: 24px; }
+  .keyboard-panel { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
   .kb-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
   .kb-row:last-child { margin-bottom: 0; }
   .kb-btn {
@@ -195,7 +200,6 @@
           <option value="8">8 小節</option>
           <option value="10" selected>10 小節 (標準)</option>
           <option value="12">12 小節 (長樂句)</option>
-          <option value="10">10 小節 (極限挑戰)</option>
         </select>
       </div>
       <div class="switch-group" id="testReplayWrapper" style="display:none;">
@@ -216,35 +220,48 @@
     <div class="level-tabs" id="fpt-levelTabs"></div>
 
     <button class="start-big-btn" id="fpt-enterBtn" disabled>🎯 開始四部和聲訓練 →</button>
+    <button class="action-btn" id="fpt-reviewEntryBtn" style="width:100%; margin-top:12px; padding:14px; border-radius:999px;" onclick="showPage('fpt-review')">📕 錯題本 (<span id="fpt-reviewCount">0</span> 題)</button>
+  </div>
+
+  <!-- 【錯題紀錄頁】 -->
+  <div id="pageFptReview" class="page-view">
+    <div class="nav-header-row">
+      <button class="nav-back-btn" onclick="showPage('fpt-settings')">← 返回設定</button>
+      <button class="reset-cache-btn" id="fpt-clearReviewBtn">🗑️ 清空錯題本</button>
+    </div>
+    <h1>錯題本</h1>
+    <p class="subtitle">這裡收錄你答錯的題目，可以重播聆聽、對照正解，反覆複習加強。</p>
+    <div class="review-section" id="fpt-reviewSection" style="display:block;">
+      <div id="fpt-reviewList"></div>
+      <p id="fpt-reviewEmpty" class="subtitle" style="text-align:center; margin-top:24px;">目前沒有錯題紀錄，繼續加油！🎵</p>
+    </div>
   </div>
 
   <!-- 【作答與訓練頁】 -->
-  <div id="pageFptPractice" class="page-view">
-    <div class="practice-top-fixed">
+  <div id="pageFptPractice" class="page-view fpt-practice-layout">
+    <div class="practice-top-fixed fpt-staff-area">
       <div class="top-bar-practice">
         <button class="nav-back-btn" style="margin:0;" onclick="showPage('fpt-settings')">← 返回</button>
         <span class="practice-status-badge" id="fpt-statusBadge">Lv.1｜4小節｜大調｜64 BPM</span>
         <div class="score-box" id="fpt-scoreNum">0/0</div>
       </div>
       
-      <!-- 樂譜與作答格容器 (精準定位防裁切) -->
+      <!-- 樂譜與作答格容器 (作答階段只顯示低音譜表) -->
       <div class="staff-scroll-container" id="staffContainerOuter">
-        <div id="staffInnerWrapper" style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%; height: 320px;">
+        <div id="staffInnerWrapper" style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%; height: 230px;">
           <div id="fpt-staff-svg"></div>
         </div>
       </div>
-      
-      <div id="fpt-feedbackText" class="feedback-text"></div>
 
-      <div class="unified-action-row">
+      <div class="unified-action-row" style="margin-top:8px;">
         <button class="play-btn" id="btn-play-all" disabled>🔊 完整四部 (SATB)</button>
         <button class="play-btn" id="btn-play-arp" disabled>🎵 分解＋完整</button>
       </div>
       <div class="play-caption" id="fpt-playCaption">請點擊上方按鈕聆聽和聲進行</div>
     </div>
 
-    <!-- 底部作答分頁與鍵盤區 -->
-    <div style="padding: 0 4px;">
+    <!-- 底部作答分頁與鍵盤區（固定高度） -->
+    <div class="fpt-keyboard-area" style="padding: 0 4px;">
       <div class="editor-tabs-container">
         <div class="editor-tabs">
           <button class="tab-btn active" id="tab-bass" onclick="window.fptModule.switchTab('bass')">🎹 1. 編輯低音</button>
@@ -306,23 +323,47 @@
           <button class="kb-btn mod-btn" data-mod="ø">ø (半減)</button>
           <button class="kb-btn mod-btn" data-mod="+">+ (增)</button>
           <button class="kb-btn mod-btn" id="btn-slash" style="display:none;" data-mod="/">/ (副屬)</button>
-          <button class="kb-btn acc-btn" data-acc="♯">♯</button>
-          <button class="kb-btn acc-btn" data-acc="♭">♭</button>
-          <button class="kb-btn acc-btn" data-acc="♮">♮</button>
           <button class="kb-btn action-kb" id="kb-backspace">⌫ 退格</button>
           <button class="kb-btn action-kb" id="kb-clear">🗑️ 清空此格</button>
         </div>
       </div>
 
-      <div class="unified-action-row" style="margin-bottom: 24px;">
-        <button class="play-btn" id="fpt-submitBtn" style="flex:1; padding:14px; font-size:15px;" disabled>✔ 提交作答</button>
-        <button class="play-btn" id="fpt-nextBtn" style="flex:1; padding:14px; font-size:15px; display:none;">下一題 →</button>
+      <div class="unified-action-row" style="margin-bottom: 12px; margin-top: 8px;">
+        <button class="play-btn" id="fpt-submitBtn" style="flex:1; padding:14px; font-size:15px;">✔ 提交作答</button>
       </div>
-      
-      <div class="review-section" id="fpt-reviewSection">
-        <h2>複習訂正區</h2>
-        <div id="fpt-reviewList"></div>
+    </div>
+  </div>
+
+  <!-- 【解答頁】 -->
+  <div id="pageFptAnswer" class="page-view">
+    <div class="top-bar-practice" style="margin-bottom:12px;">
+      <span class="practice-status-badge" id="fpt-answerBadge">解答</span>
+      <div class="score-box" id="fpt-scoreNumAns">0/0</div>
+    </div>
+
+    <div id="fpt-feedbackText" class="feedback-text"></div>
+
+    <div class="unified-action-row" style="margin-top:10px; margin-bottom:12px;">
+      <button class="play-btn" id="btn-play-all-ans" disabled>🔊 聽完整正解</button>
+      <button class="play-btn" id="btn-play-arp-ans" disabled>🎵 聽分解正解</button>
+    </div>
+
+    <div class="review-label">你的作答 (紅色為錯誤)：</div>
+    <div class="staff-scroll-container" id="ansUserScroll">
+      <div style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%; height: 320px;">
+        <div id="fpt-ansUser-svg"></div>
       </div>
+    </div>
+
+    <div class="review-label" style="margin-top:8px;">標準正解：</div>
+    <div class="staff-scroll-container" id="ansCorrectScroll">
+      <div style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%; height: 320px;">
+        <div id="fpt-ansCorrect-svg"></div>
+      </div>
+    </div>
+
+    <div class="unified-action-row" style="margin-top:12px; margin-bottom: 24px;">
+      <button class="play-btn" id="fpt-nextBtn" style="flex:1; padding:14px; font-size:15px;">下一題 →</button>
     </div>
   </div>
 </div>
@@ -338,8 +379,17 @@ function showPage(pageId) {
   document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
   if (pageId === 'fpt-settings') document.getElementById('pageFptSettings').classList.add('active');
   else if (pageId === 'fpt-practice') document.getElementById('pageFptPractice').classList.add('active');
+  else if (pageId === 'fpt-answer') document.getElementById('pageFptAnswer').classList.add('active');
+  else if (pageId === 'fpt-review') {
+    document.getElementById('pageFptReview').classList.add('active');
+    if (window.fptModule) window.fptModule.renderReviewPage();
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// 讓 CSS 的 100vh 在行動裝置（避開位址列）更準確
+function setVH(){ document.documentElement.style.setProperty('--app-vh', window.innerHeight * 0.01 + 'px'); }
+window.addEventListener('resize', setVH); setVH();
 
 (function(){
   const VF = Vex.Flow;
@@ -741,16 +791,36 @@ function showPage(pageId) {
         }
       }
 
-      // 拿坡里六和絃：找一個下屬功能（ii/iv 系列，且未被使用）的位置替換
-      if (Math.random() < 0.35 || !hasLv4Feature) {
+      // 拿坡里六和絃 N6：屬於下屬功能，古典上必須解決到屬功能 V。
+      // 只在「本格是下屬和絃(ii°/iv系列) 且 下一格是 V 級」的位置插入；沒有這種位置就不硬塞。
+      if (Math.random() < 0.5 || !hasLv4Feature) {
+        // 先找現成的「下屬和絃 → V」銜接點
+        let n6spots = [];
         for (let i = 1; i < n - 1; i++) {
           if (usedIdx.has(i)) continue;
           let base = seq[i].replace(/[0-9]/g, '');
-          if (base === (isMinor ? 'ii°' : 'ii') || base === (isMinor ? 'iv' : 'IV')) {
-            seq[i] = 'N6';
-            usedIdx.add(i);
-            hasLv4Feature = true;
-            break;
+          let nextBase = (seq[i + 1] || '').replace(/[0-9]/g, '');
+          let isSubdom = base === (isMinor ? 'ii°' : 'ii') || base === (isMinor ? 'iv' : 'IV');
+          if (isSubdom && nextBase === 'V') n6spots.push(i);
+        }
+        if (n6spots.length > 0) {
+          let idx = n6spots[Math.floor(Math.random() * n6spots.length)];
+          seq[idx] = 'N6';
+          usedIdx.add(idx);
+          hasLv4Feature = true;
+        } else if (!hasLv4Feature) {
+          // 沒有現成銜接點，主動製造一組 N6 → V（挑一個非頭尾、下一格可改成 V 的位置）
+          for (let i = 1; i < n - 2; i++) {
+            if (usedIdx.has(i) || usedIdx.has(i + 1)) continue;
+            let nextBase = (seq[i + 1] || '').replace(/[0-9]/g, '');
+            // 下一格若本來就是 V，或可安全改成 V（避免破壞終止式主和絃）
+            if (nextBase === 'V' || (i + 1 < n - 1)) {
+              seq[i] = 'N6';
+              seq[i + 1] = 'V';
+              usedIdx.add(i); usedIdx.add(i + 1);
+              hasLv4Feature = true;
+              break;
+            }
           }
         }
       }
@@ -904,13 +974,23 @@ function showPage(pageId) {
             // 防聲部超越
             if (tv[0] < pv[1] || tv[1] < pv[2] || tv[2] < pv[3]) continue;
             
-            // 嚴格過濾 Tritone Leap / 大跳
+            // 嚴格過濾 Tritone Leap / 大跳（上三聲部）
             let hasBadLeap = false;
             for (let v = 0; v < 4; v++) {
                 let leap = Math.abs(tv[v] - pv[v]);
                 if (leap === 6 || leap > 12) { hasBadLeap = true; break; }
             }
             if (hasBadLeap) continue;
+
+            // 低音聲部（index 3）避免跳進超過完全五度，但保留兩種古典合理大跳：
+            //   (a) 終止式 V→I 的低音四/五度跳  (b) 低音八度跳（同音名不同八度）
+            let bassLeap = Math.abs(tv[3] - pv[3]);
+            if (bassLeap > 7) {
+              let isVtoI = (prevBase === 'V') && (currBase === 'I' || currBase === 'i');
+              let isOctaveJump = (bassLeap === 12) && (tv[3] % 12 === pv[3] % 12);
+              // V→I 允許到完全五度（7）或上行四度（5），八度跳單獨允許；其餘一律淘汰
+              if (!(isVtoI || isOctaveJump)) continue;
+            }
 
             // 防平行五度/八度 ＋ 外聲部隱伏五度/隱伏八度
             let hasParallel = false;
@@ -1209,16 +1289,19 @@ function showPage(pageId) {
 
       this.keyObj = poolKeys[Math.floor(Math.random() * poolKeys.length)];
 
-      // 找不到完全合規（無平行五八度、導音/七音正確解決、七和絃四音完整...）的聲部路徑，就換一組級數重新出題。
-      // 若連續多次仍無解（多發生在 Lv.4 長樂句、七和絃過度堆疊時），逐步降低七和絃密度以確保一定求得合規解。
+      // 找不到完全合規（無平行五八度、導音/七音正確解決、七和絃四音完整、低音不跳進...）的聲部路徑，
+      // 就換一組級數重新出題。若連續多次仍無解（多發生在 Lv.4 長樂句、七和絃過度堆疊時），
+      // 逐步降低七和絃密度；仍無解則短暫降一級難度求解，確保永遠出得了題。
       let attempts = 0; let seq = null; let voicings = null;
-      while (attempts < 60 && !voicings) {
-        let densityScale = attempts < 20 ? 1.0 : (attempts < 40 ? 0.7 : 0.45);
-        seq = HARMONY_ENGINE.generateSkeleton(this.bars, this.keyObj.isMin, this.curLevel.id, densityScale);
+      let effLevel = this.curLevel.id;
+      while (attempts < 100 && !voicings) {
+        let densityScale = attempts < 25 ? 1.0 : (attempts < 50 ? 0.6 : (attempts < 75 ? 0.35 : 0.15));
+        seq = HARMONY_ENGINE.generateSkeleton(this.bars, this.keyObj.isMin, effLevel, densityScale);
         voicings = HARMONY_ENGINE.solveVoiceLeading(seq, this.keyObj.isMin, this.keyObj.off);
         attempts++;
-        if (!voicings && attempts % 20 === 0) {
+        if (!voicings && attempts % 25 === 0) {
           this.keyObj = poolKeys[Math.floor(Math.random() * poolKeys.length)];
+          if (attempts >= 75 && effLevel > 1) effLevel--; // 最後手段：暫時降一級確保有解
         }
       }
       this.questionSeq = seq;
@@ -1279,11 +1362,9 @@ function showPage(pageId) {
     },
 
     checkSubmitState: function() {
-      let allSeqFilled = this.userSeq.every(val => val !== '' && !val.endsWith('/'));
-      let allBassFilled = this.userBass.every(val => val !== null);
-      let keyFilled = !!this.userKeyAns;
-      let noPendingSlash = this.pendingSlashStage === 0;
-      document.getElementById('fpt-submitBtn').disabled = !(allSeqFilled && allBassFilled && keyFilled && noPendingSlash);
+      // 提交鈕永遠可按；未填完的格子會在提交時跳出確認提示，並計為錯誤
+      let btn = document.getElementById('fpt-submitBtn');
+      if (btn) btn.disabled = false;
     },
 
     updateUI: function() {
@@ -1307,22 +1388,32 @@ function showPage(pageId) {
 
       const container = document.getElementById(targetSvgId); if (!container) return;
       container.innerHTML = '';
+
+      // 作答階段（主練習譜、尚未提交）只顯示低音譜表以節省空間；
+      // 解答/複習/顯示正解時顯示完整大譜表（高音+低音四聲部）。
+      let bassOnly = (targetSvgId === 'fpt-staff-svg') && !isSubmitted && !showAnswer;
+      // 各區塊的垂直座標：大譜表用雙行、只顯示低音時把低音行提到最上方
+      const BASS_TOP = bassOnly ? 15 : 115;
+      const TREBLE_TOP = 15;
+      const SVG_H = bassOnly ? 150 : 240;
+      const SLOT_TOP = bassOnly ? 155 : 245; // 級數作答格 / 調性下拉的垂直位置
       
       let overlay = document.getElementById(targetSvgId + '-overlay');
       if (!overlay) {
         overlay = document.createElement('div'); overlay.id = targetSvgId + '-overlay';
         overlay.style.position = 'absolute'; overlay.style.top = '0px'; overlay.style.left = '0';
-        overlay.style.width = '100%'; overlay.style.height = '310px';
+        overlay.style.width = '100%';
         overlay.style.pointerEvents = 'none'; 
         overlay.style.zIndex = '10';
         container.parentElement.appendChild(overlay);
       }
+      overlay.style.height = (bassOnly ? 240 : 310) + 'px';
       overlay.innerHTML = '';
 
       // 精確修復寬度計算
       const width = Math.max(500, bars * 110 + 180) + 40; 
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-      renderer.resize(width, 240);
+      renderer.resize(width, SVG_H);
       const ctx = renderer.getContext();
       
       let xPos = 30; // 右移防大括號裁切
@@ -1331,21 +1422,25 @@ function showPage(pageId) {
 
       for (let i = 0; i < bars; i++) {
         let isFirst = (i === 0); let w = isFirst ? barW + 80 : barW;
-        let sT = new VF.Stave(xPos, 15, w); let sB = new VF.Stave(xPos, 115, w);
+        let sT = bassOnly ? null : new VF.Stave(xPos, TREBLE_TOP, w);
+        let sB = new VF.Stave(xPos, BASS_TOP, w);
         if (isFirst) { 
-            sT.addClef('treble').addKeySignature(keyObj.vfk).addTimeSignature('4/4'); 
+            if (sT) sT.addClef('treble').addKeySignature(keyObj.vfk).addTimeSignature('4/4'); 
             sB.addClef('bass').addKeySignature(keyObj.vfk).addTimeSignature('4/4'); 
         }
         if (i === bars - 1) {
-            sT.setEndBarType(VF.Barline.type.END); sB.setEndBarType(VF.Barline.type.END);
+            if (sT) sT.setEndBarType(VF.Barline.type.END);
+            sB.setEndBarType(VF.Barline.type.END);
         }
-        sT.setContext(ctx).draw(); sB.setContext(ctx).draw();
-        if (isFirst) {
+        if (sT) sT.setContext(ctx).draw();
+        sB.setContext(ctx).draw();
+        if (isFirst && sT) {
           new VF.StaveConnector(sT, sB).setType(VF.StaveConnector.type.BRACE).setContext(ctx).draw();
           new VF.StaveConnector(sT, sB).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(ctx).draw();
         }
 
-        let startX = sT.getNoteStartX(); let endX = sT.getX() + sT.getWidth();
+        let refStave = sT || sB;
+        let startX = refStave.getNoteStartX(); let endX = refStave.getX() + refStave.getWidth();
         let slotLeft = startX; let slotWidth = endX - startX;
 
         if (targetSvgId === 'fpt-staff-svg' && i === this.activeSlot) {
@@ -1355,9 +1450,9 @@ function showPage(pageId) {
         // 生成調性下拉選單
         if (isFirst) {
             let ksDiv = document.createElement('div');
-            ksDiv.style.position = 'absolute'; ksDiv.style.left = (sT.getX()) + 'px'; 
-            ksDiv.style.top = '245px';
-            ksDiv.style.width = Math.max(70, startX - sT.getX() - 5) + 'px'; ksDiv.style.height = '64px';
+            ksDiv.style.position = 'absolute'; ksDiv.style.left = (refStave.getX()) + 'px'; 
+            ksDiv.style.top = SLOT_TOP + 'px';
+            ksDiv.style.width = Math.max(70, startX - refStave.getX() - 5) + 'px'; ksDiv.style.height = '64px';
             ksDiv.style.pointerEvents = 'auto';
             
             let optsHtml = '<option value="">調性?</option>';
@@ -1386,10 +1481,12 @@ function showPage(pageId) {
 
         // ====== 視覺焦點與全直行感應區 ======
         if (!isSubmitted && !showAnswer) {
-            // 五線譜上半部 Hitbox (自動切換到 Bass)
+            // 低音譜表感應區（點擊切換到 Bass 編輯）
             let hitTop = document.createElement('div');
             hitTop.className = 'hitbox-top';
             hitTop.style.left = slotLeft + 'px'; hitTop.style.width = slotWidth + 'px';
+            hitTop.style.top = '0px';
+            hitTop.style.height = (bassOnly ? 145 : 230) + 'px';
             hitTop.onclick = () => { 
                 window.fptModule.switchTab('bass');
                 window.fptModule.activeSlot = i; 
@@ -1398,10 +1495,12 @@ function showPage(pageId) {
             };
             overlay.appendChild(hitTop);
             
-            // 下方格子 Hitbox (自動切換到 Chord)
+            // 級數作答格感應區（點擊切換到 Chord 編輯）
             let hitBot = document.createElement('div');
             hitBot.className = 'hitbox-bot';
             hitBot.style.left = slotLeft + 'px'; hitBot.style.width = slotWidth + 'px';
+            hitBot.style.top = (bassOnly ? 150 : 235) + 'px';
+            hitBot.style.height = '75px';
             hitBot.onclick = () => { 
                 window.fptModule.switchTab('chord');
                 window.fptModule.activeSlot = i; 
@@ -1415,7 +1514,7 @@ function showPage(pageId) {
         if (!isSubmitted && !showAnswer && this.activeTab === 'bass' && i === this.activeSlot) {
             let noteBox = document.createElement('div');
             noteBox.className = 'active-note-box';
-            noteBox.style.top = '125px'; // 低音譜表位置
+            noteBox.style.top = (bassOnly ? 25 : 125) + 'px'; // 低音譜表位置（隨模式調整）
             noteBox.style.left = slotLeft + 'px';
             noteBox.style.width = (slotWidth - 6) + 'px';
             noteBox.style.height = '80px';
@@ -1439,7 +1538,7 @@ function showPage(pageId) {
         
         slot.id = `${targetSvgId}-slot-${i}`;
         slot.style.position = 'absolute'; slot.style.left = slotLeft + 'px'; 
-        slot.style.top = '245px'; 
+        slot.style.top = SLOT_TOP + 'px'; 
         slot.style.width = (slotWidth - 6) + 'px'; slot.style.height = '64px';
         
         let dispVal = opt.forceCorrectSlots ? this.questionSeq[i] : (userSeq[i] || '—');
@@ -1473,8 +1572,10 @@ function showPage(pageId) {
           new VF.Formatter().joinVoices([vB1, vB2]).format([vB1, vB2], slotWidth - 20);
           vB1.draw(ctx, sB); vB2.draw(ctx, sB);
         } else {
-          let rT = new VF.StaveNote({ clef: 'treble', keys: ['a/4'], duration: 'wr' });
-          VF.Formatter.FormatAndDraw(ctx, sT, [rT]);
+          if (sT) {
+            let rT = new VF.StaveNote({ clef: 'treble', keys: ['a/4'], duration: 'wr' });
+            VF.Formatter.FormatAndDraw(ctx, sT, [rT]);
+          }
           
           if (userBass[i] && !isSubmitted) {
              let ub = userBass[i];
@@ -1517,7 +1618,8 @@ function showPage(pageId) {
       this.updatePlayBtns();
       this.updateSlotsOverlay(); 
       
-      document.getElementById('fpt-playCaption').textContent = '🎵 標準音 A4，準備聆聽題目...';
+      let capEl = document.getElementById('fpt-playCaption');
+      if (capEl) capEl.textContent = '🎵 標準音 A4，準備聆聽題目...';
 
       const ctx = ensureAudio();
       // 先給作答者標準音 A4（MIDI 69），音量比照題目外聲部（gain 3.5），約 1 秒，
@@ -1530,7 +1632,7 @@ function showPage(pageId) {
 
       // 標準音與停頓結束後，更新提示文字為正在播放題目
       const capTimer = setTimeout(() => {
-        if (this.isPlaying) document.getElementById('fpt-playCaption').textContent = `🔊 正在播放 (${modeStr === 'block'?'完整四部':'分解＋完整'})...`;
+        if (this.isPlaying && capEl) capEl.textContent = `🔊 正在播放 (${modeStr === 'block'?'完整四部':'分解＋完整'})...`;
       }, (t - ctx.currentTime) * 1000);
       pendingTimers.push(capTimer);
 
@@ -1558,7 +1660,7 @@ function showPage(pageId) {
 
       const timer = setTimeout(() => {
         this.isPlaying = false; this.updatePlayBtns();
-        document.getElementById('fpt-playCaption').textContent = '✅ 播放完畢，請切換頁籤填寫低音與級數！';
+        if (capEl) capEl.textContent = '✅ 播放完畢，請切換頁籤填寫低音與級數！';
       }, (t - ctx.currentTime) * 1000 + 100);
       pendingTimers.push(timer);
     },
@@ -1602,8 +1704,14 @@ function showPage(pageId) {
       const btns = ['btn-play-all', 'btn-play-arp'];
       btns.forEach(id => {
         let b = document.getElementById(id);
+        if (!b) return;
         if (this.isPlaying) b.disabled = true;
         else b.disabled = !pianoInst || (this.mode === 'test' && this.testSession && this.testSession.replaysLeft <= 0);
+      });
+      // 解答頁的播放按鈕（不受測驗次數限制）
+      ['btn-play-all-ans', 'btn-play-arp-ans'].forEach(id => {
+        let b = document.getElementById(id);
+        if (b) b.disabled = this.isPlaying || !pianoInst;
       });
       if (!this.isPlaying && this.mode === 'test' && this.testSession) {
         document.getElementById('btn-play-all').textContent = `🔊 完整四部 (剩 ${this.testSession.replaysLeft} 次)`;
@@ -1613,6 +1721,19 @@ function showPage(pageId) {
     },
 
     submitAnswer: function() {
+      // 提交前檢查未完成項目，跳出確認提示
+      let emptyBass = this.userBass.filter(v => v === null).length;
+      let emptySeq = this.userSeq.filter(v => v === '' || v.endsWith('/')).length;
+      let keyMissing = !this.userKeyAns;
+      let issues = [];
+      if (keyMissing) issues.push('調性尚未選擇');
+      if (emptyBass > 0) issues.push(`${emptyBass} 格低音未填`);
+      if (emptySeq > 0) issues.push(`${emptySeq} 格級數未填或未完成`);
+      if (issues.length > 0) {
+        let msg = '尚有未完成項目：\n・' + issues.join('\n・') + '\n\n未填的部分會計為錯誤，確定要提交嗎？';
+        if (!window.confirm(msg)) return;
+      }
+
       window.fptStopAll();
       this.isSubmitted = true;
       let allCorrect = true;
@@ -1624,16 +1745,39 @@ function showPage(pageId) {
       for (let i = 0; i < this.bars; i++) {
         let uNorm = normalizeChord(this.userSeq[i], this.keyObj.isMin);
         let qNorm = normalizeChord(this.questionSeq[i], this.keyObj.isMin);
-        let isChordC = (uNorm === qNorm);
-        let isBassC = (this.userBass[i].midi === this.questionVoicings[i][3]);
+        let isChordC = (this.userSeq[i] !== '' && uNorm === qNorm);
+        // 未填低音 (null) 視為錯誤，不再直接讀取 .midi 造成 crash
+        let isBassC = (this.userBass[i] != null) && (this.userBass[i].midi === this.questionVoicings[i][3]);
         
         results.push({ chord: isChordC, bass: isBassC });
         if (!isChordC || !isBassC) allCorrect = false;
       }
 
-      this.renderStaff({ showAnswer: true, forceResults: results }); 
-      document.getElementById('fpt-submitBtn').style.display = 'none';
-      document.getElementById('fpt-nextBtn').style.display = 'block';
+      // 在解答頁渲染雙譜表對照：上=你的作答（紅色標錯）、下=標準正解（完整四聲部）
+      this.renderStaff({
+          targetSvgId: 'fpt-ansUser-svg', bars: this.bars, keyObj: this.keyObj,
+          userSeq: this.userSeq, userBass: this.userBass, userKeyAns: this.userKeyAns,
+          isSubmitted: true, showAnswer: false, customVoicings: this.questionVoicings, forceResults: results
+      });
+      this.renderStaff({
+          targetSvgId: 'fpt-ansCorrect-svg', bars: this.bars, keyObj: this.keyObj,
+          userSeq: this.questionSeq, userBass: this.userBass, userKeyAns: this.keyObj.name,
+          isSubmitted: true, showAnswer: true, customVoicings: this.questionVoicings, forceCorrectSlots: true
+      });
+      // 兩個譜表捲軸同步
+      setTimeout(() => {
+        let ua = document.getElementById('ansUserScroll');
+        let ca = document.getElementById('ansCorrectScroll');
+        if (ua && ca && !ua._syncBound) {
+          ua._syncBound = true;
+          let syncing = false;
+          let link = (from, to) => from.addEventListener('scroll', () => {
+            if (syncing) { syncing = false; return; }
+            syncing = true; to.scrollLeft = from.scrollLeft;
+          }, { passive: true });
+          link(ua, ca); link(ca, ua);
+        }
+      }, 60);
 
       const ft = document.getElementById('fpt-feedbackText');
       if (allCorrect) {
@@ -1644,73 +1788,94 @@ function showPage(pageId) {
         let hasBassErr = results.some(r => !r.bass);
         let hasChordErr = results.some(r => !r.chord);
         if (hasBassErr && hasChordErr) {
-            ft.textContent = '❌ 低音與級數都有錯喔！請查看下方訂正區對比實際聲部：';
+            ft.textContent = '❌ 低音與級數都有錯喔！完整正解如下，也已收進錯題本：';
             ft.className = 'feedback-text wrong';
         } else if (hasBassErr) {
-            ft.textContent = '⚠️ 級數寫對了，但是 Bass 低音抓錯囉！請查看訂正區：';
+            ft.textContent = '⚠️ 級數寫對了，但低音抓錯囉！完整正解如下，已收進錯題本：';
             ft.className = 'feedback-text partial';
         } else {
-            ft.textContent = '⚠️ 低音全對！但上方和絃性質或轉位判斷錯誤，請查看訂正區：';
+            ft.textContent = '⚠️ 低音全對！但和絃性質或轉位判斷有誤，完整正解如下，已收進錯題本：';
             ft.className = 'feedback-text partial';
         }
         this.addToReview(results, keyCorrect);
       }
-      this.score.t++; document.getElementById('fpt-scoreNum').textContent = `${this.score.c}/${this.score.t}`;
+      this.score.t++;
+      let scoreText = `${this.score.c}/${this.score.t}`;
+      document.getElementById('fpt-scoreNum').textContent = scoreText;
+      document.getElementById('fpt-scoreNumAns').textContent = scoreText;
+      document.getElementById('fpt-answerBadge').textContent = allCorrect ? '✅ 答對了' : '📖 解答對照';
+      this.updatePlayBtns();
+      showPage('fpt-answer');
     },
 
     addToReview: function(results, keyCorrect) {
-      const revSec = document.getElementById('fpt-reviewSection');
-      revSec.style.display = 'block';
-      const list = document.getElementById('fpt-reviewList');
       const id = this.reviewItems.length + 1;
-      
-      let rItem = {
+      // 只儲存錯題資料，實際渲染延到進入錯題本頁時才做（節省效能）
+      this.reviewItems.push({
           id: id, bars: this.bars, keyObj: this.keyObj,
           userKeyAns: this.userKeyAns, userSeq: [...this.userSeq], userBass: JSON.parse(JSON.stringify(this.userBass)),
-          questionSeq: [...this.questionSeq], questionVoicings: [...this.questionVoicings]
-      };
-      this.reviewItems.push(rItem);
+          questionSeq: [...this.questionSeq], questionVoicings: [...this.questionVoicings],
+          results: results.map(r => ({...r}))
+      });
+      this.updateReviewCount();
+    },
 
-      let box = document.createElement('div'); box.className = 'review-item';
-      box.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <span style="font-weight:700; color:var(--wrong);">❌ 錯題 #${id} (正解: ${this.keyObj.name})</span>
-        </div>
-        <div class="review-label">你的作答 (紅色為錯誤低音)：</div>
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-           <button class="action-btn" style="border-color:var(--wrong); color:var(--wrong);" onclick="window.fptModule.playReview(${id}, 'block')">🔊 聽完整 (你的)</button>
-           <button class="action-btn" style="border-color:var(--wrong); color:var(--wrong);" onclick="window.fptModule.playReview(${id}, 'arpeggio')">🎵 聽分解 (你的)</button>
-        </div>
-        <div class="review-staff" id="rev-user-scroll-${id}">
-          <div id="rev-user-wrapper-${id}" style="position:relative; width:max-content; min-width:100%; height:320px;">
-             <div id="rev-user-${id}"></div>
+    updateReviewCount: function() {
+      let el = document.getElementById('fpt-reviewCount');
+      if (el) el.textContent = this.reviewItems.length;
+    },
+
+    // 進入錯題本頁時，渲染所有累積的錯題（你的作答 vs 標準正解，捲軸同步）
+    renderReviewPage: function() {
+      const list = document.getElementById('fpt-reviewList');
+      const empty = document.getElementById('fpt-reviewEmpty');
+      if (!list) return;
+      list.innerHTML = '';
+      if (this.reviewItems.length === 0) { if (empty) empty.style.display = 'block'; return; }
+      if (empty) empty.style.display = 'none';
+
+      // 由新到舊排列
+      let items = [...this.reviewItems].reverse();
+      items.forEach(rItem => {
+        let id = rItem.id;
+        let box = document.createElement('div'); box.className = 'review-item';
+        box.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span style="font-weight:700; color:var(--wrong);">❌ 錯題 #${id} (正解: ${rItem.keyObj.name})</span>
           </div>
-        </div>
-        <div class="review-label" style="margin-top:8px;">標準正解：</div>
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-           <button class="action-btn" style="border-color:var(--correct); color:var(--correct);" onclick="window.fptModule.playReview(${id}, 'block')">🔁 聽完整 (正解)</button>
-           <button class="action-btn" style="border-color:var(--correct); color:var(--correct);" onclick="window.fptModule.playReview(${id}, 'arpeggio')">🎵 聽分解 (正解)</button>
-        </div>
-        <div class="review-staff" id="rev-correct-scroll-${id}">
-          <div id="rev-correct-wrapper-${id}" style="position:relative; width:max-content; min-width:100%; height:320px;">
-             <div id="rev-correct-${id}"></div>
+          <div class="review-label">你的作答 (紅色為錯誤)：</div>
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
+             <button class="action-btn" style="border-color:var(--correct); color:var(--correct);" onclick="window.fptModule.playReview(${id}, 'block')">🔊 聽完整正解</button>
+             <button class="action-btn" style="border-color:var(--correct); color:var(--correct);" onclick="window.fptModule.playReview(${id}, 'arpeggio')">🎵 聽分解正解</button>
           </div>
-        </div>
-      `;
-      list.prepend(box);
+          <div class="review-staff" id="rev-user-scroll-${id}">
+            <div style="position:relative; width:max-content; min-width:100%; height:320px;">
+               <div id="rev-user-${id}"></div>
+            </div>
+          </div>
+          <div class="review-label" style="margin-top:8px;">標準正解：</div>
+          <div class="review-staff" id="rev-correct-scroll-${id}">
+            <div style="position:relative; width:max-content; min-width:100%; height:320px;">
+               <div id="rev-correct-${id}"></div>
+            </div>
+          </div>
+        `;
+        list.appendChild(box);
+      });
 
       setTimeout(() => {
+        items.forEach(rItem => {
+          let id = rItem.id;
           this.renderStaff({
               targetSvgId: `rev-user-${id}`, bars: rItem.bars, keyObj: rItem.keyObj,
               userSeq: rItem.userSeq, questionSeq: rItem.questionSeq, userBass: rItem.userBass, userKeyAns: rItem.userKeyAns,
-              isSubmitted: true, showAnswer: false, customVoicings: rItem.questionVoicings, forceResults: results
+              isSubmitted: true, showAnswer: false, customVoicings: rItem.questionVoicings, forceResults: rItem.results
           });
           this.renderStaff({
               targetSvgId: `rev-correct-${id}`, bars: rItem.bars, keyObj: rItem.keyObj,
               userSeq: rItem.questionSeq, questionSeq: rItem.questionSeq, userBass: rItem.userBass, userKeyAns: rItem.keyObj.name,
               isSubmitted: true, showAnswer: true, customVoicings: rItem.questionVoicings, forceCorrectSlots: true
           });
-          // 兩個譜表捲軸同步：捲動其中一個，另一個跟到相同水平位置
           let ua = document.getElementById(`rev-user-scroll-${id}`);
           let ca = document.getElementById(`rev-correct-scroll-${id}`);
           if (ua && ca) {
@@ -1721,6 +1886,7 @@ function showPage(pageId) {
             }, { passive: true });
             link(ua, ca); link(ca, ua);
           }
+        });
       }, 50);
     },
 
@@ -1742,8 +1908,6 @@ function showPage(pageId) {
           this.testSession = { replaysLeft: max, total: max };
         } else this.testSession = null;
         
-        document.getElementById('fpt-reviewSection').style.display = 'none';
-        document.getElementById('fpt-reviewList').innerHTML = '';
         this.generateQuestion();
         showPage('fpt-practice');
         this.switchTab('bass');
@@ -1751,6 +1915,9 @@ function showPage(pageId) {
 
       document.getElementById('btn-play-all').onclick = () => { if(this.mode==='test'&&this.testSession)this.testSession.replaysLeft--; this.playProgression('block'); };
       document.getElementById('btn-play-arp').onclick = () => { if(this.mode==='test'&&this.testSession)this.testSession.replaysLeft--; this.playProgression('arpeggio'); };
+      // 解答頁的播放按鈕（不受測驗次數限制，可自由聆聽正解）
+      document.getElementById('btn-play-all-ans').onclick = () => this.playProgression('block');
+      document.getElementById('btn-play-arp-ans').onclick = () => this.playProgression('arpeggio');
 
       document.getElementById('btn-case-switch').onclick = (e) => {
         e.target.classList.toggle('active-toggle');
@@ -1784,11 +1951,22 @@ function showPage(pageId) {
       document.getElementById('fpt-submitBtn').onclick = () => this.submitAnswer();
       document.getElementById('fpt-nextBtn').onclick = () => {
         window.fptStopAll();
-        document.getElementById('fpt-submitBtn').style.display = 'block';
-        document.getElementById('fpt-nextBtn').style.display = 'none';
         document.getElementById('fpt-feedbackText').className = 'feedback-text';
+        document.getElementById('fpt-feedbackText').textContent = '';
         this.generateQuestion();
         this.switchTab('bass');
+        showPage('fpt-practice');
+      };
+
+      // 錯題本清空
+      let clearBtn = document.getElementById('fpt-clearReviewBtn');
+      if (clearBtn) clearBtn.onclick = () => {
+        if (this.reviewItems.length === 0) return;
+        if (window.confirm('確定要清空所有錯題紀錄嗎？此動作無法復原。')) {
+          this.reviewItems = [];
+          this.updateReviewCount();
+          this.renderReviewPage();
+        }
       };
 
       window.addEventListener('resize', () => { if(document.getElementById('pageFptPractice').classList.contains('active')) this.updateUI(); });
