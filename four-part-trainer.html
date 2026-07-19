@@ -317,7 +317,7 @@
           <button class="kb-btn deg-btn" data-deg="5">V</button>
           <button class="kb-btn deg-btn" data-deg="6">VI</button>
           <button class="kb-btn deg-btn" data-deg="7">VII</button>
-          <button class="kb-btn deg-btn" id="btn-deg-N" style="display:none;" data-deg="N">N</button>
+          <button class="kb-btn deg-btn" id="btn-deg-N" style="display:none;" data-deg="N6">N6</button>
         </div>
         <div class="kb-row" id="kb-row-inv">
           <button class="kb-btn" id="btn-sev-switch" style="background:#f0eef9; border-color:#ccd;">7和絃 [關]</button>
@@ -497,7 +497,12 @@ window.addEventListener('resize', setVH); setVH();
     let str = map[midi % 12];
     let n = str[0];              // 第一個字元一定是音名字母（c/d/e/f/g/a/b）
     let a = str.slice(1);        // 其餘（可能是 ''、'#'、'##'、'b'、'bb'）才是升降記號
-    return { keyStr: `${n}${a}/${Math.floor(midi/12)-1}`, letter: n.toUpperCase(), acc: a };
+    // 正確八度：由「字母自然音 + 升降半音」反推，避免 B#/Cb/E#/Fb 等跨 C 分界的同音異名被畫錯八度
+    // （例如 c#小調導音 B#，音高等於 C，但字母是 B，須歸屬低一個八度）
+    let LS = { 'c':0,'d':2,'e':4,'f':5,'g':7,'a':9,'b':11 };
+    let accSemi = a === '##' ? 2 : a === '#' ? 1 : a === 'bb' ? -2 : a === 'b' ? -1 : 0;
+    let realOct = Math.round((midi - LS[n] - accSemi) / 12) - 1;
+    return { keyStr: `${n}${a}/${realOct}`, letter: n.toUpperCase(), acc: a };
   }
 
   // 增六和絃專用拼寫：修正 ♯4（升四級）與 ♭6（降六級）兩個特徵音的正確記譜。
@@ -508,14 +513,13 @@ window.addEventListener('resize', setVH); setVH();
     let pc = midi % 12;
     let flat6 = (keyOffset + 8) % 12;   // ♭6
     let sharp4 = (keyOffset + 6) % 12;  // ♯4
-    let octave = Math.floor(midi / 12) - 1;
     function build(letterIdx, targetPc) {
       let letter = LETTERS[letterIdx];
       let natural = LETTER_SEMI[letter];
       let diff = ((targetPc - natural + 18) % 12) - 6; // -6..+5 範圍的升降半音數
       let acc = diff === 2 ? '##' : diff === 1 ? '#' : diff === -1 ? 'b' : diff === -2 ? 'bb' : '';
-      // 依字母與八度修正跨 B/C 邊界的八度歸屬
-      let realOct = octave;
+      // 正確八度：由「該字母自然音 + 升降」反推，避免 B#/Cb 等跨 C 分界的同音異名被畫錯八度
+      let realOct = Math.round((midi - natural - diff) / 12) - 1;
       return { keyStr: `${letter.toLowerCase()}${acc}/${realOct}`, letter: letter, acc: acc };
     }
     if (pc === sharp4) {
@@ -527,6 +531,56 @@ window.addEventListener('resize', setVH); setVH();
       // ♭6 = 第 6 級字母 + 降（第6級 = 主音字母往上數 5 個字母）
       let idx = (tonicLetterIdx + 5) % 7;
       return build(idx, pc);
+    }
+    return null;
+  }
+
+  // 拿坡里六和絃 N6 專用拼寫：N6 = 降二級(♭II)大三和絃，三個音為 ♭2 - 4 - ♭6。
+  // 這些是調外變化音，直接依「正確的級數字母 + 升降」拼寫，繞過調性表的自然音拼法（如 B 大調誤拼成 B#、F##）。
+  function spellNapolitanTone(midi, keyOffset, tonicLetterIdx) {
+    let pc = midi % 12;
+    let flat2 = (keyOffset + 1) % 12;   // ♭2（拿坡里根音）
+    let deg4  = (keyOffset + 5) % 12;   // 4（拿坡里三音）
+    let flat6 = (keyOffset + 8) % 12;   // ♭6（拿坡里五音）
+    function build(letterIdx, targetPc) {
+      let letter = LETTERS[letterIdx];
+      let natural = LETTER_SEMI[letter];
+      let diff = ((targetPc - natural + 18) % 12) - 6;
+      let acc = diff === 2 ? '##' : diff === 1 ? '#' : diff === -1 ? 'b' : diff === -2 ? 'bb' : '';
+      let realOct = Math.round((midi - natural - diff) / 12) - 1;
+      return { keyStr: `${letter.toLowerCase()}${acc}/${realOct}`, letter: letter, acc: acc };
+    }
+    if (pc === flat2) return build((tonicLetterIdx + 1) % 7, pc); // ♭2 = 第2級字母 + 降
+    if (pc === deg4)  return build((tonicLetterIdx + 3) % 7, pc); // 4  = 第4級字母
+    if (pc === flat6) return build((tonicLetterIdx + 5) % 7, pc); // ♭6 = 第6級字母 + 降
+    return null;
+  }
+
+  // 副屬和絃 V(x)/target 專用拼寫：把 target 當暫時主音，其屬和絃為
+  //   根音(target上五度) - 大三度 - 完全五度 - 小七度，各音以「正確音程字母 + 升降」推算，
+  //   避免本調拼寫表把臨時導音（升音）誤拼成降記號等音（如 a 小調 D♯ 誤拼成 E♭）。
+  // targetDeg = 目標級數字串（如 'V','ii','IV'）；targetLetterIdx = 目標根音的字母索引(0-6)。
+  function spellSecondaryDominantTone(midi, targetRootPc, targetLetterIdx) {
+    let pc = midi % 12;
+    // 副屬和絃根音 = 目標根音往上完全五度；其字母 = 目標字母往上 4 個字母
+    let domRootPc = (targetRootPc + 7) % 12;
+    let domRootLetterIdx = (targetLetterIdx + 4) % 7;
+    let tones = [
+      { letterIdx: domRootLetterIdx,           tpc: domRootPc },              // 根音
+      { letterIdx: (domRootLetterIdx + 2) % 7, tpc: (domRootPc + 4) % 12 },   // 大三度（臨時導音）
+      { letterIdx: (domRootLetterIdx + 4) % 7, tpc: (domRootPc + 7) % 12 },   // 完全五度
+      { letterIdx: (domRootLetterIdx + 6) % 7, tpc: (domRootPc + 10) % 12 }   // 小七度
+    ];
+    function build(letterIdx, targetPc) {
+      let letter = LETTERS[letterIdx];
+      let natural = LETTER_SEMI[letter];
+      let diff = ((targetPc - natural + 18) % 12) - 6;
+      let acc = diff === 2 ? '##' : diff === 1 ? '#' : diff === -1 ? 'b' : diff === -2 ? 'bb' : '';
+      let realOct = Math.round((midi - natural - diff) / 12) - 1;
+      return { keyStr: `${letter.toLowerCase()}${acc}/${realOct}`, letter: letter, acc: acc };
+    }
+    for (let tn of tones) {
+      if (pc === tn.tpc) return build(tn.letterIdx, pc);
     }
     return null;
   }
@@ -1495,7 +1549,7 @@ window.addEventListener('resize', setVH); setVH();
 
       if (type === 'deg') {
         let isUpper = document.getElementById('btn-case-switch').classList.contains('active-toggle');
-        let roman = val === 'N' ? 'N' : (isUpper ? ['I','II','III','IV','V','VI','VII'][val-1] : ['i','ii','iii','iv','v','vi','vii'][val-1]);
+        let roman = (val === 'N' || val === 'N6') ? 'N6' : (isUpper ? ['I','II','III','IV','V','VI','VII'][val-1] : ['i','ii','iii','iv','v','vi','vii'][val-1]);
 
         if (this.pendingSlashStage === 1) {
           // 副屬和絃第一下：寫入斜線前的級數，等待第二下
@@ -1856,13 +1910,38 @@ window.addEventListener('resize', setVH); setVH();
 
         // ====== 渲染音符 ======
         let mAccT = {}; let mAccB = {};
-        // 若本格和絃是增六，使用專用拼寫修正 ♯4/♭6 特徵音
+        // 變化和絃（增六、拿坡里、副屬）使用專用拼寫修正調外變化音，避免調性表的自然音拼法拼錯
         let curSym = (questionSeq && questionSeq[i]) ? questionSeq[i] : '';
         let isAug6Here = (curSym === 'It6' || curSym === 'Fr6' || curSym === 'Ger6');
+        let isN6Here = curSym.includes('N');
+        let isSecDomHere = curSym.includes('/');
         let tonicLetterIdx = LETTERS.indexOf((keyObj.vfk || 'C')[0].toUpperCase());
+        // 副屬和絃：算出目標根音的音級與字母（供專用拼寫用）
+        let secDomTargetPc = null, secDomTargetLetterIdx = null;
+        if (isSecDomHere) {
+          let target = curSym.split('/')[1];
+          // 目標級數 → 相對主音的級數位移（字母數）與音級（半音數）
+          const DEG_INFO = {
+            'I':[0,0],'i':[0,0],'II':[1,2],'ii':[1,2],'III':[2,4],'iii':[2,3],'III+':[2,4],
+            'IV':[3,5],'iv':[3,5],'V':[4,7],'v':[4,7],'VI':[5,9],'vi':[5,9],'VII':[6,11],'vii':[6,10]
+          };
+          let info = DEG_INFO[target] || DEG_INFO[target.replace('°','')] ;
+          if (info) {
+            secDomTargetLetterIdx = (tonicLetterIdx + info[0]) % 7;
+            secDomTargetPc = (keyObj.off + info[1]) % 12;
+          }
+        }
         let spellFn = (midi) => {
           if (isAug6Here) {
             let ov = spellAug6Tone(midi, keyObj.off, tonicLetterIdx);
+            if (ov) return ov;
+          }
+          if (isN6Here) {
+            let ov = spellNapolitanTone(midi, keyObj.off, tonicLetterIdx);
+            if (ov) return ov;
+          }
+          if (isSecDomHere && secDomTargetPc !== null) {
+            let ov = spellSecondaryDominantTone(midi, secDomTargetPc, secDomTargetLetterIdx);
             if (ov) return ov;
           }
           return getSpellingByMidiAndKey(midi, keyObj.name);
