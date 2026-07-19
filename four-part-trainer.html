@@ -318,6 +318,11 @@
           <button class="kb-btn inv-btn" id="inv-btn-2" data-inv="64">64</button>
           <button class="kb-btn inv-btn" id="inv-btn-3" data-inv="42" style="display:none;">42</button>
         </div>
+        <div class="kb-row" id="kb-row-aug6" style="display:none;">
+          <button class="kb-btn aug6-btn" data-aug6="It6" style="background:#eef4f0; border-color:#bcd;">It+6</button>
+          <button class="kb-btn aug6-btn" data-aug6="Fr6" style="background:#eef4f0; border-color:#bcd;">Fr+6</button>
+          <button class="kb-btn aug6-btn" data-aug6="Ger6" style="background:#eef4f0; border-color:#bcd;">Ger+6</button>
+        </div>
         <div class="kb-row">
           <button class="kb-btn mod-btn" data-mod="°">° (減)</button>
           <button class="kb-btn mod-btn" data-mod="ø">ø (半減)</button>
@@ -411,7 +416,8 @@ window.addEventListener('resize', setVH); setVH();
     { id: 1, name: 'Lv.1 本調三和絃原位' },
     { id: 2, name: 'Lv.2 三和絃所有轉位' },
     { id: 3, name: 'Lv.3 三和絃＋七和絃全轉位' },
-    { id: 4, name: 'Lv.4 副屬和絃／拿坡里／變化和絃' }
+    { id: 4, name: 'Lv.4 副屬和絃／拿坡里／變化和絃' },
+    { id: 5, name: 'Lv.5 增六和絃（義／法／德）' }
   ];
 
   // 24 大小調完整對應字典 (C=0 基準)
@@ -484,6 +490,37 @@ window.addEventListener('resize', setVH); setVH();
     return { keyStr: `${n}${a}/${Math.floor(midi/12)-1}`, letter: n.toUpperCase(), acc: a };
   }
 
+  // 增六和絃專用拼寫：修正 ♯4（升四級）與 ♭6（降六級）兩個特徵音的正確記譜。
+  // keyOffset = 該調主音的音級(0-11)。回傳與 getSpellingByMidiAndKey 相同格式，或 null（非特徵音則沿用預設）。
+  const LETTERS = ['C','D','E','F','G','A','B'];
+  const LETTER_SEMI = { 'C':0,'D':2,'E':4,'F':5,'G':7,'A':9,'B':11 };
+  function spellAug6Tone(midi, keyOffset, tonicLetterIdx) {
+    let pc = midi % 12;
+    let flat6 = (keyOffset + 8) % 12;   // ♭6
+    let sharp4 = (keyOffset + 6) % 12;  // ♯4
+    let octave = Math.floor(midi / 12) - 1;
+    function build(letterIdx, targetPc) {
+      let letter = LETTERS[letterIdx];
+      let natural = LETTER_SEMI[letter];
+      let diff = ((targetPc - natural + 18) % 12) - 6; // -6..+5 範圍的升降半音數
+      let acc = diff === 2 ? '##' : diff === 1 ? '#' : diff === -1 ? 'b' : diff === -2 ? 'bb' : '';
+      // 依字母與八度修正跨 B/C 邊界的八度歸屬
+      let realOct = octave;
+      return { keyStr: `${letter.toLowerCase()}${acc}/${realOct}`, letter: letter, acc: acc };
+    }
+    if (pc === sharp4) {
+      // ♯4 = 第 4 級字母 + 升（第4級 = 主音字母往上數 3 個字母）
+      let idx = (tonicLetterIdx + 3) % 7;
+      return build(idx, pc);
+    }
+    if (pc === flat6) {
+      // ♭6 = 第 6 級字母 + 降（第6級 = 主音字母往上數 5 個字母）
+      let idx = (tonicLetterIdx + 5) % 7;
+      return build(idx, pc);
+    }
+    return null;
+  }
+
   function getAccidentalToDraw(spell, mAcc, keyObj) {
     let keyId = spell.letter + spell.octave;
     let currentAcc = mAcc[keyId];
@@ -543,6 +580,10 @@ window.addEventListener('resize', setVH); setVH();
     if (!sym) return '';
     let s = sym.trim();
     let upperS = s.toUpperCase();
+    // 增六和絃正規化（接受 It6/It+6/IT6 等變體）
+    if (/^IT/.test(upperS)) return 'It6';
+    if (/^FR/.test(upperS)) return 'Fr6';
+    if (/^GER/.test(upperS)) return 'Ger6';
     if (upperS.includes('K64') || upperS.includes('CAD64')) s = s.replace(/K64|CAD64/ig, 'I64');
     if (upperS === 'N' || upperS === 'N6' || upperS === 'BII6' || upperS === '♭II6') return 'N6';
     if (isMinor) {
@@ -568,6 +609,13 @@ window.addEventListener('resize', setVH); setVH();
     getChordPcs: function(sym, isMinor) {
       let is7th = /7|65|43|42/.test(sym);
       if (sym.includes('N')) return [1, 5, 8]; // N: bII (1,5,8)
+      // 增六和絃（相對主音音級，低音固定 b6 = 8）：特徵音為增六度 b6→#4(=6)
+      //   It+6 = b6, 1, #4      → [8, 0, 6]（重根音 1）
+      //   Fr+6 = b6, 1, 2, #4   → [8, 0, 2, 6]
+      //   Ger+6 = b6, 1, b3, #4 → [8, 0, 3, 6]
+      if (sym === 'It6') return [8, 0, 6];
+      if (sym === 'Fr6') return [8, 0, 2, 6];
+      if (sym === 'Ger6') return [8, 0, 3, 6];
       if (sym.includes('/')) {
         let target = sym.split('/')[1];
         return getSecondaryDominantPcs(target);
@@ -618,7 +666,7 @@ window.addEventListener('resize', setVH); setVH();
 
       // 結尾盡量用 V 類（各種轉位）接 I；變格終止 IV-I 只保留極低機率（阿們終止另由套組處理）
       let cadType = Math.random() < 0.97 ? 'auth' : 'plag';
-      let picardy = isMinor && levelId === 4 && Math.random() < 0.2;
+      let picardy = isMinor && levelId >= 4 && Math.random() < 0.2;
 
       let seq = Array(bars).fill('');
       seq[0] = TONIC;
@@ -659,6 +707,7 @@ window.addEventListener('resize', setVH); setVH();
       const n = seq.length;
       for (let i = 1; i < n; i++) {
         if (seq[i] !== seq[i - 1]) continue; // 只處理完全相同
+        if (seq[i] === 'It6' || seq[i] === 'Fr6' || seq[i] === 'Ger6') continue; // 增六不動
         // 頭尾主和絃不動；其餘嘗試改成不同轉位或換和絃
         let base = seq[i].replace(/[0-9]/g, '');
         let is7 = /7|65|43|42/.test(seq[i]);
@@ -903,11 +952,54 @@ window.addEventListener('resize', setVH); setVH();
         }
       }
 
+      if (levelId < 5) return seq;
+
+      // ---------- Lv.5：在 Lv.4 基礎上，強制加入一個增六和絃（每題 100% 出現一次） ----------
+      // 增六取代 IV 類功能，一定解決到 V：義/法 直接接原位 V 或 V7；德國增六先接 I64 再到 V（避平行五）。
+      {
+        const TONIC_UP = isMinor ? 'i' : 'I';
+        let augType = ['It6', 'Fr6', 'Ger6'][Math.floor(Math.random() * 3)];
+        let placed = false;
+        if (augType === 'Ger6') {
+          let spots = [];
+          for (let i = 1; i <= n - 4; i++) {
+            if (usedIdx.has(i) || usedIdx.has(i + 1) || usedIdx.has(i + 2)) continue;
+            spots.push(i);
+          }
+          if (spots.length > 0) {
+            let idx = spots[Math.floor(Math.random() * spots.length)];
+            seq[idx] = 'Ger6'; seq[idx + 1] = TONIC_UP + '64'; seq[idx + 2] = 'V';
+            usedIdx.add(idx); usedIdx.add(idx + 1); usedIdx.add(idx + 2);
+            placed = true;
+          }
+        }
+        if (!placed) {
+          if (augType === 'Ger6') augType = (Math.random() < 0.5 ? 'It6' : 'Fr6');
+          let spots = [];
+          for (let i = 1; i <= n - 3; i++) {
+            if (usedIdx.has(i) || usedIdx.has(i + 1)) continue;
+            spots.push(i);
+          }
+          if (spots.length > 0) {
+            let idx = spots[Math.floor(Math.random() * spots.length)];
+            seq[idx] = augType;
+            seq[idx + 1] = (Math.random() < 0.5) ? 'V' : 'V7';
+            usedIdx.add(idx); usedIdx.add(idx + 1);
+            placed = true;
+          }
+        }
+        if (!placed && n >= 3) {
+          if (augType === 'Ger6') augType = 'It6';
+          seq[n - 3] = augType; seq[n - 2] = 'V';
+        }
+      }
+
       return seq;
     },
 
     // 依和絃記號判斷低音應該落在和絃第幾個音（0=根音,1=三音,2=五音,3=七音）
     getBassIndex: function(sym) {
+      if (sym === 'It6' || sym === 'Fr6' || sym === 'Ger6') return 0; // 增六低音固定 b6 (pcs[0])
       if (/65/.test(sym)) return 1;
       if (/43/.test(sym)) return 2;
       if (/42/.test(sym)) return 3;
@@ -934,8 +1026,39 @@ window.addEventListener('resize', setVH); setVH();
       return noDouble;
     },
 
+    // 取得該和絃「優先重複」的音級（回傳 {pc, second} — 首選重複音級與次選，或 null）。
+    // 依古典重複音慣例區分主要/次要三和絃：
+    //   I6/V6(i6/V6)  → 重根音，次選五音
+    //   ii6/iv6/vi6/vii°6/N6 → 重三音（低音）
+    //   I64/中止六四  → 重五音（低音）
+    getPreferredDoublePc: function(sym, isMinor, keyOffset) {
+      let pcsRaw = this.getChordPcs(sym, isMinor);
+      let is7th = /7|65|43|42/.test(sym);
+      if (is7th) return null; // 七和絃四音齊全，不談重複
+      let rootLetters = (sym.match(/^[a-zA-Z°]+/) || [''])[0];
+      let root = (pcsRaw[0] + keyOffset) % 12;
+      let third = (pcsRaw[1] + keyOffset) % 12;
+      let fifth = (pcsRaw[2] + keyOffset) % 12;
+
+      if (sym.includes('N')) return { pc: third, second: null };  // N6 重三音
+      let figure = sym.replace(/^[a-zA-Z°]+/, '').split('/')[0];  // 數字部分
+
+      if (figure === '64') {
+        // 第二轉位（含中止六四 I64）：重複五音（低音）
+        return { pc: fifth, second: null };
+      }
+      if (figure === '6') {
+        // 第一轉位：區分主要三和絃(I/V)重根音、其餘次要三和絃重三音
+        let isMajorPrimary = (rootLetters === 'I' || rootLetters === 'i' || rootLetters === 'V');
+        if (isMajorPrimary) return { pc: root, second: fifth };   // I6/V6 重根音，可重五音
+        return { pc: third, second: null };                       // ii6/iv6/vi6/vii°6 重三音
+      }
+      return null;
+    },
+
     generateLegalVoicings: function(sym, isMinor, keyOffset) {
       let is7th = /7|65|43|42/.test(sym);
+      let isAug6 = (sym === 'It6' || sym === 'Fr6' || sym === 'Ger6');
       let pcs = this.getChordPcs(sym, isMinor);
       let bassPc = pcs[this.getBassIndex(sym)];
       if (bassPc === undefined) bassPc = pcs[0];
@@ -950,6 +1073,8 @@ window.addEventListener('resize', setVH); setVH();
       fifthPc = (fifthPc + keyOffset) % 12;
       let noDoublePcs = this.getNoDoublePcs(sym, isMinor, keyOffset);
       let requiredPcs = pcs.slice(); // 這些和絃音都必須出現
+      // 增六：It6 重複根音(1)、四聲部三音；Fr6/Ger6 四音各一
+      let augRootPc = isAug6 ? (0 + keyOffset) % 12 : null; // 增六的「1」音
 
       let voicings = [];
       const B_RANGE = [40, 60], T_RANGE = [48, 67], A_RANGE = [55, 74], S_RANGE = [60, 81];
@@ -965,7 +1090,20 @@ window.addEventListener('resize', setVH); setVH();
               [b, t, a, s].forEach(x => { let p = x % 12; counts[p] = (counts[p] || 0) + 1; });
               let presentPcs = Object.keys(counts).length;
 
-              if (is7th) {
+              if (isAug6) {
+                // 增六完整性：所有和絃音都必須出現；It6(3音)重複根音1、Fr6/Ger6(4音)各一
+                let missingCount = requiredPcs.filter(p => counts[p] === undefined).length;
+                if (missingCount !== 0) continue;
+                if (sym === 'It6') {
+                  // It6 只有 3 種音，第 4 個聲部必須是重複根音(1)，不可重複 b6 或 #4（特徵音不重複）
+                  if ((counts[augRootPc] || 0) < 2) continue;
+                }
+                // 特徵音 b6(低音) 與 #4 都不可重複（張力音）
+                let sharp4Pc = (6 + keyOffset) % 12;
+                let flat6Pc = (8 + keyOffset) % 12;
+                if ((counts[sharp4Pc] || 0) >= 2) continue;
+                if ((counts[flat6Pc] || 0) >= 2) continue;
+              } else if (is7th) {
                 // 七和絃完整性：四音必須全到；唯 V7 原位可省略五音（此時允許只有 3 種音）
                 let missing = requiredPcs.filter(p => !(p in counts) && !(counts[p] === undefined ? false : true));
                 let missingCount = requiredPcs.filter(p => counts[p] === undefined).length;
@@ -979,7 +1117,16 @@ window.addEventListener('resize', setVH); setVH();
                   if (missingCount !== 0) continue; // 其餘七和絃：任何和絃音缺一律淘汰
                 }
               } else {
-                if (presentPcs < 3) continue; // 三和絃：三音必須齊全
+                // 三和絃：預設三音齊全。例外——原位主和絃 I/i 允許省略五音、三倍根音
+                // （供 V7→I 完整解決，導音上行、七音下行時的標準寫法）。
+                let isRootTonicTriad = (rootLetters === 'I' || rootLetters === 'i') && !/6|64/.test(sym);
+                if (presentPcs < 3) {
+                  if (isRootTonicTriad && (counts[bassPc] || 0) >= 3 && (counts[(pcs[1]) % 12] || 0) >= 1) {
+                    // 允許：三倍根音 + 三音（省略五音）
+                  } else {
+                    continue;
+                  }
+                }
               }
 
               if (sym.includes('64') && (b%12 !== t%12 && b%12 !== a%12 && b%12 !== s%12)) continue;
@@ -1007,7 +1154,16 @@ window.addEventListener('resize', setVH); setVH();
         resolvePc = (leadingTonePc + 1) % 12;
       }
       let seventhPc = is7th ? pcs[3] : null;
-      return { leadingTonePc, resolvePc, seventhPc };
+
+      // 增六和絃特徵音解決：b6(低音) 下行半音、#4 上行半音，兩者一起收到 V 的根音(=屬音)
+      let aug6 = null;
+      if (sym === 'It6' || sym === 'Fr6' || sym === 'Ger6') {
+        let flat6Pc = (8 + keyOffset) % 12;
+        let sharp4Pc = (6 + keyOffset) % 12;
+        let dominantRootPc = (7 + keyOffset) % 12; // V 的根音 = 屬音
+        aug6 = { flat6Pc, sharp4Pc, resolveToPc: dominantRootPc };
+      }
+      return { leadingTonePc, resolvePc, seventhPc, aug6 };
     },
 
     solveVoiceLeading: function(degSeq, isMinor, keyOffset) {
@@ -1021,9 +1177,41 @@ window.addEventListener('resize', setVH); setVH();
         let prevBase = prevSym.replace(/[0-9]/g, ''); let currBase = currSym.replace(/[0-9]/g, '');
         let isDeceptive = (prevBase === 'V' && (currBase === 'vi' || currBase === 'VI'));
         let meta = this.getResolutionMeta(prevSym, isMinor, keyOffset);
+        // 當前和絃「優先重複」的音級（首選/次選）
+        let prefDbl = this.getPreferredDoublePc(currSym, isMinor, keyOffset);
+        if (isDeceptive && prefDbl === null) {
+          // 假終止：vi/VI 重複三音（三音 = 該和絃 pcs[1]，也就是調的主音）
+          let curPcs = this.getChordPcs(currSym, isMinor);
+          prefDbl = { pc: (curPcs[1] + keyOffset) % 12, second: null };
+        }
+
+        // 原則 1：ii 類 → V 類的反向進行判斷
+        let prevIsII = (prevBase === 'ii' || prevBase === 'ii°');
+        let currIsV = (currBase === 'V');
+        let iiToV = prevIsII && currIsV;
+        let iiToV_is7 = iiToV && /7|65|43|42/.test(prevSym) && /7|65|43|42/.test(currSym);
+        // ii7→V7 需保持的共同音三音（前和絃的三音 pc）
+        let iiSeventhCommonPc = null;
+        if (iiToV_is7) {
+          let iiPcs = this.getChordPcs(prevSym, isMinor);
+          iiSeventhCommonPc = (iiPcs[1] + keyOffset) % 12; // ii7 的三音 = V7 的七音，是共同保持音
+        }
 
         for (let tv of targetVoicings) {
           let bestCost = Infinity; let bestPath = null;
+          // 重複音偏好成本：重複到首選音=0；次選音=小懲罰；其他音=大懲罰（軟性引導）
+          let doublingPenalty = 0;
+          if (prefDbl !== null) {
+            let counts = {};
+            tv.forEach(x => { let p = x % 12; counts[p] = (counts[p] || 0) + 1; });
+            let doubledPc = Object.keys(counts).find(p => counts[p] >= 2);
+            if (doubledPc !== undefined) {
+              let dp2 = Number(doubledPc);
+              if (dp2 === prefDbl.pc) doublingPenalty = 0;
+              else if (prefDbl.second !== null && dp2 === prefDbl.second) doublingPenalty = 3;
+              else doublingPenalty = 10;
+            }
+          }
           for (let prevNode of dp) {
             let pv = prevNode.last;
             // 防聲部超越
@@ -1071,14 +1259,18 @@ window.addEventListener('resize', setVH); setVH();
               if ((tv[3] - pv[3]) > 0 && (tv[0] - pv[0]) > 0) continue;
             }
 
-            // 導音必須上行到主音（內聲部可因聲部交換保留為共同音；假終止時上行到 vi 三音同樣視為合規）
+            // 導音解決規則
             if (meta.leadingTonePc !== null) {
               let leadingViolation = false;
               for (let v = 0; v < 4; v++) {
                 if (pv[v] % 12 !== meta.leadingTonePc) continue;
                 let nextPc = tv[v] % 12;
-                if (nextPc === meta.resolvePc) continue; // 正確上行解決
-                if ((v === 1 || v === 2) && nextPc === meta.leadingTonePc) continue; // 內聲部可保留共同音
+                if (nextPc === meta.resolvePc) continue; // 正確上行解決到主音
+                if (isDeceptive) {
+                  // 假終止 V→vi/VI：導音「一定要」上行到主音，不允許任何例外
+                  leadingViolation = true; break;
+                }
+                if ((v === 1 || v === 2) && nextPc === meta.leadingTonePc) continue; // 一般情況內聲部可保留共同音
                 leadingViolation = true; break;
               }
               if (leadingViolation) continue;
@@ -1098,8 +1290,50 @@ window.addEventListener('resize', setVH); setVH();
               if (seventhViolation) continue;
             }
 
+            // 增六和絃特徵音強制解決：b6 下行半音、#4 上行半音，一起收到 V 的根音(屬音)
+            if (meta.aug6 !== null) {
+              let aug6Violation = false;
+              for (let v = 0; v < 4; v++) {
+                let pPc = pv[v] % 12;
+                if (pPc === meta.aug6.flat6Pc) {
+                  // b6 必須下行半音到屬音
+                  if (!((pv[v] - tv[v]) === 1 && tv[v] % 12 === meta.aug6.resolveToPc)) { aug6Violation = true; break; }
+                }
+                if (pPc === meta.aug6.sharp4Pc) {
+                  // #4 必須上行半音到屬音
+                  if (!((tv[v] - pv[v]) === 1 && tv[v] % 12 === meta.aug6.resolveToPc)) { aug6Violation = true; break; }
+                }
+              }
+              if (aug6Violation) continue;
+            }
+
             let dist = Math.abs(tv[0]-pv[0]) + Math.abs(tv[1]-pv[1]) + Math.abs(tv[2]-pv[2]) + Math.abs(tv[3]-pv[3]) * 0.5;
             if (tv[0] === pv[0] || tv[1] === pv[1]) dist -= 2;
+            dist += doublingPenalty; // 重複音偏好
+
+            // 原則 1：ii 類 → V 類 —— 上三聲部應與低音反向進行
+            if (iiToV) {
+              let bassDir = Math.sign(tv[3] - pv[3]); // 低音方向
+              if (bassDir !== 0) {
+                for (let vv = 0; vv < 3; vv++) { // S/A/T 三個上聲部
+                  let move = tv[vv] - pv[vv];
+                  if (iiToV_is7 && pv[vv] % 12 === iiSeventhCommonPc && tv[vv] % 12 === iiSeventhCommonPc) {
+                    // ii7→V7：共同音三音保持不動，合規、不罰
+                    continue;
+                  }
+                  let vDir = Math.sign(move);
+                  if (vDir === 0) {
+                    // 三和絃 ii→V 不應保持共同音（呆滯）；七和絃非共同音的聲部也不該不動
+                    dist += 7;
+                  } else if (vDir === bassDir) {
+                    // 與低音同向（非反向）→ 懲罰
+                    dist += 9;
+                  }
+                  // 與低音反向 → 理想，不罰
+                }
+              }
+            }
+
             if (prevNode.cost + dist < bestCost) {
               bestCost = prevNode.cost + dist;
               bestPath = prevNode.path.concat([tv]);
@@ -1243,6 +1477,17 @@ window.addEventListener('resize', setVH); setVH();
       }
       
       // 級數輸入與修飾
+      if (type === 'aug6') {
+        // 增六和絃：直接寫入該格（It6/Fr6/Ger6），完成後自動跳下一格
+        // 若正在等待副屬第二級數，先取消該狀態
+        if (this.pendingSlashStage !== 0) { this.pendingSlashStage = 0; this.pendingSlashSlot = null; }
+        this.userSeq[this.activeSlot] = val;
+        this.lastEditedChordSlot = this.activeSlot;
+        if (this.activeSlot < this.bars - 1) { this.activeSlot++; this._shouldFollowScroll = true; }
+        this.updateUI();
+        return;
+      }
+
       if (type === 'deg') {
         let isUpper = document.getElementById('btn-case-switch').classList.contains('active-toggle');
         let roman = val === 'N' ? 'N' : (isUpper ? ['I','II','III','IV','V','VI','VII'][val-1] : ['i','ii','iii','iv','v','vi','vii'][val-1]);
@@ -1383,11 +1628,13 @@ window.addEventListener('resize', setVH); setVH();
     },
 
     updateKeyboardVisibility: function() {
-      document.getElementById('btn-deg-N').style.display = (this.curLevel.id === 4) ? 'inline-block' : 'none';
+      document.getElementById('btn-deg-N').style.display = (this.curLevel.id >= 4) ? 'inline-block' : 'none';
       document.getElementById('btn-sev-switch').style.display = (this.curLevel.id >= 3) ? 'inline-block' : 'none';
-      document.getElementById('btn-slash').style.display = (this.curLevel.id === 4) ? 'inline-block' : 'none';
+      document.getElementById('btn-slash').style.display = (this.curLevel.id >= 4) ? 'inline-block' : 'none';
       document.getElementById('inv-btn-1').style.display = (this.curLevel.id >= 2) ? 'inline-block' : 'none';
       document.getElementById('inv-btn-2').style.display = (this.curLevel.id >= 2) ? 'inline-block' : 'none';
+      // 增六和絃按鈕列：僅 Lv.5 顯示
+      document.getElementById('kb-row-aug6').style.display = (this.curLevel.id >= 5) ? 'flex' : 'none';
       // 切換難度時重置 7 和絃開關與 42 按鈕，避免殘留上一個難度的狀態
       let sevBtn = document.getElementById('btn-sev-switch');
       sevBtn.classList.remove('active-toggle');
@@ -1440,6 +1687,8 @@ window.addEventListener('resize', setVH); setVH();
       let showAnswer = opt.showAnswer || false;
       let vDraw = opt.customVoicings || this.questionVoicings;
       let forceResults = opt.forceResults || null;
+      // 正解和絃記號（供增六等特殊和絃的拼寫判斷）；showAnswer 時 userSeq 即為正解記號
+      let questionSeq = opt.questionSeq || (showAnswer ? userSeq : (this.questionSeq || []));
 
       const container = document.getElementById(targetSvgId); if (!container) return;
       container.innerHTML = '';
@@ -1602,10 +1851,21 @@ window.addEventListener('resize', setVH); setVH();
 
         // ====== 渲染音符 ======
         let mAccT = {}; let mAccB = {};
+        // 若本格和絃是增六，使用專用拼寫修正 ♯4/♭6 特徵音
+        let curSym = (questionSeq && questionSeq[i]) ? questionSeq[i] : '';
+        let isAug6Here = (curSym === 'It6' || curSym === 'Fr6' || curSym === 'Ger6');
+        let tonicLetterIdx = LETTERS.indexOf((keyObj.vfk || 'C')[0].toUpperCase());
+        let spellFn = (midi) => {
+          if (isAug6Here) {
+            let ov = spellAug6Tone(midi, keyObj.off, tonicLetterIdx);
+            if (ov) return ov;
+          }
+          return getSpellingByMidiAndKey(midi, keyObj.name);
+        };
         if (showAnswer || (isSubmitted && opt.forceCorrectSlots)) {
           let [s, a, t, b] = vDraw[i];
-          let bSpell = getSpellingByMidiAndKey(b, keyObj.name); let tSpell = getSpellingByMidiAndKey(t, keyObj.name);
-          let aSpell = getSpellingByMidiAndKey(a, keyObj.name); let sSpell = getSpellingByMidiAndKey(s, keyObj.name);
+          let bSpell = spellFn(b); let tSpell = spellFn(t);
+          let aSpell = spellFn(a); let sSpell = spellFn(s);
 
           let nS = new VF.StaveNote({ clef: 'treble', keys: [sSpell.keyStr], duration: 'w', stem_direction: 1 });
           let nA = new VF.StaveNote({ clef: 'treble', keys: [aSpell.keyStr], duration: 'w', stem_direction: -1 });
@@ -1695,19 +1955,19 @@ window.addEventListener('resize', setVH); setVH();
         let [s, a, tn, b] = v;
         if (modeStr === 'block') {
             pianoInst.play(b, t - 0.010, { duration: measureDur * 0.95, gain: 3.5 });
-            pianoInst.play(tn, t, { duration: measureDur * 0.95, gain: 2.5 });
-            pianoInst.play(a, t, { duration: measureDur * 0.95, gain: 2.5 });
+            pianoInst.play(tn, t, { duration: measureDur * 0.95, gain: 3.5 });
+            pianoInst.play(a, t, { duration: measureDur * 0.95, gain: 3.5 });
             pianoInst.play(s, t, { duration: measureDur * 0.95, gain: 3.5 });
         } else if (modeStr === 'arpeggio') {
             pianoInst.play(b, t, { duration: measureDur, gain: 3.5 });
-            pianoInst.play(tn, t + 0.3, { duration: measureDur - 0.3, gain: 2.5 });
-            pianoInst.play(a, t + 0.6, { duration: measureDur - 0.6, gain: 2.5 });
+            pianoInst.play(tn, t + 0.3, { duration: measureDur - 0.3, gain: 3.5 });
+            pianoInst.play(a, t + 0.6, { duration: measureDur - 0.6, gain: 3.5 });
             pianoInst.play(s, t + 0.9, { duration: measureDur - 0.9, gain: 3.5 });
             
             let remDur = Math.max(0.5, measureDur - 1.2);
             pianoInst.play(b, t + 1.2 - 0.010, { duration: remDur * 0.95, gain: 3.5 });
-            pianoInst.play(tn, t + 1.2, { duration: remDur * 0.95, gain: 2.5 });
-            pianoInst.play(a, t + 1.2, { duration: remDur * 0.95, gain: 2.5 });
+            pianoInst.play(tn, t + 1.2, { duration: remDur * 0.95, gain: 3.5 });
+            pianoInst.play(a, t + 1.2, { duration: remDur * 0.95, gain: 3.5 });
             pianoInst.play(s, t + 1.2, { duration: remDur * 0.95, gain: 3.5 });
         }
         t += measureDur;
@@ -1734,19 +1994,19 @@ window.addEventListener('resize', setVH); setVH();
             let [s, a, tn, b] = v;
             if (modeStr === 'block') {
                 pianoInst.play(b, t - 0.010, { duration: measureDur * 0.95, gain: 3.5 });
-                pianoInst.play(tn, t, { duration: measureDur * 0.95, gain: 2.5 });
-                pianoInst.play(a, t, { duration: measureDur * 0.95, gain: 2.5 });
+                pianoInst.play(tn, t, { duration: measureDur * 0.95, gain: 3.5 });
+                pianoInst.play(a, t, { duration: measureDur * 0.95, gain: 3.5 });
                 pianoInst.play(s, t, { duration: measureDur * 0.95, gain: 3.5 });
             } else if (modeStr === 'arpeggio') {
                 pianoInst.play(b, t, { duration: measureDur, gain: 3.5 });
-                pianoInst.play(tn, t + 0.3, { duration: measureDur - 0.3, gain: 2.5 });
-                pianoInst.play(a, t + 0.6, { duration: measureDur - 0.6, gain: 2.5 });
+                pianoInst.play(tn, t + 0.3, { duration: measureDur - 0.3, gain: 3.5 });
+                pianoInst.play(a, t + 0.6, { duration: measureDur - 0.6, gain: 3.5 });
                 pianoInst.play(s, t + 0.9, { duration: measureDur - 0.9, gain: 3.5 });
                 
                 let remDur = Math.max(0.5, measureDur - 1.2);
                 pianoInst.play(b, t + 1.2 - 0.010, { duration: remDur * 0.95, gain: 3.5 });
-                pianoInst.play(tn, t + 1.2, { duration: remDur * 0.95, gain: 2.5 });
-                pianoInst.play(a, t + 1.2, { duration: remDur * 0.95, gain: 2.5 });
+                pianoInst.play(tn, t + 1.2, { duration: remDur * 0.95, gain: 3.5 });
+                pianoInst.play(a, t + 1.2, { duration: remDur * 0.95, gain: 3.5 });
                 pianoInst.play(s, t + 1.2, { duration: remDur * 0.95, gain: 3.5 });
             }
             t += measureDur;
@@ -1999,6 +2259,7 @@ window.addEventListener('resize', setVH); setVH();
       document.querySelectorAll('.deg-btn').forEach(b => b.onclick = () => this.handleKbInput('deg', b.dataset.deg));
       document.querySelectorAll('.inv-btn').forEach(b => b.onclick = () => this.handleKbInput('inv', b.dataset.inv));
       document.querySelectorAll('.mod-btn').forEach(b => b.onclick = () => this.handleKbInput('mod', b.dataset.mod));
+      document.querySelectorAll('.aug6-btn').forEach(b => b.onclick = () => this.handleKbInput('aug6', b.dataset.aug6));
       
       document.getElementById('kb-backspace').onclick = () => this.handleKbInput('back');
       document.getElementById('kb-clear').onclick = () => this.handleKbInput('clear');
