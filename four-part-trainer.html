@@ -1141,7 +1141,8 @@ window.addEventListener('resize', setVH); setVH();
       let augRootPc = isAug6 ? (0 + keyOffset) % 12 : null; // 增六的「1」音
 
       let voicings = [];
-      const B_RANGE = [40, 60], T_RANGE = [48, 67], A_RANGE = [55, 74], S_RANGE = [60, 81];
+      // 四聲部標準合唱音域 (MIDI)：S:C4-G5, A:G3-C5, T:C3-G4, B:F2-C4
+      const B_RANGE = [41, 60], T_RANGE = [48, 67], A_RANGE = [55, 72], S_RANGE = [60, 79];
       for (let b = B_RANGE[0]; b <= B_RANGE[1]; b++) {
         if (b % 12 !== bassPc) continue;
         for (let t = Math.max(T_RANGE[0], b + 1); t <= T_RANGE[1]; t++) {
@@ -1281,17 +1282,29 @@ window.addEventListener('resize', setVH); setVH();
             // 防聲部超越
             if (tv[0] < pv[1] || tv[1] < pv[2] || tv[2] < pv[3]) continue;
             
-            // 嚴格過濾 Tritone Leap / 大跳（上三聲部）
-            let hasBadLeap = false;
-            for (let v = 0; v < 4; v++) {
-                let leap = Math.abs(tv[v] - pv[v]);
-                if (leap === 6 || leap > 12) { hasBadLeap = true; break; }
+            // 上三聲部（S/A/T, index 0-2）跳進規則：
+            //   - 不可三全音、不可超過完全五度（7 半音）
+            //   - 四度跳進（5 半音）後，下一步必須反向
+            let leapViolation = false;
+            let prevPrev = (prevNode.path.length >= 2) ? prevNode.path[prevNode.path.length - 2] : null;
+            for (let v = 0; v < 3; v++) {
+                let move = tv[v] - pv[v];
+                let leap = Math.abs(move);
+                if (leap === 6 || leap > 7) { leapViolation = true; break; } // 三全音 / 超過五度
+                // 四度跳進後反向：檢查「前一步」是否為四度跳進，若是，這一步必須反向
+                if (prevPrev !== null) {
+                  let prevMove = pv[v] - prevPrev[v];
+                  if (Math.abs(prevMove) === 5) { // 前一步是四度跳進
+                    if (move !== 0 && Math.sign(move) === Math.sign(prevMove)) { leapViolation = true; break; } // 同向 → 淘汰
+                  }
+                }
             }
-            if (hasBadLeap) continue;
+            if (leapViolation) continue;
 
             // 低音聲部（index 3）避免跳進超過完全五度，但保留兩種古典合理大跳：
             //   (a) 終止式 V→I 的低音四/五度跳  (b) 低音八度跳（同音名不同八度）
             let bassLeap = Math.abs(tv[3] - pv[3]);
+            if (bassLeap === 6) continue; // 低音也不可三全音跳
             if (bassLeap > 7) {
               let isVtoI = (prevBase === 'V') && (currBase === 'I' || currBase === 'i');
               let isOctaveJump = (bassLeap === 12) && (tv[3] % 12 === pv[3] % 12);
