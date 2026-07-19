@@ -35,14 +35,22 @@
   /* 橫向捲動區維持 iOS 慣性捲動，並限定只能水平捲動不干擾頁面垂直捲動 */
   .staff-scroll-container, .review-staff { touch-action: pan-x; -webkit-overflow-scrolling: touch; }
   body{ margin:0; background: var(--paper); color: var(--ink); font-family: var(--font-body); min-height:100vh; padding: 20px 16px 64px; }
+  /* 作答頁啟用時：body 不捲動、無多餘 padding，讓作答頁精準滿版 */
+  body.practice-locked{ height:100dvh; height:calc(var(--app-vh,1vh)*100); overflow:hidden; padding:0 8px; min-height:0; }
+  body.practice-locked .wrap{ height:100%; }
   .wrap{ max-width: 820px; margin: 0 auto; display:flex; flex-direction:column; height:100%; }
   .page-view { display: none; animation: fadeIn 0.22s ease-out; }
   .page-view.active { display: block; }
-  /* 練習頁上下分層：整頁撐滿可視高度，上層譜例自適應剩餘空間、下層鍵盤固定不壓縮 */
-  .page-view.fpt-practice-layout.active { display: flex; flex-direction: column; min-height: calc(var(--app-vh, 1vh) * 100 - 84px); }
-  .fpt-staff-area { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; }
-  .fpt-staff-area .staff-scroll-container { flex: 0 0 auto; }
-  .fpt-keyboard-area { flex: 0 0 auto; }
+  /* 作答頁：鎖定為一個視窗高度、整頁不捲動。譜例區固定（不滑、不佔多餘空間），鍵盤區吸收剩餘空間並可內部捲動 */
+  .page-view.fpt-practice-layout.active {
+    display: flex; flex-direction: column;
+    height: 100dvh; height: calc(var(--app-vh, 1vh) * 100);
+    max-height: 100dvh; max-height: calc(var(--app-vh, 1vh) * 100);
+    overflow: hidden; padding-top: 8px;
+  }
+  .fpt-staff-area { flex: 0 0 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .fpt-staff-area .staff-scroll-container { flex: 0 0 auto; overflow-y: hidden; }
+  .fpt-keyboard-area { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   
   .nav-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -247,8 +255,8 @@
       </div>
       
       <!-- 樂譜與作答格容器 (作答階段只顯示低音譜表) -->
-      <div class="staff-scroll-container" id="staffContainerOuter">
-        <div id="staffInnerWrapper" style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%; height: 230px;">
+      <div class="staff-scroll-container" id="staffContainerOuter" style="padding-bottom:2px;">
+        <div id="staffInnerWrapper" style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%; height: 250px;">
           <div id="fpt-staff-svg"></div>
         </div>
       </div>
@@ -382,6 +390,8 @@ function forceResetCache() {
 function showPage(pageId) {
   if (window.fptStopAll) window.fptStopAll();
   document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+  // 僅作答頁鎖定 body（滿版不捲動）；其他頁面正常可捲動
+  document.body.classList.toggle('practice-locked', pageId === 'fpt-practice');
   if (pageId === 'fpt-settings') document.getElementById('pageFptSettings').classList.add('active');
   else if (pageId === 'fpt-practice') document.getElementById('pageFptPractice').classList.add('active');
   else if (pageId === 'fpt-answer') document.getElementById('pageFptAnswer').classList.add('active');
@@ -1311,26 +1321,21 @@ window.addEventListener('resize', setVH); setVH();
             if (tv[0] === pv[0] || tv[1] === pv[1]) dist -= 2;
             dist += doublingPenalty; // 重複音偏好
 
-            // 原則 1：ii 類 → V 類 —— 上三聲部應與低音反向進行
+            // 原則 1（硬性）：ii 類 → V 類，上三聲部必須與低音反向，違反直接淘汰
             if (iiToV) {
               let bassDir = Math.sign(tv[3] - pv[3]); // 低音方向
               if (bassDir !== 0) {
+                let viol = false;
                 for (let vv = 0; vv < 3; vv++) { // S/A/T 三個上聲部
-                  let move = tv[vv] - pv[vv];
                   if (iiToV_is7 && pv[vv] % 12 === iiSeventhCommonPc && tv[vv] % 12 === iiSeventhCommonPc) {
-                    // ii7→V7：共同音三音保持不動，合規、不罰
+                    // ii7→V7：共同音三音保持不動，合規
                     continue;
                   }
-                  let vDir = Math.sign(move);
-                  if (vDir === 0) {
-                    // 三和絃 ii→V 不應保持共同音（呆滯）；七和絃非共同音的聲部也不該不動
-                    dist += 7;
-                  } else if (vDir === bassDir) {
-                    // 與低音同向（非反向）→ 懲罰
-                    dist += 9;
-                  }
-                  // 與低音反向 → 理想，不罰
+                  let vDir = Math.sign(tv[vv] - pv[vv]);
+                  // 保持不動（呆滯）或與低音同向 → 違反反向原則，淘汰
+                  if (vDir === 0 || vDir === bassDir) { viol = true; break; }
                 }
+                if (viol) continue;
               }
             }
 
@@ -2121,6 +2126,13 @@ window.addEventListener('resize', setVH); setVH();
       document.getElementById('fpt-answerBadge').textContent = allCorrect ? '✅ 答對了' : '📖 解答對照';
       this.updatePlayBtns();
       showPage('fpt-answer');
+      // 答案頁捲軸重置回第一小節（兩個譜表都歸零）
+      setTimeout(() => {
+        let ua = document.getElementById('ansUserScroll');
+        let ca = document.getElementById('ansCorrectScroll');
+        if (ua) ua.scrollLeft = 0;
+        if (ca) ca.scrollLeft = 0;
+      }, 80);
     },
 
     addToReview: function(results, keyCorrect) {
@@ -2226,6 +2238,7 @@ window.addEventListener('resize', setVH); setVH();
         this.generateQuestion();
         showPage('fpt-practice');
         this.switchTab('bass');
+        setTimeout(() => { let el = document.getElementById('staffContainerOuter'); if (el) el.scrollLeft = 0; }, 80);
       };
 
       document.getElementById('btn-play-all').onclick = () => { if(this.mode==='test'&&this.testSession)this.testSession.replaysLeft--; this.playProgression('block'); };
@@ -2272,6 +2285,8 @@ window.addEventListener('resize', setVH); setVH();
         this.generateQuestion();
         this.switchTab('bass');
         showPage('fpt-practice');
+        // 作答譜例捲軸回第一小節
+        setTimeout(() => { let el = document.getElementById('staffContainerOuter'); if (el) el.scrollLeft = 0; }, 80);
       };
 
       // 錯題本清空
