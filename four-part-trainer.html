@@ -48,8 +48,8 @@
     max-height: 100dvh; max-height: calc(var(--app-vh, 1vh) * 100);
     overflow: hidden; padding-top: 8px;
   }
-  .fpt-staff-area { flex: 0 0 auto; min-height: 0; max-height: 42dvh; max-height: calc(var(--app-vh, 1vh) * 42); display: flex; flex-direction: column; overflow: hidden; }
-  .fpt-staff-area .staff-scroll-container { flex: 0 0 auto; overflow-y: hidden; }
+  .fpt-staff-area { flex: 0 0 auto; min-height: 0; max-height: 36dvh; max-height: calc(var(--app-vh, 1vh) * 36); display: flex; flex-direction: column; overflow: hidden; }
+  .fpt-staff-area .staff-scroll-container { flex: 0 0 auto; overflow-y: hidden; padding-top: 4px; margin-bottom: 6px; }
   .fpt-keyboard-area { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   
@@ -99,6 +99,7 @@
   .staff-scroll-container::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
 
   .unified-action-row { display: flex; gap: 12px; justify-content: center; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .fpt-staff-area .unified-action-row .play-btn { padding: 9px 16px; font-size: 13.5px; box-shadow: 0 2px 8px rgba(51,65,92,0.18); }
   .action-btn, .play-btn { font-size: 14px; font-weight: 600; padding: 12px 20px; border-radius: 999px; cursor: pointer; transition: all 0.2s; border: none; }
   .action-btn { border: 1px solid var(--ink-soft); background: transparent; color: var(--ink); }
   .play-btn { background: var(--accent); color: var(--panel); box-shadow: 0 4px 12px rgba(51,65,92,0.2); }
@@ -256,16 +257,15 @@
       
       <!-- 樂譜與作答格容器 (作答階段只顯示低音譜表) -->
       <div class="staff-scroll-container" id="staffContainerOuter" style="padding-bottom:2px;">
-        <div id="staffInnerWrapper" style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%; height: 190px;">
+        <div id="staffInnerWrapper" style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%; height: 178px;">
           <div id="fpt-staff-svg"></div>
         </div>
       </div>
 
-      <div class="unified-action-row" style="margin-top:8px;">
+      <div class="unified-action-row" style="margin-top:6px;">
         <button class="play-btn" id="btn-play-all" disabled>🔊 完整四部 (SATB)</button>
         <button class="play-btn" id="btn-play-arp" disabled>🎵 分解＋完整</button>
       </div>
-      <div class="play-caption" id="fpt-playCaption">請點擊上方按鈕聆聽和聲進行</div>
     </div>
 
     <!-- 底部作答分頁與鍵盤區（固定高度） -->
@@ -1626,7 +1626,7 @@ window.addEventListener('resize', setVH); setVH();
       this.currentAccidental = 'n'; this.accidentalExplicit = false;
       
       document.getElementById('fpt-statusBadge').textContent = `${this.curLevel.name}｜${this.bars}小節`;
-      document.getElementById('fpt-playCaption').textContent = '請點擊上方按鈕聆聽和聲進行';
+      let _cap = document.getElementById('fpt-playCaption'); if (_cap) _cap.textContent = '請點擊上方按鈕聆聽和聲進行';
       this.updateKeyboardVisibility();
       this.updateUI();
       this.updatePlayBtns();
@@ -1702,10 +1702,10 @@ window.addEventListener('resize', setVH); setVH();
       // 解答/複習/顯示正解時顯示完整大譜表（高音+低音四聲部）。
       let bassOnly = (targetSvgId === 'fpt-staff-svg') && !isSubmitted && !showAnswer;
       // 各區塊的垂直座標：大譜表用雙行、只顯示低音時把低音行提到最上方
-      const BASS_TOP = bassOnly ? 8 : 115;
+      const BASS_TOP = bassOnly ? 4 : 115;
       const TREBLE_TOP = 15;
-      const SVG_H = bassOnly ? 108 : 240;
-      const SLOT_TOP = bassOnly ? 112 : 245; // 級數作答格 / 調性下拉的垂直位置
+      const SVG_H = bassOnly ? 100 : 240;
+      const SLOT_TOP = bassOnly ? 104 : 245; // 級數作答格 / 調性下拉的垂直位置
       
       let overlay = document.getElementById(targetSvgId + '-overlay');
       if (!overlay) {
@@ -1716,7 +1716,7 @@ window.addEventListener('resize', setVH); setVH();
         overlay.style.zIndex = '10';
         container.parentElement.appendChild(overlay);
       }
-      overlay.style.height = (bassOnly ? 185 : 310) + 'px';
+      overlay.style.height = (bassOnly ? 175 : 310) + 'px';
       overlay.innerHTML = '';
 
       // 精確修復寬度計算
@@ -1795,7 +1795,7 @@ window.addEventListener('resize', setVH); setVH();
             hitTop.className = 'hitbox-top';
             hitTop.style.left = slotLeft + 'px'; hitTop.style.width = slotWidth + 'px';
             hitTop.style.top = '0px';
-            hitTop.style.height = (bassOnly ? 106 : 230) + 'px';
+            hitTop.style.height = (bassOnly ? 98 : 230) + 'px';
             hitTop.onclick = () => { 
                 window.fptModule.switchTab('bass');
                 window.fptModule.activeSlot = i; 
@@ -1808,7 +1808,7 @@ window.addEventListener('resize', setVH); setVH();
             let hitBot = document.createElement('div');
             hitBot.className = 'hitbox-bot';
             hitBot.style.left = slotLeft + 'px'; hitBot.style.width = slotWidth + 'px';
-            hitBot.style.top = (bassOnly ? 108 : 235) + 'px';
+            hitBot.style.top = (bassOnly ? 100 : 235) + 'px';
             hitBot.style.height = '72px';
             hitBot.onclick = () => { 
                 window.fptModule.switchTab('chord');
@@ -1823,7 +1823,7 @@ window.addEventListener('resize', setVH); setVH();
         if (!isSubmitted && !showAnswer && this.activeTab === 'bass' && i === this.activeSlot) {
             let noteBox = document.createElement('div');
             noteBox.className = 'active-note-box';
-            noteBox.style.top = (bassOnly ? 18 : 125) + 'px'; // 低音譜表位置（隨模式調整）
+            noteBox.style.top = (bassOnly ? 14 : 125) + 'px'; // 低音譜表位置（隨模式調整）
             noteBox.style.left = slotLeft + 'px';
             noteBox.style.width = (slotWidth - 6) + 'px';
             noteBox.style.height = '74px';
