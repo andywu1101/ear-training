@@ -801,6 +801,16 @@ window.addEventListener('resize', setVH); setVH();
         }
         seq[i] = alt;
       }
+      // ii65（低音為七音）接 V7 時容易逼壞聲部：降回 ii7 原位（同功能、聲部更乾淨）。
+      // ii65 接 V 原位則沒問題，維持不變。
+      for (let i = 0; i < n - 1; i++) {
+        let base = seq[i].replace(/[0-9]/g, '');
+        let isII65 = (base === 'ii' || base === 'ii°') && /65/.test(seq[i]);
+        if (!isII65) continue;
+        let nb = seq[i + 1].replace(/[0-9]/g, '');
+        let nextIsV7 = (nb === 'V') && /7/.test(seq[i + 1]) && !seq[i + 1].includes('/');
+        if (nextIsV7) seq[i] = base + '7'; // ii65 → ii7 原位
+      }
       return seq;
     },
 
@@ -815,9 +825,11 @@ window.addEventListener('resize', setVH); setVH();
 
       // ---------- Lv.2：三和絃所有轉位 + 四組固定套組 ----------
       const BUNDLES = isMinor ? [
-        ['i','V64','i6'], ['i6','V64','i'], ['i64','V','i'], ['i','iv64','i'], ['i','vii°6','i6']
+        ['i','V64','i6'], ['i6','V64','i'], ['i64','V','i'], ['i','iv64','i'],
+        ['i','vii°6','i6'], ['i6','vii°6','i']
       ] : [
-        ['I','V64','I6'], ['I6','V64','I'], ['I64','V','I'], ['I','IV64','I'], ['I','vii°6','I6']
+        ['I','V64','I6'], ['I6','V64','I'], ['I64','V','I'], ['I','IV64','I'],
+        ['I','vii°6','I6'], ['I6','vii°6','I']
       ];
       let hasLv2Feature = false;
       if (n - 3 >= 3) {
@@ -830,8 +842,10 @@ window.addEventListener('resize', setVH); setVH();
         }
       }
       // 其餘未被套組佔用的中段三和絃，較高機率升級成第一轉位；第二轉位 64 僅少量（避免假套組特徵）
+      // vii° 排除在外：vii° 是減三和絃、含減五度，只以 vii°6 形式出現在 I–vii°6–I6 組合包內，其他位置不加轉位
       for (let i = 1; i < n - 2; i++) {
         if (usedIdx.has(i)) continue;
+        if (seq[i].replace(/[0-9]/g, '') === 'vii°') continue;
         let r = Math.random();
         if (r < 0.58) { seq[i] = seq[i] + '6'; hasLv2Feature = true; }
         else if (r < 0.60) { seq[i] = seq[i] + '64'; hasLv2Feature = true; }
@@ -839,7 +853,7 @@ window.addEventListener('resize', setVH); setVH();
       // 保底：Lv.2 至少要有一個轉位或固定套組
       if (!hasLv2Feature) {
         let candidates = [];
-        for (let i = 1; i < n - 2; i++) if (!usedIdx.has(i)) candidates.push(i);
+        for (let i = 1; i < n - 2; i++) if (!usedIdx.has(i) && seq[i].replace(/[0-9]/g, '') !== 'vii°') candidates.push(i);
         if (candidates.length > 0) {
           let idx = candidates[Math.floor(Math.random() * candidates.length)];
           seq[idx] = seq[idx] + '6';
@@ -860,6 +874,7 @@ window.addEventListener('resize', setVH); setVH();
       for (let i = 1; i < n - 2; i++) {
         if (usedIdx.has(i)) continue; // 固定套組的和絃不額外升級成七和絃，避免破壞慣用進行
         let base = seq[i].replace(/[0-9]/g, '');
+        if (base === 'vii°') continue; // vii° 只以 vii°6 形式出現在組合包內，其他位置不升級/加轉位
         let hadInv = /6|64/.test(seq[i]);
         let r = Math.random();
         if (r < sevProb) {
@@ -996,8 +1011,10 @@ window.addEventListener('resize', setVH); setVH();
       // 最終保底：無論如何都要有至少一個 Lv.4 專屬元素（強制製造借用和絃銜接）
       if (!hasLv4Feature) {
         // 找出所有「下一格正好是可借用目標」的位置，隨機挑一個插入副屬和絃
+        // 必須排除 usedIdx（組合包等已鎖定的格子）與其相鄰，避免破壞 I–vii°6–I6 等慣用進行
         let spots = [];
         for (let i = 1; i < n - 1; i++) {
+          if (usedIdx.has(i) || usedIdx.has(i + 1)) continue;
           let nb = (seq[i + 1] || '').replace(/[0-9]/g, '');
           if (TARGETS.includes(nb)) spots.push(i);
         }
@@ -1006,13 +1023,19 @@ window.addEventListener('resize', setVH); setVH();
           let target = seq[idx + 1].replace(/[0-9]/g, '');
           let inv = ['7', '65', '43', '42'][Math.floor(Math.random() * 4)];
           seq[idx] = 'V' + inv + '/' + target;
+          usedIdx.add(idx);
         } else {
-          // 真的沒有現成銜接點，才強制造一組（位置也隨機化）
-          let target = TARGETS[Math.floor(Math.random() * TARGETS.length)];
-          let pos = 1 + Math.floor(Math.random() * Math.max(1, n - 3));
-          let inv = ['7', '65', '43', '42'][Math.floor(Math.random() * 4)];
-          seq[pos] = 'V' + inv + '/' + target;
-          seq[pos + 1] = target;
+          // 真的沒有現成銜接點，才強制造一組（位置也隨機化，且避開已鎖定格子）
+          let freePairs = [];
+          for (let i = 1; i < n - 2; i++) if (!usedIdx.has(i) && !usedIdx.has(i + 1)) freePairs.push(i);
+          if (freePairs.length > 0) {
+            let target = TARGETS[Math.floor(Math.random() * TARGETS.length)];
+            let pos = freePairs[Math.floor(Math.random() * freePairs.length)];
+            let inv = ['7', '65', '43', '42'][Math.floor(Math.random() * 4)];
+            seq[pos] = 'V' + inv + '/' + target;
+            seq[pos + 1] = target;
+            usedIdx.add(pos); usedIdx.add(pos + 1);
+          }
         }
       }
 
@@ -1196,6 +1219,15 @@ window.addEventListener('resize', setVH); setVH();
 
               if (sym.includes('64') && (b%12 !== t%12 && b%12 !== a%12 && b%12 !== s%12)) continue;
               if (sym.includes('N') && (b%12 !== t%12 && b%12 !== a%12 && b%12 !== s%12)) continue;
+              // vii°6 強制重複三音（=低音）：減三和絃的三音就是低音，重複它可自然避免減五度攤在兩聲部間
+              if (rootLetters === 'vii°' && /6/.test(sym) && !/7|65|43|42/.test(sym)) {
+                let thirdPc = (pcs[1]) % 12; // 三音（第一轉位的低音）
+                if ((counts[thirdPc] || 0) < 2) continue; // 沒有重複三音就淘汰
+              }
+              // 原位主和絃 I/i：硬性禁止重複五音（只能重根音，最穩定；I6 才可重五音）
+              if ((rootLetters === 'I' || rootLetters === 'i') && !/6|64|7|65|43|42/.test(sym)) {
+                if ((counts[fifthPc] || 0) >= 2) continue; // 重五音一律淘汰
+              }
               if (noDoublePcs.some(p => (counts[p] || 0) >= 2)) continue; // 不重複導音
               voicings.push([s, a, t, b]);
             }
@@ -1262,6 +1294,18 @@ window.addEventListener('resize', setVH); setVH();
           iiSeventhCommonPc = (iiPcs[1] + keyOffset) % 12; // ii7 的三音 = V7 的七音，是共同保持音
         }
 
+        // V7→I 省五重根優先：偵測 prevSym 是否為原位 V7、curr 是否為 I/i
+        // 若前一格 V7 用「省略五音、重複根音」的配置，給成本優惠（軟性優先，最順的解決法）
+        let prevIsDomV7Root = /^V/.test(prevBase) && /7/.test(prevSym) && !/6|65|43|42|64/.test(prevSym);
+        let currIsTonic = (currBase === 'I' || currBase === 'i');
+        let v7ToI = prevIsDomV7Root && currIsTonic;
+        let v7RootPc = null, v7FifthPc = null;
+        if (v7ToI) {
+          let vp = this.getChordPcs(prevSym, isMinor);
+          v7RootPc = (vp[0] + keyOffset) % 12;
+          v7FifthPc = (vp[2] + keyOffset) % 12;
+        }
+
         for (let tv of targetVoicings) {
           let bestCost = Infinity; let bestPath = null;
           // 重複音偏好成本：重複到首選音=0；次選音=小懲罰；其他音=大懲罰（軟性引導）
@@ -1284,32 +1328,45 @@ window.addEventListener('resize', setVH); setVH();
             
             // 上三聲部（S/A/T, index 0-2）跳進規則：
             //   - 不可三全音、不可超過完全五度（7 半音）
-            //   - 四度跳進（5 半音）後，下一步必須反向
+            //   - 四度(5)或五度(7)跳進後，下一步必須反向
             let leapViolation = false;
             let prevPrev = (prevNode.path.length >= 2) ? prevNode.path[prevNode.path.length - 2] : null;
             for (let v = 0; v < 3; v++) {
                 let move = tv[v] - pv[v];
                 let leap = Math.abs(move);
                 if (leap === 6 || leap > 7) { leapViolation = true; break; } // 三全音 / 超過五度
-                // 四度跳進後反向：檢查「前一步」是否為四度跳進，若是，這一步必須反向
+                // 四度或五度跳進後反向：檢查「前一步」是否為四/五度跳進，若是，這一步必須反向
                 if (prevPrev !== null) {
                   let prevMove = pv[v] - prevPrev[v];
-                  if (Math.abs(prevMove) === 5) { // 前一步是四度跳進
-                    if (move !== 0 && Math.sign(move) === Math.sign(prevMove)) { leapViolation = true; break; } // 同向 → 淘汰
+                  let pl = Math.abs(prevMove);
+                  if (pl === 5 || pl === 7) {
+                    if (move !== 0 && Math.sign(move) === Math.sign(prevMove)) { leapViolation = true; break; }
                   }
                 }
             }
             if (leapViolation) continue;
 
-            // 低音聲部（index 3）避免跳進超過完全五度，但保留兩種古典合理大跳：
-            //   (a) 終止式 V→I 的低音四/五度跳  (b) 低音八度跳（同音名不同八度）
+            // 低音聲部（index 3）避免跳進超過完全五度，但保留合理大跳：
+            //   (a) 終止式 V→I 的低音四/五度跳
+            //   (b) 低音八度跳（同音名不同八度）——I64→V 的八度跳只允許下行（由高接低）
             let bassLeap = Math.abs(tv[3] - pv[3]);
             if (bassLeap === 6) continue; // 低音也不可三全音跳
             if (bassLeap > 7) {
               let isVtoI = (prevBase === 'V') && (currBase === 'I' || currBase === 'i');
               let isOctaveJump = (bassLeap === 12) && (tv[3] % 12 === pv[3] % 12);
-              // V→I 允許到完全五度（7）或上行四度（5），八度跳單獨允許；其餘一律淘汰
+              // I64→V 的八度跳：只允許低音下行（tv[3] < pv[3]，由高接低）
+              let prevIs64 = /64/.test(prevSym);
+              if (isOctaveJump && prevIs64 && currBase === 'V') {
+                if (tv[3] >= pv[3]) continue; // 上行八度跳不允許
+              }
               if (!(isVtoI || isOctaveJump)) continue;
+            }
+            // 低音四/五度跳進後也必須反向（多用轉位讓低音級進、避免低音跳來跳去）
+            if (prevPrev !== null) {
+              let prevBassMove = pv[3] - prevPrev[3];
+              let pbl = Math.abs(prevBassMove);
+              let curBassMove = tv[3] - pv[3];
+              if ((pbl === 5 || pbl === 7) && curBassMove !== 0 && Math.sign(curBassMove) === Math.sign(prevBassMove)) continue;
             }
 
             // 防平行五度/八度 ＋ 外聲部隱伏五度/隱伏八度 ＋ 減五度→完全五度
@@ -1391,6 +1448,16 @@ window.addEventListener('resize', setVH); setVH();
             let dist = Math.abs(tv[0]-pv[0]) + Math.abs(tv[1]-pv[1]) + Math.abs(tv[2]-pv[2]) + Math.abs(tv[3]-pv[3]) * 0.5;
             if (tv[0] === pv[0] || tv[1] === pv[1]) dist -= 2;
             dist += doublingPenalty; // 重複音偏好
+
+            // V7→I 省五重根優先（軟性）：若前一格 V7 省略五音、重複根音，給成本優惠。
+            // 這會讓 V7 傾向省五重根配置，使 ii→V7 共同音自然保持、V7→I 無跳進。
+            if (v7ToI) {
+              let pcnt = {};
+              pv.forEach(x => { let p = x % 12; pcnt[p] = (pcnt[p] || 0) + 1; });
+              let omitsFifth = !(v7FifthPc in pcnt);
+              let doublesRoot = (pcnt[v7RootPc] || 0) >= 2;
+              if (omitsFifth && doublesRoot) dist -= 4; // 優惠，優先選省五重根的 V7 配置
+            }
 
             // 原則 1（硬性）：ii 類 → V 類，上三聲部必須與低音反向，違反直接淘汰
             if (iiToV) {
@@ -1670,14 +1737,14 @@ window.addEventListener('resize', setVH); setVH();
       // 逐步降低七和絃密度；仍無解則短暫降一級難度求解，確保永遠出得了題。
       let attempts = 0; let seq = null; let voicings = null;
       let effLevel = this.curLevel.id;
-      while (attempts < 100 && !voicings) {
-        let densityScale = attempts < 25 ? 1.0 : (attempts < 50 ? 0.6 : (attempts < 75 ? 0.35 : 0.15));
+      while (attempts < 140 && !voicings) {
+        let densityScale = attempts < 30 ? 1.0 : (attempts < 60 ? 0.6 : (attempts < 90 ? 0.35 : 0.15));
         seq = HARMONY_ENGINE.generateSkeleton(this.bars, this.keyObj.isMin, effLevel, densityScale);
         voicings = HARMONY_ENGINE.solveVoiceLeading(seq, this.keyObj.isMin, this.keyObj.off);
         attempts++;
-        if (!voicings && attempts % 25 === 0) {
+        if (!voicings && attempts % 20 === 0) {
           this.keyObj = poolKeys[Math.floor(Math.random() * poolKeys.length)];
-          if (attempts >= 75 && effLevel > 1) effLevel--; // 最後手段：暫時降一級確保有解
+          if (attempts >= 80 && effLevel > 1) effLevel--; // 最後手段：暫時降一級確保有解
         }
       }
       this.questionSeq = seq;
