@@ -1145,7 +1145,7 @@ window.addEventListener('resize', setVH); setVH();
       const B_RANGE = [41, 60], T_RANGE = [48, 67], A_RANGE = [55, 72], S_RANGE = [60, 79];
       for (let b = B_RANGE[0]; b <= B_RANGE[1]; b++) {
         if (b % 12 !== bassPc) continue;
-        for (let t = Math.max(T_RANGE[0], b + 1); t <= T_RANGE[1]; t++) {
+        for (let t = Math.max(T_RANGE[0], b + 1); t <= Math.min(T_RANGE[1], b + 24); t++) {
           if (!pcs.includes(t % 12)) continue;
           for (let a = Math.max(A_RANGE[0], t + 1); a <= Math.min(A_RANGE[1], t + 12); a++) {
             if (!pcs.includes(a % 12)) continue;
@@ -1312,16 +1312,20 @@ window.addEventListener('resize', setVH); setVH();
               if (!(isVtoI || isOctaveJump)) continue;
             }
 
-            // 防平行五度/八度 ＋ 外聲部隱伏五度/隱伏八度
+            // 防平行五度/八度 ＋ 外聲部隱伏五度/隱伏八度 ＋ 減五度→完全五度
             let hasParallel = false;
             for (let v1 = 0; v1 < 3; v1++) {
               for (let v2 = v1 + 1; v2 < 4; v2++) {
-                let ivPrev = Math.abs(pv[v1] - pv[v2]) % 12;
-                let ivCurr = Math.abs(tv[v1] - tv[v2]) % 12;
+                let rawPrev = Math.abs(pv[v1] - pv[v2]);
+                let rawCurr = Math.abs(tv[v1] - tv[v2]);
+                let ivPrev = rawPrev % 12;
+                let ivCurr = rawCurr % 12;
                 let sameDir = (tv[v1] - pv[v1]) * (tv[v2] - pv[v2]) > 0;
                 if ((ivPrev === 7 && ivCurr === 7) || (ivPrev === 0 && ivCurr === 0)) {
                   if (sameDir) { hasParallel = true; break; }
                 }
+                // 減五度(6)→完全五度(7) 同向進行：一律禁止（不分聲部）
+                if (ivPrev === 6 && ivCurr === 7 && sameDir) { hasParallel = true; break; }
                 // 外聲部（S=0, B=3）隱伏五度/隱伏八度：同向進行且到達完全協和音程，且高音（S）為跳進
                 if (v1 === 0 && v2 === 3 && (ivCurr === 7 || ivCurr === 0) && ivPrev !== ivCurr) {
                   if (sameDir && Math.abs(tv[0] - pv[0]) > 2) { hasParallel = true; break; }
