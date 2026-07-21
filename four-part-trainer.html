@@ -585,6 +585,25 @@ window.addEventListener('resize', setVH); setVH();
     return null;
   }
 
+  // 取得某和絃中某個音級(pc)的「字母索引」(0=C..6=B)，供增二度偵測。
+  // 依和絃類型使用對應的專用拼寫（增六/拿坡里/副屬），其餘用調性表。keyName 用於預設拼寫。
+  function letterIndexOfTone(pc, sym, keyOffset, keyName, tonicLetterIdx) {
+    const LI = { 'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6 };
+    // 用一個落在該 pc 的 midi（任意八度，字母不受八度影響）
+    let midi = 60 + (pc % 12);
+    let ov = null;
+    if (sym === 'It6' || sym === 'Fr6' || sym === 'Ger6') ov = spellAug6Tone(midi, keyOffset, tonicLetterIdx);
+    else if (sym.includes('N')) ov = spellNapolitanTone(midi, keyOffset, tonicLetterIdx);
+    else if (sym.includes('/')) {
+      let tgt = sym.split('/')[1];
+      const DEG = {'I':[0,0],'i':[0,0],'ii':[1,2],'ii°':[1,2],'iii':[2,3],'III':[2,4],'IV':[3,5],'iv':[3,5],'V':[4,7],'v':[4,7],'vi':[5,9],'VI':[5,9],'vii':[6,11]};
+      let info = DEG[tgt];
+      if (info) ov = spellSecondaryDominantTone(midi, (keyOffset + info[1]) % 12, (tonicLetterIdx + info[0]) % 7);
+    }
+    if (!ov) ov = getSpellingByMidiAndKey(midi, keyName);
+    return LI[ov.letter];
+  }
+
   function getAccidentalToDraw(spell, mAcc, keyObj) {
     let keyId = spell.letter + spell.octave;
     let currentAcc = mAcc[keyId];
@@ -718,12 +737,11 @@ window.addEventListener('resize', setVH); setVH();
           'vii°':['I']
       };
       const NEXT_MIN = {
-          'i':   ['ii°', 'iv', 'V', 'VI', 'III', 'VI'],
+          'i':   ['ii°', 'iv', 'V', 'VI', 'iv', 'VI'],
           'ii°': ['V', 'vii°', 'V'],
-          'III': ['VI', 'iv'],
           'iv':  ['V', 'ii°', 'i', 'vii°'],
           'V':   ['i', 'VI'],
-          'VI':  ['ii°', 'iv', 'V', 'III'],
+          'VI':  ['ii°', 'iv', 'V', 'ii°'],
           'vii°':['i']
       };
       let nextMap = isMinor ? NEXT_MIN : NEXT_MAJ;
@@ -896,7 +914,7 @@ window.addEventListener('resize', setVH); setVH();
 
       // ---------- Lv.4：副屬和絃／拿坡里六和絃／皮卡第三度 ----------
       let hasLv4Feature = seq[n - 1] === 'I' && isMinor; // 皮卡第三度也算 Lv.4 專屬元素
-      const TARGETS = isMinor ? ['V', 'iv', 'VI', 'III'] : ['ii', 'IV', 'V', 'vi'];
+      const TARGETS = isMinor ? ['V', 'iv', 'VI'] : ['ii', 'IV', 'V', 'vi'];
 
       let chromaticChoices = [];
       for (let i = 1; i < n - 1; i++) {
@@ -1135,10 +1153,12 @@ window.addEventListener('resize', setVH); setVH();
         return { pc: fifth, second: null };
       }
       if (figure === '6') {
-        // 第一轉位：區分主要三和絃(I/V)重根音、其餘次要三和絃重三音
-        let isMajorPrimary = (rootLetters === 'I' || rootLetters === 'i' || rootLetters === 'V');
-        if (isMajorPrimary) return { pc: root, second: fifth };   // I6/V6 重根音，可重五音
-        return { pc: third, second: null };                       // ii6/iv6/vi6/vii°6 重三音
+        // 第一轉位：主要三和絃(I/IV/V)重根音、可重五音；次要三和絃(ii/vi/vii°)重三音
+        let isMajorPrimary = (rootLetters === 'I' || rootLetters === 'i' ||
+                              rootLetters === 'IV' || rootLetters === 'iv' ||
+                              rootLetters === 'V');
+        if (isMajorPrimary) return { pc: root, second: fifth };   // I6/IV6/V6 重根音，次選五音
+        return { pc: third, second: null };                       // ii6/vi6/vii°6 重三音
       }
       return null;
     },
@@ -1267,6 +1287,11 @@ window.addEventListener('resize', setVH); setVH();
       let allVoicings = degSeq.map(sym => this.generateLegalVoicings(sym, isMinor, keyOffset));
       if (allVoicings.some(v => v.length === 0)) return null; // 有和絃完全找不到可用聲位
       let dp = allVoicings[0].map(v => ({ cost: 0, path: [v], last: v }));
+      // 供增二度偵測用：此調的名稱與主音字母索引
+      let _keyObj = (typeof ALL_KEYS !== 'undefined') ? ALL_KEYS.find(k => k.off === keyOffset && k.isMin === isMinor) : null;
+      let _keyName = _keyObj ? _keyObj.name : 'C 大調';
+      const _LI = { 'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6 };
+      let _tonicLetterIdx = _keyObj ? _LI[(_keyObj.vfk || 'C')[0].toUpperCase()] : 0;
       
       for (let i = 1; i < degSeq.length; i++) {
         let nextDp = []; let targetVoicings = allVoicings[i];
@@ -1345,6 +1370,17 @@ window.addEventListener('resize', setVH); setVH();
                 }
             }
             if (leapViolation) continue;
+
+            // 禁止增二度旋律進行：任一聲部移動 3 半音，若兩音拼寫為「相鄰字母」(二度關係)即為增二度，淘汰
+            let aug2 = false;
+            for (let v = 0; v < 4; v++) {
+              if (Math.abs(tv[v] - pv[v]) !== 3) continue; // 只有 3 半音移動才可能是增二度
+              let l1 = letterIndexOfTone(pv[v] % 12, prevSym, keyOffset, _keyName, _tonicLetterIdx);
+              let l2 = letterIndexOfTone(tv[v] % 12, currSym, keyOffset, _keyName, _tonicLetterIdx);
+              let gap = Math.abs(l1 - l2); gap = Math.min(gap, 7 - gap);
+              if (gap === 1) { aug2 = true; break; } // 字母相鄰 + 3半音 = 增二度
+            }
+            if (aug2) continue;
 
             // 低音聲部（index 3）避免跳進超過完全五度，但保留合理大跳：
             //   (a) 終止式 V→I 的低音四/五度跳
@@ -1737,14 +1773,14 @@ window.addEventListener('resize', setVH); setVH();
       // 逐步降低七和絃密度；仍無解則短暫降一級難度求解，確保永遠出得了題。
       let attempts = 0; let seq = null; let voicings = null;
       let effLevel = this.curLevel.id;
-      while (attempts < 140 && !voicings) {
-        let densityScale = attempts < 30 ? 1.0 : (attempts < 60 ? 0.6 : (attempts < 90 ? 0.35 : 0.15));
+      while (attempts < 200 && !voicings) {
+        let densityScale = attempts < 40 ? 1.0 : (attempts < 80 ? 0.6 : (attempts < 120 ? 0.35 : 0.15));
         seq = HARMONY_ENGINE.generateSkeleton(this.bars, this.keyObj.isMin, effLevel, densityScale);
         voicings = HARMONY_ENGINE.solveVoiceLeading(seq, this.keyObj.isMin, this.keyObj.off);
         attempts++;
-        if (!voicings && attempts % 20 === 0) {
+        if (!voicings && attempts % 15 === 0) {
           this.keyObj = poolKeys[Math.floor(Math.random() * poolKeys.length)];
-          if (attempts >= 80 && effLevel > 1) effLevel--; // 最後手段：暫時降一級確保有解
+          if (attempts >= 90 && effLevel > 1) effLevel--; // 最後手段：暫時降一級確保有解
         }
       }
       this.questionSeq = seq;
