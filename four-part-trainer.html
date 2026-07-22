@@ -33,7 +33,7 @@
     -webkit-user-select: none; -moz-user-select: none; user-select: none;
   }
   /* 橫向捲動區維持 iOS 慣性捲動，並限定只能水平捲動不干擾頁面垂直捲動 */
-  .staff-scroll-container, .review-staff { touch-action: pan-x; -webkit-overflow-scrolling: touch; }
+  .staff-scroll-container, .review-staff { touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
   body{ margin:0; background: var(--paper); color: var(--ink); font-family: var(--font-body); min-height:100vh; padding: 20px 16px 64px; }
   /* 作答頁啟用時：body 不捲動、無多餘 padding，讓作答頁精準滿版 */
   body.practice-locked{ height:100dvh; height:calc(var(--app-vh,1vh)*100); overflow:hidden; padding:0 8px; min-height:0; }
@@ -415,6 +415,49 @@ function showPage(pageId) {
 // 讓 CSS 的 100vh 在行動裝置（避開位址列）更準確
 function setVH(){ document.documentElement.style.setProperty('--app-vh', window.innerHeight * 0.01 + 'px'); }
 window.addEventListener('resize', setVH); setVH();
+
+// 譜例水平捲動容器的手勢方向判斷（解決 iOS 巢狀捲動：垂直滑被譜例攔截而無法捲頁面的問題）
+// 可靠做法：觸控裝置上，容器預設 overflow-x:hidden（頁面垂直捲永遠順暢，不被攔截）；
+//   觸控時若判定為「水平手勢」，才即時開啟該容器的水平捲動，讓使用者左右查看小節。
+//   桌機（無觸控）維持 overflow-x:auto，滑鼠捲動不受影響。
+(function(){
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (!isTouch) return; // 桌機不處理，維持原本水平捲動
+  // 只處理解答頁與錯題本的譜例（作答頁是滿版鎖定、需程式自動水平捲跟隨作答格，且無整頁垂直捲，不需處理）
+  const SCROLL_SEL = '#ansUserScroll, #ansCorrectScroll, .review-staff';
+  // 觸控裝置：讓這些容器預設不水平捲（改由手勢判斷即時開啟）
+  const style = document.createElement('style');
+  style.textContent = SCROLL_SEL.split(',').map(s => s.trim() + '{ overflow-x: hidden; }').join('\n');
+  document.head.appendChild(style);
+
+  let startX = 0, startY = 0, locked = null, activeEl = null;
+  function onStart(e){
+    let el = e.target.closest(SCROLL_SEL);
+    activeEl = el || null; locked = null;
+    if (!activeEl) return;
+    let t = e.touches[0];
+    startX = t.clientX; startY = t.clientY;
+  }
+  function onMove(e){
+    if (!activeEl || locked === 'v') return;
+    let t = e.touches[0];
+    let dx = Math.abs(t.clientX - startX);
+    let dy = Math.abs(t.clientY - startY);
+    if (locked === null) {
+      if (dx < 6 && dy < 6) return;      // 需要一點位移才判斷，避免誤判
+      locked = (dx > dy) ? 'h' : 'v';
+      if (locked === 'h') activeEl.style.setProperty('overflow-x', 'auto', 'important'); // 水平手勢：即時開啟左右捲
+    }
+  }
+  function onEnd(){
+    if (activeEl) activeEl.style.removeProperty('overflow-x'); // 還原（回到預設 hidden）
+    activeEl = null; locked = null;
+  }
+  document.addEventListener('touchstart', onStart, { passive: true });
+  document.addEventListener('touchmove', onMove, { passive: true });
+  document.addEventListener('touchend', onEnd, { passive: true });
+  document.addEventListener('touchcancel', onEnd, { passive: true });
+})();
 
 (function(){
   const VF = Vex.Flow;
