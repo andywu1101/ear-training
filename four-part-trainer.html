@@ -38,7 +38,8 @@
   /* 作答頁啟用時：body 不捲動、無多餘 padding，讓作答頁精準滿版 */
   body.practice-locked{ height:100dvh; height:calc(var(--app-vh,1vh)*100); overflow:hidden; padding:0 8px; min-height:0; }
   body.practice-locked .wrap{ height:100%; }
-  .wrap{ max-width: 820px; margin: 0 auto; display:flex; flex-direction:column; height:100%; }
+  /* 非作答頁（含解答頁/錯題本）：wrap 高度自適應內容，整個文件自然垂直捲動；譜例內部仍可水平捲動 */
+  .wrap{ max-width: 820px; margin: 0 auto; display:flex; flex-direction:column; }
   .page-view { display: none; animation: fadeIn 0.22s ease-out; }
   .page-view.active { display: block; }
   /* 作答頁：鎖定為一個視窗高度、整頁不捲動。譜例區固定（不滑、不佔多餘空間），鍵盤區吸收剩餘空間並可內部捲動 */
