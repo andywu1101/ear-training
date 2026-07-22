@@ -48,9 +48,11 @@
     max-height: 100dvh; max-height: calc(var(--app-vh, 1vh) * 100);
     overflow: hidden; padding-top: 8px;
   }
-  .fpt-staff-area { flex: 0 0 auto; min-height: 0; max-height: 36dvh; max-height: calc(var(--app-vh, 1vh) * 36); display: flex; flex-direction: column; overflow: hidden; }
-  .fpt-staff-area .staff-scroll-container { flex: 0 0 auto; overflow-y: hidden; padding-top: 4px; margin-bottom: 6px; }
+  .fpt-staff-area { flex: 0 1 auto; min-height: 0; max-height: 40dvh; max-height: calc(var(--app-vh, 1vh) * 40); display: flex; flex-direction: column; overflow: hidden; }
+  .fpt-staff-area .staff-scroll-container { flex: 0 1 auto; overflow-y: hidden; padding-top: 4px; margin-bottom: 4px; min-height: 0; }
   .fpt-keyboard-area { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+  /* 播放按鈕吸附在鍵盤區最上緣：隨時可見可按、跨裝置一致、不受上層譜例高度影響 */
+  .fpt-play-sticky { position: sticky; top: 0; z-index: 20; background: var(--paper, #efeee6); padding: 6px 0 8px 0; margin-bottom: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   
   .nav-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -90,6 +92,10 @@
 
   /* 作答與樂譜區 */
   .practice-top-fixed { background: var(--paper); z-index: 10; border-bottom: 1px solid var(--panel-border); padding-bottom: 16px; margin-bottom: 16px; }
+  /* 作答鎖定模式：譜例區更緊湊，盡量不佔空間、完整顯示，剩餘空間全給鍵盤 */
+  body.practice-locked .practice-top-fixed { padding-bottom: 6px; margin-bottom: 6px; }
+  body.practice-locked .top-bar-practice { margin-bottom: 6px; }
+  body.practice-locked .fpt-staff-area .staff-scroll-container { margin-bottom: 0; }
   .top-bar-practice { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
   .practice-status-badge { font-family: var(--font-mono); font-size: 12px; background: var(--panel); border: 1px solid var(--panel-border); padding: 6px 12px; border-radius: 999px; color: var(--ink-soft); }
   .score-box{ font-family: var(--font-mono); text-align:right; font-size: 18px; font-weight:700; color: var(--accent); }
@@ -261,15 +267,15 @@
           <div id="fpt-staff-svg"></div>
         </div>
       </div>
-
-      <div class="unified-action-row" style="margin-top:6px;">
-        <button class="play-btn" id="btn-play-all" disabled>🔊 完整四部 (SATB)</button>
-        <button class="play-btn" id="btn-play-arp" disabled>🎵 分解＋完整</button>
-      </div>
     </div>
 
     <!-- 底部作答分頁與鍵盤區（固定高度） -->
     <div class="fpt-keyboard-area" style="padding: 0 4px;">
+      <!-- 播放按鈕：吸附在鍵盤區最上緣，隨時可見可按，不受上層譜例高度限制 -->
+      <div class="unified-action-row fpt-play-sticky">
+        <button class="play-btn" id="btn-play-all" disabled>🔊 完整四部 (SATB)</button>
+        <button class="play-btn" id="btn-play-arp" disabled>🎵 分解＋完整</button>
+      </div>
       <div class="editor-tabs-container">
         <div class="editor-tabs">
           <button class="tab-btn active" id="tab-bass" onclick="window.fptModule.switchTab('bass')">🎹 1. 編輯低音</button>
