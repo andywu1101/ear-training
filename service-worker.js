@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v12'; // v12：六設定頁新增「玩法說明」彈窗
+const CACHE_NAME = 'ear-training-shell-v13'; // v13：返回鍵改回選單、清除快取六頁統一
 const APP_SHELL = [
   './',
   './index.html',

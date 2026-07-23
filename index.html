@@ -214,6 +214,13 @@
 </div>
 
 <script>
+/* 從練習頁返回時帶 #menu：直接顯示選單、跳過封面（封面只在首次啟動出現）。此段趁早執行，避免閃到封面。 */
+if (location.hash === '#menu') {
+  var _c = document.getElementById('pageCover'); var _m = document.getElementById('pageMenu');
+  if (_c) _c.classList.remove('active'); if (_m) _m.classList.add('active');
+}
+</script>
+<script>
 /* ===== 統一錯題本儲存（與各練習頁共用同一組 localStorage key） ===== */
 window.REVIEW_STORE = {
   PREFIX: 'earTrainer.review.',
