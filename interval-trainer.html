@@ -172,6 +172,27 @@
   .loading-banner{ text-align:center; font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; background: var(--panel); padding: 10px; border-radius: 8px; border: 1px solid var(--panel-border); }
   @media (max-width: 480px){ h1{ font-size: 26px; } .card{ padding: 22px 16px; } .review-item{ flex-direction: column; align-items: flex-start; } .top-bar-practice { flex-direction: column; align-items: flex-start; gap: 8px; } .score-box { text-align: left; } .switch-row { gap: 12px; } }
   @media (prefers-reduced-motion: reduce){ .playhead{ transition: none !important; } .page-view { animation: none; } }
+
+  /* ===== 玩法說明按鈕與彈窗 ===== */
+  .settings-topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:10px; flex-wrap:wrap; }
+  .help-btn{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-body); font-size:13px; font-weight:600; color:var(--accent); background:#fff; border:1px solid var(--accent-line); padding:8px 14px; border-radius:999px; cursor:pointer; touch-action:manipulation; white-space:nowrap; }
+  .help-btn:hover, .help-btn:active{ background:var(--accent); color:var(--panel); border-color:var(--accent); }
+  .help-modal{ display:none; position:fixed; inset:0; z-index:1000; background:rgba(38,36,32,0.55); padding:24px 16px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .help-modal.open{ display:flex; align-items:flex-start; justify-content:center; }
+  .help-box{ background:var(--paper); border:1px solid var(--panel-border); border-radius:16px; max-width:560px; width:100%; margin:auto; padding:24px 22px 22px; box-shadow:0 20px 50px rgba(0,0,0,0.28); position:relative; animation:helpIn .2s ease-out; }
+  @keyframes helpIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .help-box h2{ font-family:var(--font-display); font-size:22px; font-weight:600; margin:0 30px 6px 0; }
+  .help-box h3{ font-family:var(--font-body); font-size:13.5px; font-weight:700; color:var(--accent); margin:16px 0 5px; }
+  .help-box p{ font-size:13.5px; line-height:1.8; color:var(--ink); margin:0 0 8px; }
+  .help-box .help-lead{ color:var(--ink-soft); font-size:13px; margin-bottom:4px; }
+  .help-box b{ font-weight:700; }
+  .help-close{ position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); font-size:20px; line-height:1; cursor:pointer; }
+  .help-close:hover{ background:var(--accent); color:var(--panel); border-color:var(--accent); }
+  .help-common{ margin-top:18px; padding-top:14px; border-top:1px dashed var(--panel-border); }
+  .help-common h3{ color:var(--ink-soft); }
+  .help-common p{ font-size:12.5px; line-height:1.75; color:var(--ink-soft); }
+  .help-foot{ margin-top:16px; text-align:center; }
+  .help-foot button{ font-family:var(--font-body); font-weight:700; font-size:14px; padding:11px 30px; border-radius:999px; background:var(--accent); color:var(--panel); border:none; cursor:pointer; touch-action:manipulation; }
 </style>
 </head>
 <body>
@@ -187,7 +208,10 @@
 
   <!-- 【音程練習】設定頁 -->
   <div id="pageIntSettings" class="page-view active">
-    <button class="nav-back-btn" onclick="location.href='index.html'">← 回目錄選單</button>
+    <div class="settings-topbar">
+      <button class="nav-back-btn" style="margin-bottom:0;" onclick="location.href='index.html'">← 回目錄選單</button>
+      <button class="help-btn" onclick="openHelp('int-helpModal')">❔ 玩法說明</button>
+    </div>
     <h1>音程練習 — 設定</h1>
     <p class="subtitle">調整你想要的音程模式、難度與副（複）音程開關，設定完成即可進入作答。</p>
 
@@ -934,6 +958,31 @@ function showPage(pageId) {
       });
     });
   }
+</script>
+<!-- 玩法說明彈窗 -->
+<div class="help-modal" id="int-helpModal" onclick="if(event.target===this) closeHelp('int-helpModal')">
+  <div class="help-box">
+    <button class="help-close" onclick="closeHelp('int-helpModal')" aria-label="關閉">×</button>
+    <h2>音程練習 — 玩法說明</h2>
+    <p class="help-lead">聽辨兩個音之間的音程（度數與性質）。</p>
+    <h3>設定</h3>
+    <p>作答題型可選「<b>單題作答</b>」或「<b>連續聽寫</b>」；難度分 Lv1 協和音程、Lv2 不協和音程、Lv3 不完全協和音程，或用「<b>自訂音程</b>」自己勾選要練哪幾種（至少 2 種，可全選）；打開「<b>副音程開關</b>」會出現超過八度的複音程。</p>
+    <h3>作答</h3>
+    <p>單題按「播放和聲音程」（兩音同響、連續三遍）→ 點出你聽到的音程 → 解答頁可重播「和聲」與「上行＋和聲」。連續聽寫則按「播放整段」→ 點題號格選中、再點選項填入（會自動跳下一題）→ 全部填完按提交看成績。</p>
+    <div class="help-common">
+      <h3>共通規則（六個練習都適用）</h3>
+      <p><b>練習模式</b>可無限聆聽、不限時間；<b>測驗模式</b>限制重播次數，模擬考試。</p>
+      <p>作答完按「<b>提交</b>」進入<b>解答頁</b>：顯示答對／答錯、你的作答與正解對照，可重播聆聽，再按「下一題」繼續。</p>
+      <p>有格子沒填也可以提交，但會跳提醒（<b>未填的部分算錯</b>）。</p>
+      <p>設定頁下方的「<b>錯題本</b>」會自動收錄答錯的題目，存在本機瀏覽器（重整或關閉都不會消失），可重播對照與即時訂正。</p>
+    </div>
+    <div class="help-foot"><button onclick="closeHelp('int-helpModal')">我知道了</button></div>
+  </div>
+</div>
+<script>
+function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); }
+function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); }
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('.help-modal.open').forEach(function(m){ m.classList.remove('open'); }); } });
 </script>
 </body>
 </html>

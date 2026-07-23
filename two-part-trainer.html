@@ -144,6 +144,26 @@
     .p-btn.note-btn { height: 45px; }
     .p-btn.acc-btn { height: 32px; }
   }
+
+  /* ===== 玩法說明按鈕與彈窗 ===== */
+  .help-btn{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-body); font-size:13px; font-weight:600; color:var(--accent); background:#fff; border:1px solid var(--accent-line); padding:8px 14px; border-radius:999px; cursor:pointer; touch-action:manipulation; white-space:nowrap; }
+  .help-btn:hover, .help-btn:active{ background:var(--accent); color:var(--panel); border-color:var(--accent); }
+  .help-modal{ display:none; position:fixed; inset:0; z-index:1000; background:rgba(38,36,32,0.55); padding:24px 16px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .help-modal.open{ display:flex; align-items:flex-start; justify-content:center; }
+  .help-box{ background:var(--paper); border:1px solid var(--panel-border); border-radius:16px; max-width:560px; width:100%; margin:auto; padding:24px 22px 22px; box-shadow:0 20px 50px rgba(0,0,0,0.28); position:relative; animation:helpIn .2s ease-out; }
+  @keyframes helpIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .help-box h2{ font-family:var(--font-display); font-size:22px; font-weight:600; margin:0 30px 6px 0; }
+  .help-box h3{ font-family:var(--font-body); font-size:13.5px; font-weight:700; color:var(--accent); margin:16px 0 5px; }
+  .help-box p{ font-size:13.5px; line-height:1.8; color:var(--ink); margin:0 0 8px; }
+  .help-box .help-lead{ color:var(--ink-soft); font-size:13px; margin-bottom:4px; }
+  .help-box b{ font-weight:700; }
+  .help-close{ position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); font-size:20px; line-height:1; cursor:pointer; }
+  .help-close:hover{ background:var(--accent); color:var(--panel); border-color:var(--accent); }
+  .help-common{ margin-top:18px; padding-top:14px; border-top:1px dashed var(--panel-border); }
+  .help-common h3{ color:var(--ink-soft); }
+  .help-common p{ font-size:12.5px; line-height:1.75; color:var(--ink-soft); }
+  .help-foot{ margin-top:16px; text-align:center; }
+  .help-foot button{ font-family:var(--font-body); font-weight:700; font-size:14px; padding:11px 30px; border-radius:999px; background:var(--accent); color:var(--panel); border:none; cursor:pointer; touch-action:manipulation; }
 </style>
 </head>
 <body>
@@ -153,7 +173,10 @@
   <div id="pageTpSettings" class="page-view active">
     <div class="nav-header-row">
       <button class="nav-back-btn" onclick="location.href='index.html'">← 離開</button>
-      <button class="reset-cache-btn" onclick="forceResetCache()">🔄 畫面凍結請點此重置</button>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+        <button class="help-btn" onclick="openHelp('tp-helpModal')">❔ 玩法說明</button>
+        <button class="reset-cache-btn" onclick="forceResetCache()">🔄 畫面凍結請點此重置</button>
+      </div>
     </div>
 
     <h1>兩聲部曲調 — 設定</h1>
@@ -1338,6 +1361,31 @@ function showPage(pageId) {
 
 <script>
   if('serviceWorker' in navigator){ window.addEventListener('load', () => { navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }); }
+</script>
+<!-- 玩法說明彈窗 -->
+<div class="help-modal" id="tp-helpModal" onclick="if(event.target===this) closeHelp('tp-helpModal')">
+  <div class="help-box">
+    <button class="help-close" onclick="closeHelp('tp-helpModal')" aria-label="關閉">×</button>
+    <h2>兩聲部曲調 — 玩法說明</h2>
+    <p class="help-lead">大譜表雙軌聽寫，同時寫出高音與低音兩個聲部的節奏與音高。</p>
+    <h3>設定</h3>
+    <p>可選拍號、小節數、速度與要出現的節奏型；測驗模式可限制重播次數。</p>
+    <h3>作答</h3>
+    <p>播放時可選「<b>雙聲部</b>」一起聽，或單獨聽「<b>高音</b>」「<b>低音</b>」孤立聲部。作答分「編輯節奏／編輯音高」兩個分頁，並可切換目前編輯的聲部（點譜上高音區或低音區即可切換，右上會顯示「目前編輯：高音／低音」）。音高輸入方式與單旋律相同（先打音名，再事後修飾升降與八度）。填完提交 → 解答頁雙譜對照、紅色標錯，可聆聽你的作答／正解雙軌。</p>
+    <div class="help-common">
+      <h3>共通規則（六個練習都適用）</h3>
+      <p><b>練習模式</b>可無限聆聽、不限時間；<b>測驗模式</b>限制重播次數，模擬考試。</p>
+      <p>作答完按「<b>提交</b>」進入<b>解答頁</b>：顯示答對／答錯、你的作答與正解對照，可重播聆聽，再按「下一題」繼續。</p>
+      <p>有格子沒填也可以提交，但會跳提醒（<b>未填的部分算錯</b>）。</p>
+      <p>設定頁下方的「<b>錯題本</b>」會自動收錄答錯的題目，存在本機瀏覽器（重整或關閉都不會消失），可重播對照與即時訂正。</p>
+    </div>
+    <div class="help-foot"><button onclick="closeHelp('tp-helpModal')">我知道了</button></div>
+  </div>
+</div>
+<script>
+function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); }
+function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); }
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('.help-modal.open').forEach(function(m){ m.classList.remove('open'); }); } });
 </script>
 </body>
 </html>

@@ -2524,14 +2524,14 @@ window.addEventListener('resize', setVH); setVH();
   }
 </script>
 <script>
-/* 附加：四部和聲錯題本摘要同步到 localStorage（供 index 總覽整合）＋支援 #review 直達；不改動既有邏輯。 */
+/* 附加（不改動既有邏輯）：1) 錯題本摘要同步 localStorage 供 index 總覽整合＋#review 直達；2) 玩法說明按鈕與彈窗。 */
 (function(){
   if(!window.REVIEW_STORE){
     window.REVIEW_STORE = {
       PREFIX:'earTrainer.review.',
-      load(t){try{return JSON.parse(localStorage.getItem(this.PREFIX+t)||'[]')}catch(e){return[]}},
-      save(t,a){try{localStorage.setItem(this.PREFIX+t,JSON.stringify(a))}catch(e){}},
-      clear(t){this.save(t,[])},count(t){return this.load(t).length}
+      load:function(t){try{return JSON.parse(localStorage.getItem(this.PREFIX+t)||'[]')}catch(e){return[]}},
+      save:function(t,a){try{localStorage.setItem(this.PREFIX+t,JSON.stringify(a))}catch(e){}},
+      clear:function(t){this.save(t,[])},count:function(t){return this.load(t).length}
     };
   }
   function persist(){
@@ -2558,6 +2558,62 @@ window.addEventListener('resize', setVH); setVH();
       if(location.hash==='#review' && typeof showPage==='function') showPage('fpt-review');
     } else if(tries>40){ clearInterval(iv); }
   },150);
+
+  /* ---- 玩法說明按鈕與彈窗 ---- */
+  var hcss = ''
+    + '.help-btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--accent);background:#fff;border:1px solid var(--accent-line);padding:8px 14px;border-radius:999px;cursor:pointer;touch-action:manipulation;white-space:nowrap;}'
+    + '.help-btn:hover,.help-btn:active{background:var(--accent);color:var(--panel);border-color:var(--accent);}'
+    + '.help-modal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(38,36,32,0.55);padding:24px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch;}'
+    + '.help-modal.open{display:flex;align-items:flex-start;justify-content:center;}'
+    + '.help-box{background:var(--paper);border:1px solid var(--panel-border);border-radius:16px;max-width:560px;width:100%;margin:auto;padding:24px 22px 22px;box-shadow:0 20px 50px rgba(0,0,0,0.28);position:relative;}'
+    + '.help-box h2{font-family:var(--font-display);font-size:22px;font-weight:600;margin:0 30px 6px 0;}'
+    + '.help-box h3{font-family:var(--font-body);font-size:13.5px;font-weight:700;color:var(--accent);margin:16px 0 5px;}'
+    + '.help-box p{font-size:13.5px;line-height:1.8;color:var(--ink);margin:0 0 8px;}'
+    + '.help-box .help-lead{color:var(--ink-soft);font-size:13px;margin-bottom:4px;}'
+    + '.help-box b{font-weight:700;}'
+    + '.help-close{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--panel-border);background:var(--panel);color:var(--ink);font-size:20px;line-height:1;cursor:pointer;}'
+    + '.help-close:hover{background:var(--accent);color:var(--panel);border-color:var(--accent);}'
+    + '.help-common{margin-top:18px;padding-top:14px;border-top:1px dashed var(--panel-border);}'
+    + '.help-common h3{color:var(--ink-soft);}'
+    + '.help-common p{font-size:12.5px;line-height:1.75;color:var(--ink-soft);}'
+    + '.help-foot{margin-top:16px;text-align:center;}'
+    + '.help-foot button{font-family:var(--font-body);font-weight:700;font-size:14px;padding:11px 30px;border-radius:999px;background:var(--accent);color:var(--panel);border:none;cursor:pointer;touch-action:manipulation;}';
+  var st=document.createElement('style'); st.textContent=hcss; document.head.appendChild(st);
+
+  var hhtml = ''
+    + '<div class="help-box">'
+    + '<button class="help-close" data-help-close aria-label="關閉">×</button>'
+    + '<h2>四部和聲進行 — 玩法說明</h2>'
+    + '<p class="help-lead">聽辨古典四部和聲的進行——判斷調性、寫出低音線條、標出功能級數與轉位（全音符 4/4 記譜）。</p>'
+    + '<h3>設定</h3>'
+    + '<p>可選調性（隨機 24 大小調／僅大調／僅小調）、小節數（6／8／10／12）、速度、難度 Lv1～Lv5（Lv1 本調三和絃原位，逐級加入轉位、七和絃、副屬／拿坡里，到 Lv5 增六和絃）。</p>'
+    + '<h3>作答</h3>'
+    + '<p>按「完整四部（SATB）」或「分解＋完整」聆聽，接著完成三件事——① <b>調性</b>：在譜例最前面的「調性?」下拉選單，從共用同一組調號的大調與關係小調中二選一。② <b>編輯低音</b>：用音名鍵盤寫出每格低音；先打音名，再用升／降／還原／「復原回本調」與八度做事後修飾（輸入後自動跳下一格）。③ <b>編輯級數</b>：選羅馬數字級數與轉位（原位／6／64，七和絃 65／43／42），另有大小寫切換、減／半減／增、副屬、拿坡里 N6、增六（義／法／德）等修飾鍵。</p>'
+    + '<p>按提交 → 若還有未完成（調性未選、低音或級數未填）會列出提醒、仍可提交（未填算錯）→ 解答頁把你的作答與標準正解「雙譜表對照」、紅色標錯，可聆聽完整／分解正解。</p>'
+    + '<div class="help-common">'
+    + '<h3>共通規則（六個練習都適用）</h3>'
+    + '<p><b>練習模式</b>可無限聆聽、不限時間；<b>測驗模式</b>限制重播次數，模擬考試。</p>'
+    + '<p>作答完按「<b>提交</b>」進入<b>解答頁</b>：顯示答對／答錯、你的作答與正解對照，可重播聆聽，再按「下一題」繼續。</p>'
+    + '<p>有格子沒填也可以提交，但會跳提醒（<b>未填的部分算錯</b>）。</p>'
+    + '<p>設定頁下方的「<b>錯題本</b>」會自動收錄答錯的題目，存在本機瀏覽器（重整或關閉都不會消失），可重播對照與即時訂正。</p>'
+    + '</div>'
+    + '<div class="help-foot"><button data-help-close>我知道了</button></div>'
+    + '</div>';
+  var modal=document.createElement('div'); modal.className='help-modal'; modal.id='fpt-helpModal'; modal.innerHTML=hhtml;
+  document.body.appendChild(modal);
+  function closeM(){ modal.classList.remove('open'); }
+  function openM(){ modal.classList.add('open'); }
+  modal.addEventListener('click', function(e){ if(e.target===modal) closeM(); });
+  Array.prototype.forEach.call(modal.querySelectorAll('[data-help-close]'), function(b){ b.addEventListener('click', closeM); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeM(); });
+  var nav=document.querySelector('#pageFptSettings .nav-header-row');
+  if(nav){
+    var btn=document.createElement('button'); btn.type='button'; btn.className='help-btn'; btn.textContent='❔ 玩法說明';
+    btn.addEventListener('click', openM);
+    var reset=nav.querySelector('.reset-cache-btn');
+    if(reset){ var w=document.createElement('div'); w.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;'; nav.insertBefore(w, reset); w.appendChild(btn); w.appendChild(reset); }
+    else nav.appendChild(btn);
+  }
 })();
 </script>
 </body>
