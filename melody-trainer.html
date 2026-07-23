@@ -837,11 +837,33 @@ function showPage(pageId) {
       this.updateUI();
     },
 
-    setAccidental: function(acc) {
+    // 更新升降按鈕視覺狀態與「待套用」記號（先按記號、再輸入音名的舊行為用）
+    setPendingAccidental: function(acc) {
       this.currentAccidental = acc;
       document.getElementById('acc-b').className = `p-btn acc-btn ${acc === 'b' ? 'active' : ''}`;
       document.getElementById('acc-n').className = `p-btn acc-btn ${acc === 'n' ? 'active' : ''}`;
       document.getElementById('acc-s').className = `p-btn acc-btn ${acc === '#' ? 'active' : ''}`;
+    },
+
+    // 升降按鈕：與八度邏輯一致——剛輸入完一個音時，直接修改那個音（事後修飾，含連結線）；
+    // 否則維持「先按記號、再輸入音名」的舊行為。
+    setAccidental: function(acc) {
+      let targetIdx = this.lastEditedNoteIdx;
+      if (targetIdx !== null && targetIdx !== -1 && this.userPitch[targetIdx]) {
+        let base = this.userPitch[targetIdx];
+        let np = this.sanitizePitch({ step: base.step, oct: base.oct, acc: acc });
+        this.userPitch[targetIdx] = np;
+        let propagateIdx = targetIdx;
+        while (this.isNoteTiedToNext(propagateIdx)) {
+          if (propagateIdx + 1 < this.userPitch.length) this.userPitch[propagateIdx + 1] = { step: np.step, oct: np.oct, acc: np.acc };
+          propagateIdx++;
+        }
+        this.currentOctave = np.oct; this.updateOctaveLabels();
+        this.setPendingAccidental('n'); // 記號鍵回到還原，避免影響下一個新輸入的音
+        this.updateUI();
+      } else {
+        this.setPendingAccidental(acc);
+      }
     },
 
     updateOctaveLabels: function() {
@@ -881,7 +903,7 @@ function showPage(pageId) {
       this.currentOctave = oct; this.updateOctaveLabels();
 
       let accToApply = this.currentAccidental;
-      if(this.currentAccidental !== 'n') this.setAccidental('n');
+      if(this.currentAccidental !== 'n') this.setPendingAccidental('n');
 
       let propagateIdx = this.activeNoteIdx;
       while(this.isNoteTiedToNext(propagateIdx)) {
