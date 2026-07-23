@@ -84,12 +84,48 @@
   .hub-item .qtime{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); white-space:nowrap; }
   .hub-more{ font-size:12px; color:var(--ink-soft); margin-top:8px; }
   .hub-clear-all{ font-family:var(--font-body); font-size:12px; font-weight:600; color:#8a6d20; background:#fff8e6; border:1px solid #ffd885; padding:8px 14px; border-radius:999px; cursor:pointer; margin-left:8px; }
+
+  /* ===== 封面頁 ===== */
+  .cover{ min-height: calc(100vh - 84px); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; padding: 32px 8px; }
+  .cover-notes{ position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .cover-note{ position:absolute; font-family: var(--font-display); color: var(--accent); opacity:0.10; user-select:none; line-height:1; }
+  .cover-card{ position:relative; z-index:1; max-width: 540px; }
+  .cover-clef{ font-family: var(--font-display); font-size: 92px; color: var(--accent); opacity:0.9; line-height:1; margin-bottom: 2px; }
+  .cover-title{ font-family: var(--font-display); font-weight:600; font-size: 40px; margin: 0 0 6px; letter-spacing:-0.01em; }
+  .cover-sub{ font-family: var(--font-mono); font-size: 12px; letter-spacing:0.22em; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 26px; }
+  .cover-msg{ font-size: 15px; line-height: 1.95; color: var(--ink); background: var(--panel); border:1px solid var(--panel-border); border-radius: var(--radius); padding: 22px 24px; margin: 0 auto 28px; box-shadow: 0 4px 16px rgba(51,65,92,0.06); }
+  .cover-start{ font-family: var(--font-body); font-weight:700; font-size: 17px; padding: 16px 44px; border-radius: 999px; background: var(--accent); color: var(--panel); border:none; cursor:pointer; box-shadow: 0 6px 20px rgba(51,65,92,0.25); transition: all .15s ease; display:inline-flex; align-items:center; gap:10px; touch-action: manipulation; }
+  .cover-start:hover, .cover-start:active{ filter:brightness(1.12); transform: translateY(-2px); box-shadow: 0 10px 26px rgba(51,65,92,0.32); }
+  .cover-foot{ margin-top: 22px; font-size: 12px; color: var(--ink-soft); }
+  @media (max-width:480px){ .cover-title{ font-size:32px; } .cover-clef{ font-size:76px; } .cover-msg{ font-size:14px; padding:18px 18px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <!-- 封面頁 -->
+  <div id="pageCover" class="page-view active">
+    <div class="cover">
+      <div class="cover-notes" aria-hidden="true">
+        <span class="cover-note" style="top:8%; left:9%; font-size:72px;">♪</span>
+        <span class="cover-note" style="top:18%; right:11%; font-size:56px;">♫</span>
+        <span class="cover-note" style="top:52%; left:6%; font-size:48px;">♩</span>
+        <span class="cover-note" style="bottom:14%; left:16%; font-size:64px;">𝄞</span>
+        <span class="cover-note" style="bottom:9%; right:14%; font-size:50px;">♬</span>
+        <span class="cover-note" style="top:40%; right:8%; font-size:40px;">♪</span>
+      </div>
+      <div class="cover-card">
+        <div class="cover-clef">𝄞</div>
+        <h1 class="cover-title">音樂聽力練習</h1>
+        <div class="cover-sub">Ear Training</div>
+        <p class="cover-msg">這個工具永久免費，你可以自由使用、也歡迎推薦給同學和老師；如果它對你的教學或練習有幫助，歡迎小額贊助支持後續開發與維護。</p>
+        <button class="cover-start" onclick="showMenu()">開始練習 →</button>
+        <div class="cover-foot">為音樂班、音樂系的學生與老師而做 🎵</div>
+      </div>
+    </div>
+  </div>
+
   <!-- 主目錄 -->
-  <div id="pageMenu" class="page-view active">
+  <div id="pageMenu" class="page-view">
     <div class="staff-header">
       <div class="clef-mark">𝄞</div>
       <div class="staff-line"></div><div class="staff-line"></div><div class="staff-line"></div>

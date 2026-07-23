@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v9'; // v9：五練習頁統一解答頁＋localStorage 錯題本、index 錯題本總覽
+const CACHE_NAME = 'ear-training-shell-v11'; // v11：新增 index 封面頁（永久免費說明＋開始練習）
 const APP_SHELL = [
   './',
   './index.html',
