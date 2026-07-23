@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v8'; // 升級為 v8（四部和聲：修正 N6 接 V、解答頁雙譜表對照）
+const CACHE_NAME = 'ear-training-shell-v9'; // v9：五練習頁統一解答頁＋localStorage 錯題本、index 錯題本總覽
 const APP_SHELL = [
   './',
   './index.html',

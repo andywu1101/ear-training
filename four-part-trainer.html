@@ -2523,5 +2523,42 @@ window.addEventListener('resize', setVH); setVH();
     });
   }
 </script>
+<script>
+/* 附加：將四部和聲的錯題本以摘要形式同步到 localStorage，供 index 錯題本總覽整合；並支援 #review 直達。此段為附加，不改動既有作答/錯題邏輯。 */
+(function(){
+  if(!window.REVIEW_STORE){
+    window.REVIEW_STORE = {
+      PREFIX:'earTrainer.review.',
+      load(t){try{return JSON.parse(localStorage.getItem(this.PREFIX+t)||'[]')}catch(e){return[]}},
+      save(t,a){try{localStorage.setItem(this.PREFIX+t,JSON.stringify(a))}catch(e){}},
+      clear(t){this.save(t,[])},count(t){return this.load(t).length}
+    };
+  }
+  function persist(){
+    try{
+      var m = window.fptModule; if(!m) return;
+      var items = m.reviewItems || [];
+      var out = items.map(function(it){
+        var kn = it.keyObj ? it.keyObj.name : '';
+        return { id:'fp'+it.id, ts: it.ts || Date.now(), label: kn, correctText: kn ? ('正解調性 '+kn) : '（四部和聲）', yourText:'' };
+      });
+      window.REVIEW_STORE.save('fourpart', out);
+    }catch(e){}
+  }
+  var tries=0;
+  var iv=setInterval(function(){
+    tries++;
+    if(window.fptModule && typeof window.fptModule.addToReview==='function'){
+      clearInterval(iv);
+      var orig=window.fptModule.addToReview.bind(window.fptModule);
+      window.fptModule.addToReview=function(){ var r=orig.apply(window.fptModule,arguments); persist(); return r; };
+      var clr=document.getElementById('fpt-clearReviewBtn');
+      if(clr) clr.addEventListener('click', function(){ setTimeout(persist,60); });
+      persist();
+      if(location.hash==='#review' && typeof showPage==='function') showPage('fpt-review');
+    } else if(tries>40){ clearInterval(iv); }
+  },150);
+})();
+</script>
 </body>
 </html>

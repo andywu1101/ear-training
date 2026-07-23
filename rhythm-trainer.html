@@ -22,16 +22,16 @@
     --font-display: 'Fraunces', serif; --font-body: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  
+
   html, body { height: 100%; margin: 0; overflow: hidden; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
   .wrap { height: 100%; display: flex; flex-direction: column; max-width: 820px; margin: 0 auto; width: 100%; }
-  
+
   .page-view { display: none; height: 100%; flex-direction: column; animation: fadeIn 0.2s ease-out; }
   .page-view.active { display: flex; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-  
-  /* ================= 設定頁 ================= */
-  #pageRhySettings { overflow-y: auto; padding: 20px 16px 64px; }
+
+  /* ================= 設定頁 / 解答頁 / 錯題本頁（可捲動） ================= */
+  #pageRhySettings, #pageRhyAnswer, #pageRhyReview { overflow-y: auto; padding: 20px 16px 64px; }
   .nav-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .nav-back-btn, .reset-cache-btn {
     display: inline-flex; align-items: center; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px;
@@ -40,41 +40,43 @@
   .reset-cache-btn { color: #8a6d20; border-color: #ffd885; background: #fff8e6; margin-left: 8px; }
   h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; margin: 0 0 8px; }
   .subtitle { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 20px; line-height: 1.5; }
-  
+
   .switch-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
   .switch-group { display: flex; flex-direction: column; gap: 8px; }
   .switch-group-label { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); font-weight: 700; }
   .switch-btns { display: flex; gap: 8px; flex-wrap: wrap; }
   .mode-btn { font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 10px; background: transparent; border: 1px solid var(--panel-border); color: var(--ink-soft); cursor: pointer; }
   .mode-btn.active { background: var(--ink); border-color: var(--ink); color: var(--panel); }
-  
+
   .control-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
   .select-box { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--panel-border); font-size: 14px; background: var(--panel); cursor: pointer; }
   .bpm-slider { flex: 1; min-width: 150px; accent-color: var(--accent); }
-  
+
   .pattern-grid-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px; }
   .select-all-btn { font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--panel-border); background: var(--panel); font-weight: bold; cursor: pointer; }
   .pattern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-bottom: 24px; }
   .pattern-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 2px solid var(--panel-border); border-radius: 10px; padding: 4px; cursor: pointer; transition: 0.1s; height: 60px; overflow: hidden; }
   .pattern-item.selected { border-color: var(--accent); background: var(--accent-soft); }
   .pattern-item svg { pointer-events: none; }
-  
-  .start-big-btn { width: 100%; font-weight: 700; font-size: 16px; padding: 16px; border-radius: var(--radius); background: var(--accent); color: var(--panel); border: none; cursor: pointer; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(51,65,92,0.2); transition: filter 0.2s; }
+
+  .start-big-btn { width: 100%; font-weight: 700; font-size: 16px; padding: 16px; border-radius: var(--radius); background: var(--accent); color: var(--panel); border: none; cursor: pointer; margin-bottom: 12px; box-shadow: 0 4px 16px rgba(51,65,92,0.2); transition: filter 0.2s; }
   .start-big-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  
+  .review-entry-btn{ width:100%; padding:14px; border-radius:999px; font-weight:700; font-size:15px; background:transparent; color:var(--ink); border:1px solid var(--ink); cursor:pointer; margin-bottom:20px; }
+  .review-entry-btn:hover, .review-entry-btn:active{ background:var(--ink); color:var(--panel); }
+
   /* ================= 作答頁 (上下分層) ================= */
   .practice-top-fixed { flex: 0 0 auto; padding: 12px 16px; background: var(--paper); z-index: 10; border-bottom: 1px solid var(--panel-border); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
   .practice-bottom-scroll { flex: 1 1 auto; overflow-y: auto; padding: 16px; background: var(--panel); }
 
   .top-bar-practice { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .practice-status-badge { font-family: var(--font-mono); font-size: 12px; background: var(--panel); border: 1px solid var(--panel-border); padding: 6px 12px; border-radius: 999px; color: var(--ink-soft); }
   .score-box { text-align: right; font-family: var(--font-mono); }
   .score-box .num { font-size: 18px; font-weight: 700; color: var(--accent); line-height: 1; }
-  
-  /* 【關鍵修復】拔除 scroll-behavior: smooth，避免瀏覽器在恢復捲軸時強制加入動畫造成亂閃 */
+
   .staff-scroll-container { width: 100%; background: #fff; border: 1px solid var(--hairline); border-radius: 12px; padding: 10px 4px; box-shadow: inset 0 0 8px rgba(0,0,0,0.02); margin-bottom: 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
   .staff-scroll-container::-webkit-scrollbar { height: 6px; }
   .staff-scroll-container::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
-  
+
   .unified-action-row { display: flex; gap: 8px; justify-content: center; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
   .action-btn, .play-btn { font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 999px; cursor: pointer; transition: all 0.2s; }
   .action-btn { border: 1px solid var(--ink-soft); background: transparent; color: var(--ink); }
@@ -87,12 +89,14 @@
   .rhythm-btn { background: #fff; border: 2px solid var(--panel-border); border-radius: 12px; padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 60px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); overflow: hidden; }
   .rhythm-btn:active { transform: scale(0.94); border-color: var(--accent); }
   .rhythm-btn:disabled { opacity: 0.3; pointer-events: none; }
-  
+
   .feedback-text { text-align: center; font-size: 14px; font-weight: 700; margin-bottom: 6px; display: none; }
   .feedback-text.correct { color: var(--correct); display: block; }
   .feedback-text.wrong { color: var(--wrong); display: block; }
-  
-  .review-section { padding: 16px 0; border-top: 1px dashed var(--panel-border); margin-top: 16px; }
+  .answer-big-feedback{ font-family: var(--font-display); font-size: 22px; font-weight: 700; text-align:center; margin: 6px 0 14px; }
+  .answer-big-feedback.correct{ color: var(--correct); }
+  .answer-big-feedback.wrong{ color: var(--wrong); }
+
   .review-section h2 { font-family: var(--font-display); font-size: 18px; margin: 0 0 12px; }
   .review-item { background: #fff; border: 1px solid var(--panel-border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
   .review-label { font-size: 12px; font-weight: bold; color: var(--ink-soft); margin-bottom: 4px; }
@@ -119,7 +123,7 @@
     .staff-scroll-container { margin-bottom: 4px; padding: 4px; }
     .unified-action-row { margin-bottom: 4px; }
     .play-caption { margin-top: 0; }
-    .rhythm-btn { height: 50px; } 
+    .rhythm-btn { height: 50px; }
     .pattern-item { height: 45px; }
   }
 </style>
@@ -133,7 +137,7 @@
       <button class="nav-back-btn" onclick="location.href='index.html'">← 離開</button>
       <button class="reset-cache-btn" onclick="forceResetCache()">🔄 畫面凍結請點此重置</button>
     </div>
-    
+
     <h1>節奏練習 — 設定</h1>
     <p class="subtitle">訓練對拍子與常見節奏型的聽辨與默寫，支援單/複拍子預備拍系統與雙音顆粒訓練。</p>
 
@@ -196,10 +200,11 @@
       <div class="switch-group-label">勾選測驗節奏型 (以 1 拍為單位，無休止符)</div>
       <button class="select-all-btn" id="selectAllBtn">☑️ 全選 / 全不選</button>
     </div>
-    
+
     <div class="pattern-grid" id="settingsPatternGrid"></div>
 
     <button class="start-big-btn" id="rhy-enterBtn" disabled>🎯 開始節奏訓練 →</button>
+    <button class="review-entry-btn" onclick="showPage('rhy-review')">📕 錯題本（<span id="rhy-reviewCount">0</span> 題）</button>
   </div>
 
   <div id="pageRhyPractice" class="page-view">
@@ -209,14 +214,12 @@
         <span class="practice-status-badge" id="rhy-statusBadge">2/4拍｜2小節｜80 BPM</span>
         <div class="score-box"><div class="num" id="rhy-scoreNum">0/0</div></div>
       </div>
-      
+
       <div class="staff-scroll-container" id="staffContainerOuter">
         <div id="staffInnerWrapper" style="margin: 0 auto; display: block; position: relative; width: max-content; min-width: 100%;">
           <div id="rhy-staff-svg" style="position: relative; display: inline-block; width: 100%;"></div>
         </div>
       </div>
-      
-      <div id="rhy-feedbackText" class="feedback-text"></div>
 
       <div class="unified-action-row">
         <button class="play-btn" id="rhy-playBtn" disabled>▶ 播放題目</button>
@@ -225,7 +228,6 @@
           <button class="action-btn" id="rhy-clearBtn">🗑️ 清空</button>
           <button class="action-btn btn-submit" id="rhy-submitBtn" disabled>✔ 提交</button>
         </span>
-        <button class="action-btn btn-submit" id="rhy-nextBtn" style="display:none; flex:1;">下一題 →</button>
       </div>
       <div class="play-caption" id="rhy-playCaption">請點擊上方播放按鈕</div>
     </div>
@@ -235,16 +237,56 @@
         <div class="keypad-hint">👇 點擊上方五線譜選擇位置，再點擊下方節奏填寫</div>
         <div class="rhythm-keypad" id="rhy-keypad"></div>
       </div>
-      
-      <div class="review-section" id="rhy-reviewSection" style="display:none;">
-        <h2>複習訂正區</h2>
-        <div id="rhy-reviewList"></div>
-      </div>
     </div>
+  </div>
+
+  <!-- 【節奏練習】解答頁（提交作答後） -->
+  <div id="pageRhyAnswer" class="page-view">
+    <div class="top-bar-practice" style="margin-bottom:14px;">
+      <button class="nav-back-btn" style="margin:0;" onclick="showPage('rhy-practice')">← 返回作答</button>
+      <span class="practice-status-badge" id="rhy-ansBadge">解答對照</span>
+      <div class="score-box"><div class="num" id="rhy-ansScore">0/0</div></div>
+    </div>
+    <div id="rhy-ansFeedback" class="answer-big-feedback"></div>
+    <div class="unified-action-row" style="margin-bottom:14px;">
+      <button class="action-btn" id="rhy-ansPlayUser" style="color:var(--wrong); border-color:var(--wrong);">🔊 聽你的作答</button>
+      <button class="play-btn" id="rhy-ansPlayCorrect">🔁 聽正解</button>
+    </div>
+    <div class="review-label">你的作答（紅色為錯誤）：</div>
+    <div class="review-staff"><div id="rhy-ansUser"></div></div>
+    <div class="review-label" style="margin-top:8px;">正確解答：</div>
+    <div class="review-staff"><div id="rhy-ansCorrect"></div></div>
+    <div class="unified-action-row" style="margin-top:18px;">
+      <button class="action-btn btn-submit" id="rhy-ansNextBtn" style="flex:1; padding:14px;">下一題 →</button>
+    </div>
+  </div>
+
+  <!-- 【節奏練習】錯題本頁 -->
+  <div id="pageRhyReview" class="page-view">
+    <div class="nav-header-row">
+      <button class="nav-back-btn" onclick="showPage('rhy-settings')">← 返回設定</button>
+      <button class="reset-cache-btn" id="rhy-clearReviewBtn">🗑️ 清空錯題本</button>
+    </div>
+    <h1>錯題本</h1>
+    <p class="subtitle">收錄答錯的節奏題，重整或關閉後仍會保留。可分別聆聽你的作答與正解，並對照紅色標錯處。</p>
+    <div id="rhy-reviewList"></div>
+    <p id="rhy-reviewEmpty" class="subtitle" style="text-align:center; margin-top:24px;">目前沒有錯題紀錄，繼續加油！🎵</p>
   </div>
 </div>
 
 <script>
+/* ===== 統一錯題本儲存（六個練習共用，寫入 localStorage，供 index 總覽聚合） ===== */
+window.REVIEW_STORE = {
+  PREFIX: 'earTrainer.review.',
+  TYPE_LABEL: { interval:'音程練習', chord:'和絃辨認', rhythm:'節奏練習', melody:'單旋律曲調', twopart:'兩聲部曲調', fourpart:'四部和聲進行' },
+  TYPE_PAGE: { interval:'interval-trainer.html', chord:'chord-trainer.html', rhythm:'rhythm-trainer.html', melody:'melody-trainer.html', twopart:'two-part-trainer.html', fourpart:'four-part-trainer.html' },
+  load(type){ try { return JSON.parse(localStorage.getItem(this.PREFIX+type) || '[]'); } catch(e){ return []; } },
+  save(type, arr){ try { localStorage.setItem(this.PREFIX+type, JSON.stringify(arr)); } catch(e){} },
+  add(type, item){ const a=this.load(type); item.id = item.id || (Date.now().toString(36)+Math.random().toString(36).slice(2,6)); item.ts = Date.now(); a.push(item); this.save(type,a); return a; },
+  clear(type){ this.save(type, []); },
+  count(type){ return this.load(type).length; }
+};
+
 function forceResetCache() {
   if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(r => r.forEach(x => x.unregister()));
   if ('caches' in window) caches.keys().then(n => n.forEach(x => caches.delete(x)));
@@ -253,8 +295,10 @@ function forceResetCache() {
 function showPage(pageId) {
   if (window.rhyStopAll) window.rhyStopAll();
   document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
-  if (pageId === 'rhy-settings') document.getElementById('pageRhySettings').classList.add('active');
+  if (pageId === 'rhy-settings') { document.getElementById('pageRhySettings').classList.add('active'); if(window.rhyModule) window.rhyModule.refreshReviewCount(); }
   else if (pageId === 'rhy-practice') document.getElementById('pageRhyPractice').classList.add('active');
+  else if (pageId === 'rhy-answer') document.getElementById('pageRhyAnswer').classList.add('active');
+  else if (pageId === 'rhy-review') { document.getElementById('pageRhyReview').classList.add('active'); if(window.rhyModule) window.rhyModule.renderReviewPage(); }
 }
 
 (function(){
@@ -272,7 +316,7 @@ function showPage(pageId) {
     }
     let lengths = [];
     let tieNext = [];
-    let tokens = id.split(/([-\~])/); 
+    let tokens = id.split(/([-\~])/);
     for (let i = 0; i < tokens.length; i += 2) {
       lengths.push(Number(tokens[i]));
       if (i + 1 < tokens.length) {
@@ -289,10 +333,10 @@ function showPage(pageId) {
   COMPOUND_ORDER.forEach(id => { ALL_BLOCKS[id] = { id, ...parsePatternId(id), type: 'compound', beats: 1 }; });
 
   const VF = Vex.Flow;
-  
+
   function createEnhancedTie(firstNote, lastNote) {
     if (typeof firstNote.setExtraRightPx === 'function') {
-      firstNote.setExtraRightPx(30); 
+      firstNote.setExtraRightPx(30);
     }
     return new VF.StaveTie({
       first_note: firstNote,
@@ -308,8 +352,8 @@ function showPage(pageId) {
     let notes = []; let ties = []; let tuplet = null;
     let lengths = block.lengths;
     let tieNext = block.tieNext || [];
-    
-    let currentK = 'a/4'; 
+
+    let currentK = 'a/4';
     let updatePitch = () => {
        if (pitchState) {
            currentK = pitchState.currentPitch === 69 ? 'a/4' : 'e/4';
@@ -342,23 +386,23 @@ function showPage(pageId) {
           updatePitch();
           advancePitch();
       }
-      
+
       let n1;
       if(len===1) n1 = new VF.StaveNote({keys:[currentK], duration:'16'});
       else if(len===2) n1 = new VF.StaveNote({keys:[currentK], duration:'8'});
       else if(len===3) n1 = new VF.StaveNote({keys:[currentK], duration:'8'}).addDot(0);
       else if(len===4) n1 = new VF.StaveNote({keys:[currentK], duration:'q'});
       else if(len===6) n1 = new VF.StaveNote({keys:[currentK], duration:'q'}).addDot(0);
-      
+
       if (isWrong) n1.setStyle({fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)'});
-      
+
       if (needsExtraSpacing && typeof n1.setExtraRightPx === 'function') {
           n1.setExtraRightPx(25);
       }
 
       notes.push(n1);
     });
-    
+
     for (let idx = 0; idx < tieNext.length; idx++) {
       if (tieNext[idx] && idx + 1 < notes.length) {
         ties.push(createEnhancedTie(notes[idx], notes[idx + 1]));
@@ -373,15 +417,15 @@ function showPage(pageId) {
   function drawMiniRhythm(container, blockId) {
     try {
       container.innerHTML = ''; const block = ALL_BLOCKS[blockId];
-      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(260, 110); 
-      const svg = container.querySelector('svg'); 
-      
-      svg.setAttribute('viewBox', '0 20 260 65'); 
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(260, 110);
+      const svg = container.querySelector('svg');
+
+      svg.setAttribute('viewBox', '0 20 260 65');
       svg.style.width = '100%'; svg.style.height = '100%';
-      
+
       const ctx = renderer.getContext();
       ctx.scale(1.25, 1.25);
-      
+
       const stave = new VF.Stave(5, 5, 200).setContext(ctx).draw();
       const { notes, ties, beams, tuplet } = getVexNotes(block, false, null);
       VF.Formatter.FormatAndDraw(ctx, stave, notes);
@@ -391,61 +435,62 @@ function showPage(pageId) {
     } catch(e) {}
   }
 
-  function renderMainStaff(containerId, seq, interactive = false, correctSeq = null, startPitch = 69) {
+  // 繪製主譜；靜態渲染（解答頁 / 錯題本）時透過 ctxOverride 指定該題自身的拍號、小節與音高設定
+  function renderMainStaff(containerId, seq, interactive = false, correctSeq = null, startPitch = 69, ctxOverride = null) {
     try {
       const container = document.getElementById(containerId);
-      if (!container) return; 
-      
+      if (!container) return;
+
+      const cfg = ctxOverride || { barsCount: rhyModule.barsCount, beatsPerBar: rhyModule.beatsPerBar, meter: rhyModule.meter, meterType: rhyModule.meterType, pitchMode: rhyModule.pitchMode };
+
       const outerContainer = document.getElementById('staffContainerOuter');
       const innerWrapper = document.getElementById('staffInnerWrapper');
       let currentScrollLeft = 0;
-      
-      // 【防坍塌機制】在清空畫布前，記下目前的捲軸位置，並將內容寬度「鎖死」
+
       if (outerContainer && interactive && innerWrapper) {
           currentScrollLeft = outerContainer.scrollLeft;
           innerWrapper.style.minWidth = innerWrapper.scrollWidth + 'px';
       }
-      
+
       container.innerHTML = '';
-      
-      const minMeasureWidth = 240; 
-      const requiredWidth = (minMeasureWidth * rhyModule.barsCount) + 60;
-      const parentWidth = container.parentElement.clientWidth || 300;
+
+      const minMeasureWidth = 240;
+      const requiredWidth = (minMeasureWidth * cfg.barsCount) + 60;
       const totalWidth = requiredWidth;
       const usableWidth = totalWidth - 10;
-      
+
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
       renderer.resize(totalWidth, 130);
       const ctx = renderer.getContext();
-      
+
       let xPos = 5;
-      const barWidth = (usableWidth - 60) / rhyModule.barsCount; 
+      const barWidth = (usableWidth - 60) / cfg.barsCount;
 
       let bars = []; let currentBar = []; let currentBeats = 0;
       seq.forEach(id => {
         currentBar.push(id);
         let b = id === 'placeholder' ? 1 : ALL_BLOCKS[id].beats;
         currentBeats += b;
-        if (currentBeats >= rhyModule.beatsPerBar) { bars.push(currentBar); currentBar = []; currentBeats = 0; }
+        if (currentBeats >= cfg.beatsPerBar) { bars.push(currentBar); currentBar = []; currentBeats = 0; }
       });
-      while(bars.length < rhyModule.barsCount) bars.push([]);
+      while(bars.length < cfg.barsCount) bars.push([]);
 
       let globalIdx = 0;
       let beatFirstNotes = [];
-      let pitchState = { isDual: rhyModule.pitchMode === 'dual', currentPitch: startPitch };
+      let pitchState = { isDual: cfg.pitchMode === 'dual', currentPitch: startPitch };
 
-      for (let b = 0; b < rhyModule.barsCount; b++) {
+      for (let b = 0; b < cfg.barsCount; b++) {
         const isFirst = (b === 0);
         const sWidth = isFirst ? barWidth + 60 : barWidth;
         const stave = new VF.Stave(xPos, 15, sWidth);
-        if (isFirst) stave.addClef('treble').addTimeSignature(rhyModule.meter);
+        if (isFirst) stave.addClef('treble').addTimeSignature(cfg.meter);
         stave.setContext(ctx).draw();
 
         let allNotes = []; let allBeams = []; let allTies = []; let allTuplets = [];
         let barKeys = bars[b] || [];
-        
+
         let filledBeats = barKeys.reduce((acc, k) => acc + (k === 'placeholder' ? 1 : ALL_BLOCKS[k].beats), 0);
-        while(filledBeats < rhyModule.beatsPerBar) { barKeys.push('placeholder'); filledBeats++; }
+        while(filledBeats < cfg.beatsPerBar) { barKeys.push('placeholder'); filledBeats++; }
 
         barKeys.forEach(id => {
           let firstNoteOfBeat = null;
@@ -459,7 +504,7 @@ function showPage(pageId) {
           } else {
             let currentK = pitchState.currentPitch === 69 ? 'a/4' : 'e/4';
             let ghost = new VF.StaveNote({keys:[currentK], duration: 'qr'});
-            if(rhyModule.meterType==='compound') ghost.addDot(0);
+            if(cfg.meterType==='compound') ghost.addDot(0);
             ghost.setStyle({fillStyle: '#e0e0e0', strokeStyle: '#e0e0e0'});
             allNotes.push(ghost);
             firstNoteOfBeat = ghost;
@@ -467,7 +512,7 @@ function showPage(pageId) {
           beatFirstNotes[globalIdx] = firstNoteOfBeat;
           globalIdx++;
         });
-        
+
         if (allNotes.length > 0) {
           VF.Formatter.FormatAndDraw(ctx, stave, allNotes);
           allBeams.forEach(bm => bm.setContext(ctx).draw());
@@ -481,57 +526,63 @@ function showPage(pageId) {
         let overlay = document.createElement('div');
         overlay.style.position = 'absolute'; overlay.style.top = '0'; overlay.style.left = '0';
         overlay.style.width = '100%'; overlay.style.height = '100%';
-        overlay.style.pointerEvents = 'none'; 
+        overlay.style.pointerEvents = 'none';
         container.appendChild(overlay);
-        
+
         for(let i=0; i<beatFirstNotes.length; i++) {
           let firstNote = beatFirstNotes[i]; let nextNote = beatFirstNotes[i+1];
           let stave = firstNote.getStave(); if(!stave) continue;
-          
+
           let nx = typeof firstNote.getAbsoluteX === 'function' ? firstNote.getAbsoluteX() : stave.getX() + firstNote.getTickContext().getX();
           let x = nx - 12; let y = stave.getYForLine(0) - 20; let h = 110; let w = 30;
-          
+
           if (nextNote && nextNote.getStave() === stave) {
             let n2x = typeof nextNote.getAbsoluteX === 'function' ? nextNote.getAbsoluteX() : stave.getX() + nextNote.getTickContext().getX();
             w = n2x - nx;
           } else w = stave.getX() + stave.getWidth() - nx + 10;
-          
+
           let slot = document.createElement('div');
-          slot.id = 'rhy-slot-' + i; 
+          slot.id = 'rhy-slot-' + i;
           slot.style.position = 'absolute'; slot.style.left = x + 'px'; slot.style.top = y + 'px';
           slot.style.width = Math.max(w, 20) + 'px'; slot.style.height = h + 'px';
           slot.style.cursor = 'pointer'; slot.style.pointerEvents = 'auto';
           slot.style.borderRadius = '8px'; slot.style.transition = 'all 0.1s';
-          
-          if (i === rhyModule.activeSlotIdx && rhyModule.activeSlotIdx !== -1) { 
-            slot.style.border = '2px solid var(--accent)'; slot.style.backgroundColor = 'var(--accent-soft)'; slot.style.zIndex = '10'; 
-          } else { 
-            slot.style.border = '1px dashed transparent'; slot.style.zIndex = '1'; 
+
+          if (i === rhyModule.activeSlotIdx && rhyModule.activeSlotIdx !== -1) {
+            slot.style.border = '2px solid var(--accent)'; slot.style.backgroundColor = 'var(--accent-soft)'; slot.style.zIndex = '10';
+          } else {
+            slot.style.border = '1px dashed transparent'; slot.style.zIndex = '1';
           }
-          
+
           slot.onmouseover = () => { if(i !== rhyModule.activeSlotIdx && rhyModule.activeSlotIdx !== -1) slot.style.border = '1px dashed var(--accent-line)'; };
           slot.onmouseout = () => { if(i !== rhyModule.activeSlotIdx && rhyModule.activeSlotIdx !== -1) slot.style.border = '1px dashed transparent'; };
           slot.onclick = () => { rhyModule.activeSlotIdx = i; rhyModule.updateUI(); };
-          
+
           overlay.appendChild(slot);
         }
       }
-      
-      // 【防坍塌機制】畫布重繪完畢，瞬間塞回捲軸位置，並解除寬度鎖定
+
       if (outerContainer && interactive && innerWrapper) {
           outerContainer.scrollLeft = currentScrollLeft;
           innerWrapper.style.minWidth = '';
       }
-      
+
     } catch(e) { console.error("Main Staff Error:", e); }
+  }
+
+  // 靜態渲染包裝：解答頁與錯題本用該題自身的設定繪譜
+  function renderStaticStaff(containerId, seq, correctSeq, item) {
+    renderMainStaff(containerId, seq, false, correctSeq, item.startPitch, {
+      barsCount: item.barsCount, beatsPerBar: item.beatsPerBar, meter: item.meter, meterType: item.meterType, pitchMode: item.pitchMode
+    });
   }
 
   // ================= 播放引擎 =================
   let audioCtx = null; let pianoInst = null; let pendingTimers = [];
   function clearTimers(){ pendingTimers.forEach(id => clearTimeout(id)); pendingTimers = []; }
-  window.rhyStopAll = function() { 
-    if(pianoInst) pianoInst.stop(); 
-    clearTimers(); rhyModule.testSession.isRunning = false; rhyModule.isPlaying = false; rhyModule.updatePlayBtn(); 
+  window.rhyStopAll = function() {
+    if(pianoInst) pianoInst.stop();
+    clearTimers(); rhyModule.testSession.isRunning = false; rhyModule.isPlaying = false; rhyModule.updatePlayBtn();
   };
 
   function ensureAudio(){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} return audioCtx; }
@@ -542,12 +593,68 @@ function showPage(pageId) {
     }).catch(()=>{ document.getElementById('loadingBanner').innerHTML = '⚠️ 載入失敗，請重試 <button onclick="loadPiano()">🔁</button>'; });
   };
 
+  // 靜態播放：解答頁 / 錯題本用該題自身的拍號、速度與音高播放（不動作答狀態）
+  function playStatic(seq, item) {
+    window.rhyStopAll();
+    if(!pianoInst) return;
+    const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;
+    const bpm = item.bpm, meter = item.meter, meterType = item.meterType, pitchMode = item.pitchMode, startPitch = item.startPitch;
+    let secPerUnit = 60 / bpm;
+    let numerator = parseInt(meter.split('/')[0], 10);
+    let secPer16th;
+    if (meterType === 'simple') {
+      secPer16th = secPerUnit / 4;
+      for(let i=0; i<numerator; i++) {
+        let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle';
+        o.frequency.value = i===0 ? 1000 : 700;
+        g.gain.setValueAtTime(0.2, time+i*secPerUnit); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPerUnit+0.05);
+        o.connect(g); g.connect(ctx.destination); o.start(time+i*secPerUnit); o.stop(time+i*secPerUnit+0.05);
+      }
+      time += numerator * secPerUnit;
+    } else {
+      secPer16th = secPerUnit / 2;
+      for(let i=0; i<numerator; i++) {
+        let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle';
+        o.frequency.value = (i%3 === 0) ? 1000 : 700;
+        g.gain.setValueAtTime(0.2, time+i*secPerUnit); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPerUnit+0.05);
+        o.connect(g); g.connect(ctx.destination); o.start(time+i*secPerUnit); o.stop(time+i*secPerUnit+0.05);
+      }
+      time += numerator * secPerUnit;
+    }
+    let beatUnits = meterType === 'simple' ? 4 : 6;
+    let currentPitch = startPitch;
+    seq.forEach(id => {
+      if(id === 'placeholder'){ time += beatUnits * secPer16th; return; }
+      const block = ALL_BLOCKS[id];
+      const lengths = block.lengths;
+      const tieNext = block.tieNext || [];
+      let i = 0;
+      while (i < lengths.length) {
+        let totalLen = lengths[i];
+        let isTied = tieNext[i];
+        let nextIdx = i + 1;
+        while (isTied && nextIdx < lengths.length) {
+          totalLen += lengths[nextIdx];
+          isTied = tieNext[nextIdx];
+          nextIdx++;
+        }
+        pianoInst.play(pitchMode==='dual'?currentPitch:69, time, { duration: totalLen * secPer16th * 0.9, gain: 4.0 });
+        if(pitchMode==='dual') currentPitch = (currentPitch===69) ? 64 : 69;
+        time += totalLen * secPer16th;
+        i = nextIdx;
+      }
+    });
+    rhyModule.isPlaying = true; rhyModule.updatePlayBtn();
+    const timerId = setTimeout(() => { rhyModule.isPlaying = false; rhyModule.updatePlayBtn(); }, (time-ctx.currentTime)*1000 + 100);
+    pendingTimers.push(timerId);
+  }
+
   const rhyModule = {
     mode: 'practice', pitchMode: 'single', meter: '2/4', meterType: 'simple', barsCount: 2, beatsPerBar: 2, bpm: 80, totalBeats: 4,
     selectedPatterns: new Set(), questionSeq: [], userSeq: [], lockedStartPitch: 69, isPlaying: false, hasPlayed: false,
     activeSlotIdx: 0, score: { c:0, t:0 },
     testSession: { isRunning: false, replaysLeft: 0, totalPlays: 0 },
-    reviewItems: [],
+    _ansItem: null,
 
     initSettings: function() {
       const grid = document.getElementById('settingsPatternGrid'); grid.innerHTML = '';
@@ -562,7 +669,7 @@ function showPage(pageId) {
           else { this.selectedPatterns.add(id); item.classList.add('selected'); }
           document.getElementById('rhy-enterBtn').disabled = this.selectedPatterns.size === 0;
         };
-        grid.appendChild(item); setTimeout(() => drawMiniRhythm(svgContainer, id), 10); 
+        grid.appendChild(item); setTimeout(() => drawMiniRhythm(svgContainer, id), 10);
       });
       document.getElementById('rhy-enterBtn').disabled = false;
     },
@@ -570,27 +677,26 @@ function showPage(pageId) {
     generateQuestion: function() {
       this.questionSeq = []; const pool = Array.from(this.selectedPatterns);
       for(let i=0; i<this.totalBeats; i++) this.questionSeq.push(pool[Math.floor(Math.random() * pool.length)]);
-      this.lockedStartPitch = Math.random() < 0.5 ? 69 : 64; 
+      this.lockedStartPitch = Math.random() < 0.5 ? 69 : 64;
     },
 
     playSequence: function(seq, onEnd) {
       if(!pianoInst || this.isPlaying) return;
       this.isPlaying = true; this.updatePlayBtn();
-      
-      // 狀態歸一化：按下播放，強制把焦點拉回第一拍。更新介面時捲軸就會自動跟隨回 0。
+
       this.activeSlotIdx = 0;
       this.updateUI();
-      
+
       const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;
-      
-      let secPerUnit = 60 / this.bpm; 
+
+      let secPerUnit = 60 / this.bpm;
       let numerator = parseInt(this.meter.split('/')[0], 10);
       let secPer16th;
 
       if (this.meterType === 'simple') {
         secPer16th = secPerUnit / 4;
         for(let i=0; i<numerator; i++) {
-          let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; 
+          let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle';
           o.frequency.value = i===0 ? 1000 : 700;
           g.gain.setValueAtTime(0.2, time+i*secPerUnit); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPerUnit+0.05);
           o.connect(g); g.connect(ctx.destination); o.start(time+i*secPerUnit); o.stop(time+i*secPerUnit+0.05);
@@ -599,7 +705,7 @@ function showPage(pageId) {
       } else {
         secPer16th = secPerUnit / 2;
         for(let i=0; i<numerator; i++) {
-          let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; 
+          let o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle';
           o.frequency.value = (i%3 === 0) ? 1000 : 700;
           g.gain.setValueAtTime(0.2, time+i*secPerUnit); g.gain.exponentialRampToValueAtTime(0.01, time+i*secPerUnit+0.05);
           o.connect(g); g.connect(ctx.destination); o.start(time+i*secPerUnit); o.stop(time+i*secPerUnit+0.05);
@@ -612,22 +718,22 @@ function showPage(pageId) {
         const block = ALL_BLOCKS[id];
         const lengths = block.lengths;
         const tieNext = block.tieNext || [];
-        
+
         let i = 0;
         while (i < lengths.length) {
           let totalLen = lengths[i];
           let isTied = tieNext[i];
           let nextIdx = i + 1;
-          
+
           while (isTied && nextIdx < lengths.length) {
             totalLen += lengths[nextIdx];
             isTied = tieNext[nextIdx];
             nextIdx++;
           }
-          
+
           pianoInst.play(this.pitchMode==='dual'?currentPitch:69, time, { duration: totalLen * secPer16th * 0.9, gain: 4.0 });
           if(this.pitchMode==='dual') currentPitch = (currentPitch===69) ? 64 : 69;
-          
+
           time += totalLen * secPer16th;
           i = nextIdx;
         }
@@ -664,16 +770,16 @@ function showPage(pageId) {
     renderKeypad: function() {
       const pad = document.getElementById('rhy-keypad'); pad.innerHTML = '';
       const order = this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
-      
+
       order.forEach(id => {
         if (!this.selectedPatterns.has(id)) return;
         const btn = document.createElement('div'); btn.className = 'rhythm-btn';
         if(!this.hasPlayed || this.activeSlotIdx === -1) btn.style.opacity = '0.3';
         const svgDiv = document.createElement('div'); btn.appendChild(svgDiv);
-        
+
         btn.onclick = () => {
-          if(!this.hasPlayed || this.activeSlotIdx === -1) return; 
-          
+          if(!this.hasPlayed || this.activeSlotIdx === -1) return;
+
           let reqBeats = ALL_BLOCKS[id].beats;
           let available = 0; let removeCount = 0;
           for (let i = this.activeSlotIdx; i < this.userSeq.length; i++) {
@@ -681,19 +787,17 @@ function showPage(pageId) {
             removeCount++;
             if (available >= reqBeats) break;
           }
-          
+
           if (available >= reqBeats) {
             this.userSeq.splice(this.activeSlotIdx, removeCount, id);
             let overshot = available - reqBeats;
             for(let k=0; k<overshot; k++) this.userSeq.splice(this.activeSlotIdx + 1 + k, 0, 'placeholder');
-            
-            // 永遠順著往下走一格
+
             let nextSlot = this.activeSlotIdx + 1;
             if (nextSlot < this.userSeq.length) {
                 this.activeSlotIdx = nextSlot;
             } else {
-                // 如果已經填到最後一格之外了，框框直接隱藏 (設為 -1)，絕不回頭
-                this.activeSlotIdx = -1; 
+                this.activeSlotIdx = -1;
             }
             this.updateUI();
           }
@@ -704,12 +808,12 @@ function showPage(pageId) {
 
     updateUI: function() {
       renderMainStaff('rhy-staff-svg', this.userSeq, true, null, this.lockedStartPitch);
-      document.getElementById('rhy-submitBtn').disabled = !this.hasPlayed || this.userSeq.includes('placeholder');
+      // 提交鈕在播放後即可按；未填的格子會在提交時跳出提醒並計為錯誤
+      document.getElementById('rhy-submitBtn').disabled = !this.hasPlayed;
       document.querySelectorAll('.rhythm-btn').forEach(b => {
           b.style.opacity = (this.hasPlayed && this.activeSlotIdx !== -1) ? '1' : '0.3';
       });
 
-      // 狀態驅動視圖：根據目前的藍色框框，讓捲軸精準對齊
       if (this.activeSlotIdx !== -1) {
           const containerOuter = document.getElementById('staffContainerOuter');
           const activeSlotEl = document.getElementById('rhy-slot-' + this.activeSlotIdx);
@@ -719,7 +823,6 @@ function showPage(pageId) {
               const containerWidth = containerOuter.clientWidth;
               const currentScroll = containerOuter.scrollLeft;
 
-              // 如果框框超出左邊界或右邊界，透過 JS 的平滑滾動拉回來
               if (slotLeft < currentScroll || (slotLeft + slotWidth) > (currentScroll + containerWidth)) {
                   containerOuter.scrollTo({
                       left: slotLeft - (containerWidth / 2) + (slotWidth / 2),
@@ -733,57 +836,65 @@ function showPage(pageId) {
     updatePlayBtn: function() {
       const b = document.getElementById('rhy-playBtn');
       if (this.testSession.isRunning) { b.textContent = `測驗播放中 (剩餘 ${this.testSession.replaysLeft} 次)`; b.disabled = true; }
-      else if (this.isPlaying) { b.textContent = '🔊 播放中...'; b.disabled = true; } 
+      else if (this.isPlaying) { b.textContent = '🔊 播放中...'; b.disabled = true; }
       else { b.textContent = '▶ 播放題目'; b.disabled = !pianoInst; }
     },
 
-    addToReview: function() {
-      const id = this.reviewItems.length + 1;
-      this.reviewItems.unshift({ id, correctSeq: [...this.questionSeq], userSeq: [...this.userSeq], startPitch: this.lockedStartPitch });
-      
-      document.getElementById('rhy-reviewSection').style.display = 'block';
-      const list = document.getElementById('rhy-reviewList'); list.innerHTML = '';
-      
-      this.reviewItems.forEach(item => {
-        const box = document.createElement('div'); box.className = 'review-item';
-        
-        const header = document.createElement('div');
-        header.style.cssText = "font-size:13px; font-weight:bold; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;";
-        
-        const titleSpan = document.createElement('span');
-        titleSpan.textContent = `❌ 錯題 #${item.id}`;
-        
-        const btnGroup = document.createElement('div');
-        btnGroup.style.cssText = "display:flex; gap:8px;";
-        
-        const playUserBtn = document.createElement('button');
-        playUserBtn.className = 'select-all-btn';
-        playUserBtn.style.cssText = "color: var(--wrong); border-color: var(--wrong); background: var(--wrong-soft);";
-        playUserBtn.textContent = '🔊 聽你的作答';
-        playUserBtn.onclick = () => this.playSequence(item.userSeq);
-        
-        const playCorrectBtn = document.createElement('button');
-        playCorrectBtn.className = 'select-all-btn';
-        playCorrectBtn.textContent = '🔁 聽正解';
-        playCorrectBtn.onclick = () => this.playSequence(item.correctSeq);
-        
-        btnGroup.appendChild(playUserBtn);
-        btnGroup.appendChild(playCorrectBtn);
-        header.appendChild(titleSpan);
-        header.appendChild(btnGroup);
-        box.appendChild(header);
-        
-        const uLabel = document.createElement('div'); uLabel.className = 'review-label'; uLabel.textContent = '你的作答 (紅色為錯誤)：';
-        const uStaff = document.createElement('div'); uStaff.className = 'review-staff'; uStaff.innerHTML = `<div id="rev-user-${item.id}"></div>`;
-        const cLabel = document.createElement('div'); cLabel.className = 'review-label'; cLabel.style.marginTop = '8px'; cLabel.textContent = '正確解答：';
-        const cStaff = document.createElement('div'); cStaff.className = 'review-staff'; cStaff.innerHTML = `<div id="rev-correct-${item.id}"></div>`;
+    refreshReviewCount: function() {
+      const el = document.getElementById('rhy-reviewCount'); if(el) el.textContent = window.REVIEW_STORE.count('rhythm');
+    },
 
-        box.appendChild(uLabel); box.appendChild(uStaff); box.appendChild(cLabel); box.appendChild(cStaff);
+    // 提交後：進入解答頁（你的作答 vs 正解對照）
+    showAnswerPage: function(isCorrect) {
+      const item = {
+        correctSeq: [...this.questionSeq], userSeq: [...this.userSeq], startPitch: this.lockedStartPitch,
+        meter: this.meter, meterType: this.meterType, barsCount: this.barsCount, beatsPerBar: this.beatsPerBar,
+        bpm: this.bpm, pitchMode: this.pitchMode,
+        label: `${this.meter}拍・${this.barsCount}小節`, correctText: '（節奏聽寫）', yourText: ''
+      };
+      this._ansItem = item;
+      document.getElementById('rhy-ansBadge').textContent = isCorrect ? '✅ 答對了' : '📖 解答對照';
+      const fb = document.getElementById('rhy-ansFeedback');
+      fb.textContent = isCorrect ? '🎉 完全正確！' : '❌ 有錯，來看看正解對照';
+      fb.className = 'answer-big-feedback ' + (isCorrect ? 'correct' : 'wrong');
+      document.getElementById('rhy-ansScore').textContent = `${this.score.c}/${this.score.t}`;
+      if(!isCorrect){ window.REVIEW_STORE.add('rhythm', item); this.refreshReviewCount(); }
+      showPage('rhy-answer');
+      setTimeout(() => {
+        renderStaticStaff('rhy-ansUser', item.userSeq, item.correctSeq, item);
+        renderStaticStaff('rhy-ansCorrect', item.correctSeq, null, item);
+      }, 60);
+    },
+
+    renderReviewPage: function() {
+      this.refreshReviewCount();
+      const list = document.getElementById('rhy-reviewList'); const empty = document.getElementById('rhy-reviewEmpty');
+      if(!list) return; list.innerHTML = '';
+      const items = window.REVIEW_STORE.load('rhythm');
+      if(items.length === 0){ if(empty) empty.style.display = 'block'; return; }
+      if(empty) empty.style.display = 'none';
+      items.slice().reverse().forEach((item, ri) => {
+        const uid = item.id || ('r'+ri);
+        const box = document.createElement('div'); box.className = 'review-item';
+        box.innerHTML = `
+          <div style="font-size:13px; font-weight:bold; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <span style="color:var(--wrong);">❌ 錯題（${item.meter}拍・${item.barsCount}小節）</span>
+            <div style="display:flex; gap:8px;">
+              <button class="select-all-btn rhy-rev-user" style="color:var(--wrong); border-color:var(--wrong); background:var(--wrong-soft);">🔊 聽你的作答</button>
+              <button class="select-all-btn rhy-rev-correct">🔁 聽正解</button>
+            </div>
+          </div>
+          <div class="review-label">你的作答（紅色為錯誤）：</div>
+          <div class="review-staff"><div id="rhy-rev-user-${uid}"></div></div>
+          <div class="review-label" style="margin-top:8px;">正確解答：</div>
+          <div class="review-staff"><div id="rhy-rev-correct-${uid}"></div></div>
+        `;
         list.appendChild(box);
-        
+        box.querySelector('.rhy-rev-user').onclick = () => playStatic(item.userSeq, item);
+        box.querySelector('.rhy-rev-correct').onclick = () => playStatic(item.correctSeq, item);
         setTimeout(() => {
-          renderMainStaff(`rev-user-${item.id}`, item.userSeq, false, item.correctSeq, item.startPitch);
-          renderMainStaff(`rev-correct-${item.id}`, item.correctSeq, false, null, item.startPitch);
+          renderStaticStaff(`rhy-rev-user-${uid}`, item.userSeq, item.correctSeq, item);
+          renderStaticStaff(`rhy-rev-correct-${uid}`, item.correctSeq, null, item);
         }, 50);
       });
     },
@@ -802,7 +913,7 @@ function showPage(pageId) {
         document.getElementById('bpmSym').textContent = this.meterType === 'simple' ? '♩' : '♪';
         this.initSettings();
       });
-      
+
       document.getElementById('selectAllBtn').onclick = () => {
         const order = this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
         const items = document.querySelectorAll('.pattern-item');
@@ -816,11 +927,6 @@ function showPage(pageId) {
 
       document.getElementById('rhy-enterBtn').onclick = () => {
         ensureAudio(); window.rhyStopAll();
-        
-        // 清除訂正區內容
-        this.reviewItems = [];
-        document.getElementById('rhy-reviewSection').style.display = 'none';
-        document.getElementById('rhy-reviewList').innerHTML = '';
 
         this.barsCount = parseInt(document.getElementById('rhy-barsSelect').value, 10);
         this.beatsPerBar = parseInt(this.meter.split('/')[0], 10);
@@ -829,23 +935,20 @@ function showPage(pageId) {
         this.bpm = parseInt(document.getElementById('rhy-bpm').value, 10);
 
         document.getElementById('rhy-statusBadge').textContent = `${this.meter}拍｜${this.barsCount}小節｜${this.bpm}BPM`;
-        
+
         this.userSeq = Array(this.totalBeats).fill('placeholder');
         this.hasPlayed = false; this.activeSlotIdx = 0; this.generateQuestion();
-        
-        document.getElementById('rhy-feedbackText').className = 'feedback-text';
-        document.getElementById('rhy-editBtns').style.display = 'flex';
-        document.getElementById('rhy-nextBtn').style.display = 'none';
+
         document.getElementById('rhy-playCaption').textContent = '請點擊播放按鈕聆聽';
 
         this.renderKeypad(); showPage('rhy-practice');
-        setTimeout(() => this.updateUI(), 150); 
+        setTimeout(() => this.updateUI(), 150);
       };
 
       document.getElementById('rhy-playBtn').onclick = () => {
         ensureAudio(); if(!pianoInst || this.isPlaying || this.testSession.isRunning) return;
-        this.hasPlayed = true; 
-        
+        this.hasPlayed = true;
+
         if (this.mode === 'test') {
           this.testSession.totalPlays = parseInt(document.getElementById('rhy-testReplaySelect').value, 10);
           this.testSession.replaysLeft = this.testSession.totalPlays;
@@ -856,7 +959,7 @@ function showPage(pageId) {
         }
       };
 
-      document.getElementById('rhy-backspaceBtn').onclick = () => { 
+      document.getElementById('rhy-backspaceBtn').onclick = () => {
         if(!this.hasPlayed) return;
         let t = this.activeSlotIdx;
         if (t === -1) {
@@ -875,52 +978,53 @@ function showPage(pageId) {
           this.activeSlotIdx = t; this.updateUI();
         }
       };
-      
-      document.getElementById('rhy-clearBtn').onclick = () => { 
-        if(!this.hasPlayed) return; 
-        this.userSeq = Array(this.totalBeats).fill('placeholder'); 
-        this.activeSlotIdx = 0; this.updateUI(); 
-      };
-      
-      document.getElementById('rhy-submitBtn').onclick = () => {
-        window.rhyStopAll();
-        const isCorrect = JSON.stringify(this.userSeq) === JSON.stringify(this.questionSeq);
-        const ft = document.getElementById('rhy-feedbackText');
-        document.getElementById('rhy-editBtns').style.display = 'none';
-        document.getElementById('rhy-nextBtn').style.display = 'block';
-        
-        if (isCorrect) { 
-          ft.textContent = '🎉 完全正確！'; ft.className = 'feedback-text correct'; this.score.c++; 
-        } else { 
-          ft.textContent = '❌ 有錯喔！請往下滑查看訂正區'; ft.className = 'feedback-text wrong'; 
-          renderMainStaff('rhy-staff-svg', this.questionSeq, false, this.userSeq, this.lockedStartPitch);
-          this.addToReview();
-        }
-        this.score.t++; document.getElementById('rhy-scoreNum').textContent = `${this.score.c}/${this.score.t}`;
-        document.getElementById('rhy-playCaption').textContent = '✅ 作答結束';
+
+      document.getElementById('rhy-clearBtn').onclick = () => {
+        if(!this.hasPlayed) return;
+        this.userSeq = Array(this.totalBeats).fill('placeholder');
+        this.activeSlotIdx = 0; this.updateUI();
       };
 
-      document.getElementById('rhy-nextBtn').onclick = () => {
-          // 在進入下一題前，不清除設定，直接進入下一題的初始化
-          ensureAudio(); window.rhyStopAll();
-          
-          this.userSeq = Array(this.totalBeats).fill('placeholder');
-          this.hasPlayed = false; this.activeSlotIdx = 0; this.generateQuestion();
-          
-          document.getElementById('rhy-feedbackText').className = 'feedback-text';
-          document.getElementById('rhy-editBtns').style.display = 'flex';
-          document.getElementById('rhy-nextBtn').style.display = 'none';
-          document.getElementById('rhy-playCaption').textContent = '請點擊播放按鈕聆聽';
-  
-          this.renderKeypad();
-          setTimeout(() => this.updateUI(), 150);
+      document.getElementById('rhy-submitBtn').onclick = () => {
+        if(!this.hasPlayed) return;
+        // 未填提醒：仍可提交，但跳出確認（未填計為錯誤）
+        let emptyCount = this.userSeq.filter(x => x === 'placeholder').length;
+        if(emptyCount > 0){
+          if(!window.confirm(`還有 ${emptyCount} 拍未填寫。\n\n未填的部分會計為錯誤，確定要提交嗎？`)) return;
+        }
+        window.rhyStopAll();
+        const isCorrect = JSON.stringify(this.userSeq) === JSON.stringify(this.questionSeq);
+        this.score.t++; if(isCorrect) this.score.c++;
+        document.getElementById('rhy-scoreNum').textContent = `${this.score.c}/${this.score.t}`;
+        this.showAnswerPage(isCorrect);
       };
-      
+
+      // 解答頁播放與下一題
+      document.getElementById('rhy-ansPlayUser').onclick = () => { if(this._ansItem) playStatic(this._ansItem.userSeq, this._ansItem); };
+      document.getElementById('rhy-ansPlayCorrect').onclick = () => { if(this._ansItem) playStatic(this._ansItem.correctSeq, this._ansItem); };
+      document.getElementById('rhy-ansNextBtn').onclick = () => {
+        ensureAudio(); window.rhyStopAll();
+        this.userSeq = Array(this.totalBeats).fill('placeholder');
+        this.hasPlayed = false; this.activeSlotIdx = 0; this.generateQuestion();
+        document.getElementById('rhy-playCaption').textContent = '請點擊播放按鈕聆聽';
+        this.renderKeypad();
+        showPage('rhy-practice');
+        setTimeout(() => this.updateUI(), 150);
+      };
+
+      document.getElementById('rhy-clearReviewBtn').onclick = () => {
+        if(window.REVIEW_STORE.count('rhythm') === 0) return;
+        if(window.confirm('確定要清空節奏練習的錯題本嗎？此動作無法復原。')){ window.REVIEW_STORE.clear('rhythm'); this.renderReviewPage(); this.refreshReviewCount(); }
+      };
+
       window.addEventListener('resize', () => { if(document.getElementById('pageRhyPractice').classList.contains('active')) this.updateUI(); });
     }
   };
 
-  rhyModule.initSettings(); rhyModule.setupEvents(); loadPiano();
+  window.rhyModule = rhyModule;
+  rhyModule.initSettings(); rhyModule.setupEvents(); rhyModule.refreshReviewCount(); loadPiano();
+  // 由 index 錯題本總覽「跳回複習」進入時，直接開啟錯題本頁
+  if(location.hash === '#review') showPage('rhy-review');
 })();
 </script>
 

@@ -16,12 +16,16 @@
   :root{
     --paper: #efeee6; --panel: #fbfaf6; --panel-border: #ddd8c9; --hairline: #e2ddce;
     --ink: #262420; --ink-soft: #75705f; --accent: #33415c; --accent-soft: rgba(51,65,92,0.08);
-    --accent-line: rgba(51,65,92,0.35); --radius: 16px;
+    --accent-line: rgba(51,65,92,0.35); --correct: #4b7a5b; --wrong: #a6493b; --wrong-soft: rgba(166,73,59,0.09); --radius: 16px;
     --font-display: 'Fraunces', serif; --font-body: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace;
   }
   *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body{ margin:0; background: var(--paper); color: var(--ink); font-family: var(--font-body); min-height:100vh; padding: 20px 16px 64px; }
   .wrap{ max-width: 680px; margin: 0 auto; }
+
+  .page-view { display: none; animation: fadeIn 0.22s ease-out; }
+  .page-view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
   .staff-header{ position: relative; height: 70px; margin-bottom: 20px; }
   .staff-line{ position:absolute; left:0; right:0; height:1px; background: var(--hairline); }
@@ -50,94 +54,231 @@
   .menu-card-desc { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; margin: 0; }
   .menu-badge { position: absolute; top: 18px; right: 18px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; font-family: var(--font-mono); }
   .badge-ready { background: var(--accent); color: var(--panel); }
+  .badge-review { background: var(--wrong); color: var(--panel); }
   .badge-soon { background: var(--hairline); color: var(--ink-soft); }
   .footer-note{ margin-top: 36px; font-size: 12px; color: var(--ink-soft); text-align:center; line-height:1.7; }
+
+  /* 錯題本總覽卡片（整合入口） */
+  .review-hub-card{ grid-column: 1 / -1; background: var(--ink); border-color: var(--ink); color: var(--panel); cursor:pointer; }
+  .review-hub-card .menu-card-num{ color: #c9d2e6; }
+  .review-hub-card .menu-card-title{ color: var(--panel); }
+  .review-hub-card .menu-card-desc{ color: #d7dae0; }
+  .review-hub-card:hover, .review-hub-card:active{ transform: translateY(-2px); box-shadow: 0 8px 20px rgba(38,36,32,0.18); }
+
+  /* 總覽頁 */
+  .nav-back-btn{ display:inline-flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--ink); background:var(--panel); border:1px solid var(--panel-border); padding:10px 18px; border-radius:999px; cursor:pointer; margin-bottom:20px; box-shadow:0 2px 4px rgba(38,36,32,0.04); }
+  .nav-back-btn:hover, .nav-back-btn:active{ border-color:var(--accent); background:var(--accent); color:var(--panel); }
+  .hub-total{ font-family:var(--font-mono); font-size:13px; color:var(--ink-soft); margin-bottom:18px; }
+  .hub-group{ background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius); padding:18px; margin-bottom:16px; }
+  .hub-group-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .hub-group-title{ font-family:var(--font-display); font-size:18px; font-weight:600; }
+  .hub-count{ font-family:var(--font-mono); font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--wrong-soft); color:var(--wrong); border:1px solid rgba(166,73,59,0.3); }
+  .hub-count.zero{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent-line); }
+  .hub-jump{ font-size:12.5px; font-weight:700; padding:8px 14px; border-radius:999px; border:1px solid var(--accent-line); color:var(--accent); background:#fff; text-decoration:none; cursor:pointer; }
+  .hub-jump:hover{ background:var(--accent); color:var(--panel); border-color:var(--accent); }
+  .hub-empty{ font-size:13px; color:var(--ink-soft); }
+  .hub-item{ font-size:13px; line-height:1.6; padding:8px 0; border-top:1px dashed var(--hairline); display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .hub-item:first-child{ border-top:none; }
+  .hub-item .qa .wrong-ans{ color:var(--wrong); font-weight:600; }
+  .hub-item .qa .right-ans{ color:var(--correct); font-weight:600; }
+  .hub-item .qtime{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); white-space:nowrap; }
+  .hub-more{ font-size:12px; color:var(--ink-soft); margin-top:8px; }
+  .hub-clear-all{ font-family:var(--font-body); font-size:12px; font-weight:600; color:#8a6d20; background:#fff8e6; border:1px solid #ffd885; padding:8px 14px; border-radius:999px; cursor:pointer; margin-left:8px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="staff-header">
-    <div class="clef-mark">𝄞</div>
-    <div class="staff-line"></div><div class="staff-line"></div><div class="staff-line"></div>
-    <div class="staff-line"></div><div class="staff-line"></div>
+  <!-- 主目錄 -->
+  <div id="pageMenu" class="page-view active">
+    <div class="staff-header">
+      <div class="clef-mark">𝄞</div>
+      <div class="staff-line"></div><div class="staff-line"></div><div class="staff-line"></div>
+      <div class="staff-line"></div><div class="staff-line"></div>
+    </div>
+
+    <h1>音樂聽力練習</h1>
+    <p class="subtitle">歡迎使用聽力訓練系統，請從下方目錄選擇今天要練習的項目：</p>
+
+    <div class="menu-grid">
+      <a href="interval-trainer.html" class="menu-card active-feature">
+        <span class="menu-badge badge-ready">開始練習</span>
+        <div>
+          <div class="menu-card-num">01</div>
+          <h3 class="menu-card-title">音程練習</h3>
+          <p class="menu-card-desc">訓練對兩個音符之間距離的敏感度，支援單純音程與寬廣的副（複）音程聽辨。</p>
+        </div>
+      </a>
+
+      <a href="chord-trainer.html" class="menu-card active-feature">
+        <span class="menu-badge badge-ready">開始練習</span>
+        <div>
+          <div class="menu-card-num">02</div>
+          <h3 class="menu-card-title">和絃辨認</h3>
+          <p class="menu-card-desc">聽辨各種三和絃、七和絃與九和絃的色彩與性質，支援單題作答與連續聽寫。</p>
+        </div>
+      </a>
+
+      <a href="rhythm-trainer.html" class="menu-card active-feature">
+        <span class="menu-badge badge-ready">開始練習</span>
+        <div>
+          <div class="menu-card-num">03</div>
+          <h3 class="menu-card-title">節奏練習</h3>
+          <p class="menu-card-desc">訓練拍子感與常見節奏型的記憶與默寫，支援單/複拍子與雙音顆粒訓練。</p>
+        </div>
+      </a>
+
+      <a href="melody-trainer.html" class="menu-card active-feature">
+        <span class="menu-badge badge-ready">開始練習</span>
+        <div>
+          <div class="menu-card-num">04</div>
+          <h3 class="menu-card-title">單旋律曲調</h3>
+          <p class="menu-card-desc">從短句到完整樂句的旋律聽寫，鍛鍊樂感與首調／固定調音感。</p>
+        </div>
+      </a>
+
+      <a href="two-part-trainer.html" class="menu-card active-feature">
+        <span class="menu-badge badge-ready">開始練習</span>
+        <div>
+          <div class="menu-card-num">05</div>
+          <h3 class="menu-card-title">兩聲部曲調</h3>
+          <p class="menu-card-desc">同時聆聽高低兩個聲部的交織，加強對位與多線條的聽覺注意力。</p>
+        </div>
+      </a>
+
+      <a href="four-part-trainer.html" class="menu-card active-feature">
+        <span class="menu-badge badge-ready">開始練習</span>
+        <div>
+          <div class="menu-card-num">06</div>
+          <h3 class="menu-card-title">四部和聲進行</h3>
+          <p class="menu-card-desc">古典與流行和聲連接聽辨，從 I-IV-V-I 體驗混聲合唱與和弦走向。</p>
+        </div>
+      </a>
+
+      <!-- 整合錯題本入口 -->
+      <div class="menu-card review-hub-card" onclick="showHub()">
+        <span class="menu-badge badge-review" id="hubBadge">0 題</span>
+        <div>
+          <div class="menu-card-num">★ 錯題本</div>
+          <h3 class="menu-card-title">錯題本總覽</h3>
+          <p class="menu-card-desc">整合所有練習答錯的題目，一次檢視各項目的錯題數量與最近紀錄，並可跳回該練習複習。</p>
+        </div>
+      </div>
+    </div>
+    <p class="footer-note">已加入主畫面？可以直接從主畫面圖示開啟，體驗會更接近原生 App。</p>
   </div>
 
-  <h1>音樂聽力練習</h1>
-  <p class="subtitle">歡迎使用聽力訓練系統，請從下方目錄選擇今天要練習的項目：</p>
-  
-  <div class="menu-grid">
-    <a href="interval-trainer.html" class="menu-card active-feature">
-      <span class="menu-badge badge-ready">開始練習</span>
-      <div>
-        <div class="menu-card-num">01</div>
-        <h3 class="menu-card-title">音程練習</h3>
-        <p class="menu-card-desc">訓練對兩個音符之間距離的敏感度，支援單純音程與寬廣的副（複）音程聽辨。</p>
-      </div>
-    </a>
-
-    <a href="chord-trainer.html" class="menu-card active-feature">
-      <span class="menu-badge badge-ready">開始練習</span>
-      <div>
-        <div class="menu-card-num">02</div>
-        <h3 class="menu-card-title">和絃辨認</h3>
-        <p class="menu-card-desc">聽辨各種三和絃、七和絃與九和絃的色彩與性質，支援單題作答與連續聽寫。</p>
-      </div>
-    </a>
-
-    <a href="rhythm-trainer.html" class="menu-card active-feature">
-      <span class="menu-badge badge-ready">開始練習</span>
-      <div>
-        <div class="menu-card-num">03</div>
-        <h3 class="menu-card-title">節奏練習</h3>
-        <p class="menu-card-desc">訓練拍子感與常見節奏型的記憶與默寫，支援單/複拍子與雙音顆粒訓練。</p>
-      </div>
-    </a>
-
-    <a href="melody-trainer.html" class="menu-card active-feature">
-      <span class="menu-badge badge-ready">開始練習</span>
-      <div>
-        <div class="menu-card-num">04</div>
-        <h3 class="menu-card-title">單旋律曲調</h3>
-        <p class="menu-card-desc">從短句到完整樂句的旋律聽寫，鍛鍊樂感與首調／固定調音感。</p>
-      </div>
-    </a>
-
-    <a href="two-part-trainer.html" class="menu-card active-feature">
-      <span class="menu-badge badge-ready">開始練習</span>
-      <div>
-        <div class="menu-card-num">05</div>
-        <h3 class="menu-card-title">兩聲部曲調</h3>
-        <p class="menu-card-desc">同時聆聽高低兩個聲部的交織，加強對位與多線條的聽覺注意力。</p>
-      </div>
-    </a>
-
-    <a href="four-part-trainer.html" class="menu-card active-feature">
-      <span class="menu-badge badge-ready">開始練習</span>
-      <div>
-        <div class="menu-card-num">06</div>
-        <h3 class="menu-card-title">四部和聲進行</h3>
-        <p class="menu-card-desc">古典與流行和聲連接聽辨，從 I-IV-V-I 體驗混聲合唱與和弦走向。</p>
-      </div>
-    </a>
+  <!-- 錯題本總覽 -->
+  <div id="pageHub" class="page-view">
+    <button class="nav-back-btn" onclick="showMenu()">← 回目錄</button>
+    <h1>錯題本總覽</h1>
+    <p class="subtitle">這裡整合六項練習累積的錯題（儲存在本機瀏覽器）。點「跳回複習」會直接開啟該練習的錯題本。</p>
+    <div class="hub-total" id="hubTotal"></div>
+    <div id="hubGroups"></div>
   </div>
-  <p class="footer-note">已加入主畫面？可以直接從主畫面圖示開啟，體驗會更接近原生 App。</p>
 </div>
 
 <script>
-  // PWA Service Worker 註冊與自動更新邏輯
-  if('serviceWorker' in navigator){
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+/* ===== 統一錯題本儲存（與各練習頁共用同一組 localStorage key） ===== */
+window.REVIEW_STORE = {
+  PREFIX: 'earTrainer.review.',
+  TYPES: ['interval','chord','rhythm','melody','twopart','fourpart'],
+  TYPE_LABEL: { interval:'音程練習', chord:'和絃辨認', rhythm:'節奏練習', melody:'單旋律曲調', twopart:'兩聲部曲調', fourpart:'四部和聲進行' },
+  TYPE_PAGE: { interval:'interval-trainer.html', chord:'chord-trainer.html', rhythm:'rhythm-trainer.html', melody:'melody-trainer.html', twopart:'two-part-trainer.html', fourpart:'four-part-trainer.html' },
+  load(type){ try { return JSON.parse(localStorage.getItem(this.PREFIX+type) || '[]'); } catch(e){ return []; } },
+  clear(type){ try { localStorage.setItem(this.PREFIX+type, '[]'); } catch(e){} },
+  count(type){ return this.load(type).length; },
+  total(){ return this.TYPES.reduce((a,t)=>a+this.count(t), 0); }
+};
 
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
+function fmtTime(ts){
+  if(!ts) return '';
+  try{
+    const d = new Date(ts); const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    const hh = String(d.getHours()).padStart(2,'0'); const mm = String(d.getMinutes()).padStart(2,'0');
+    if(sameDay) return `今天 ${hh}:${mm}`;
+    return `${d.getMonth()+1}/${d.getDate()} ${hh}:${mm}`;
+  }catch(e){ return ''; }
+}
+
+function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function showPageId(id){
+  document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function showMenu(){ showPageId('pageMenu'); updateHubBadge(); }
+function showHub(){ renderHub(); showPageId('pageHub'); }
+
+function updateHubBadge(){
+  const el = document.getElementById('hubBadge');
+  if(el) el.textContent = window.REVIEW_STORE.total() + ' 題';
+}
+
+function renderHub(){
+  const S = window.REVIEW_STORE;
+  document.getElementById('hubTotal').textContent = `目前共收錄 ${S.total()} 題錯題`;
+  const wrap = document.getElementById('hubGroups'); wrap.innerHTML = '';
+
+  S.TYPES.forEach(type => {
+    const items = S.load(type);
+    const group = document.createElement('div'); group.className = 'hub-group';
+    const head = document.createElement('div'); head.className = 'hub-group-head';
+
+    const titleWrap = document.createElement('div');
+    titleWrap.innerHTML = `<span class="hub-group-title">${S.TYPE_LABEL[type]}</span> <span class="hub-count ${items.length===0?'zero':''}">${items.length} 題</span>`;
+
+    const btnWrap = document.createElement('div');
+    const jump = document.createElement('a'); jump.className = 'hub-jump';
+    jump.href = S.TYPE_PAGE[type] + '#review'; jump.textContent = '跳回複習 →';
+    btnWrap.appendChild(jump);
+    if(items.length > 0){
+      const clr = document.createElement('button'); clr.className = 'hub-clear-all'; clr.textContent = '清空';
+      clr.onclick = () => { if(window.confirm(`確定要清空「${S.TYPE_LABEL[type]}」的錯題本嗎？`)){ S.clear(type); renderHub(); updateHubBadge(); } };
+      btnWrap.appendChild(clr);
+    }
+
+    head.appendChild(titleWrap); head.appendChild(btnWrap); group.appendChild(head);
+
+    if(items.length === 0){
+      const e = document.createElement('div'); e.className = 'hub-empty'; e.textContent = '尚未收錄錯題 🎵';
+      group.appendChild(e);
+    } else {
+      const recent = items.slice().reverse().slice(0, 5);
+      recent.forEach(it => {
+        const row = document.createElement('div'); row.className = 'hub-item';
+        let qa;
+        if(it.yourText){
+          qa = `你的答案：<span class="wrong-ans">${escapeHtml(it.yourText)}</span>　正解：<span class="right-ans">${escapeHtml(it.correctText || '')}</span>`;
+        } else {
+          qa = `${escapeHtml(it.label || it.correctText || '一題錯題')}`;
         }
+        row.innerHTML = `<span class="qa">${qa}</span><span class="qtime">${fmtTime(it.ts)}</span>`;
+        group.appendChild(row);
       });
+      if(items.length > recent.length){
+        const more = document.createElement('div'); more.className = 'hub-more';
+        more.textContent = `⋯ 還有 ${items.length - recent.length} 題，點「跳回複習」查看完整譜例與重播`;
+        group.appendChild(more);
+      }
+    }
+    wrap.appendChild(group);
+  });
+}
+
+updateHubBadge();
+
+// PWA Service Worker 註冊與自動更新邏輯
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) { refreshing = true; window.location.reload(); }
     });
-  }
+  });
+}
 </script>
 </body>
 </html>
