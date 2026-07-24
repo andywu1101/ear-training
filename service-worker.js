@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v17'; // v17：封面文字四行置中＋練習卡說明更新
+const CACHE_NAME = 'ear-training-shell-v19'; // v19：改用作者自製圖示（滿版米色）
 const APP_SHELL = [
   './',
   './index.html',
