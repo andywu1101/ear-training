@@ -118,6 +118,15 @@
   .donate-box h3{ font-family:var(--font-display); font-size:22px; font-weight:600; margin:10px 0 8px; }
   .donate-box p{ font-size:14px; color:var(--ink-soft); line-height:1.75; margin:0 0 18px; }
   .donate-box .ok-btn{ font-family:var(--font-body); font-weight:700; font-size:15px; padding:11px 30px; border-radius:999px; background:var(--accent); color:var(--panel); border:none; cursor:pointer; touch-action:manipulation; }
+  .donate-links{ display:flex; flex-direction:column; gap:10px; margin:6px 0 14px; }
+  .donate-go, .donate-home{ display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--font-body); font-weight:700; font-size:15px; padding:13px 20px; border-radius:999px; text-decoration:none; cursor:pointer; transition:all .15s ease; touch-action:manipulation; }
+  .donate-go{ background:var(--wrong); color:var(--panel); box-shadow:0 4px 14px rgba(166,73,59,0.28); }
+  .donate-go:hover, .donate-go:active{ filter:brightness(1.08); transform:translateY(-1px); }
+  .donate-home{ background:transparent; color:var(--ink); border:1px solid var(--panel-border); }
+  .donate-home:hover, .donate-home:active{ border-color:var(--accent); background:var(--accent-soft); }
+  .donate-dismiss{ font-family:var(--font-body); font-size:13px; color:var(--ink-soft); background:transparent; border:none; cursor:pointer; text-decoration:underline; touch-action:manipulation; }
+  .cover-author a{ color:var(--ink-soft); text-decoration:none; border-bottom:1px dashed var(--accent-line); padding-bottom:1px; transition:all .15s ease; }
+  .cover-author a:hover, .cover-author a:active{ color:var(--accent); border-color:var(--accent); }
   @media (max-width:480px){ .cover-title{ font-size:34px; } .cover-clef{ font-size:76px; } .cover-msg{ font-size:15px; padding:18px 18px; } }
 </style>
 </head>
@@ -141,7 +150,7 @@
         <p class="cover-msg">這個工具永久免費，你可以自由使用，<br>也歡迎推薦給同學和老師。<br>如果它對你的教學或練習有幫助，<br>歡迎小額贊助支持後續開發與維護。</p>
         <button class="cover-start" onclick="showMenu()">開始練習 →</button>
         <div class="cover-foot">為音樂班、音樂系的學生與老師而做 🎵</div>
-        <div class="cover-author">作者：伍祐恆 Heng_Heng Wu</div>
+        <div class="cover-author"><a href="https://portaly.cc/heng-heng.music" target="_blank" rel="noopener">作者：伍祐恆 Heng_Heng Wu ↗</a></div>
         <div class="cover-donate-wrap"><button class="donate-btn" onclick="showDonate()">❤ 小額贊助</button></div>
       </div>
     </div>
@@ -245,13 +254,18 @@
   </div>
 </div>
 
-<!-- 小額贊助佔位彈窗 -->
+<!-- 小額贊助彈窗（前往贊助 / 作者主頁） -->
 <div class="donate-modal" id="donateModal" onclick="if(event.target===this) closeDonate()">
   <div class="donate-box">
-    <div class="dico">🙏</div>
-    <h3>感謝你的支持</h3>
-    <p>贊助管道建置中，敬請期待！<br>你的支持會用於這個工具後續的開發與維護 ❤</p>
-    <button class="ok-btn" onclick="closeDonate()">好的</button>
+    <div class="dico">❤</div>
+    <h3>支持這個工具</h3>
+    <p>這個工具永久免費。你的支持會用於後續的開發與維護，感謝你 🙏</p>
+    <div class="donate-links">
+      <!-- 待 Portaly 贊助頁審核通過後，把此連結改成專屬贊助連結即可 -->
+      <a class="donate-go" href="https://portaly.cc/heng-heng.music" target="_blank" rel="noopener">❤ 前往贊助</a>
+      <a class="donate-home" href="https://portaly.cc/heng-heng.music" target="_blank" rel="noopener">🔗 作者主頁（Portaly）</a>
+    </div>
+    <button class="donate-dismiss" onclick="closeDonate()">關閉</button>
   </div>
 </div>
 

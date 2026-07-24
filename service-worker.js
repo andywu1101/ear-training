@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v19'; // v19：改用作者自製圖示（滿版米色）
+const CACHE_NAME = 'ear-training-shell-v20'; // v20：封面作者連品牌頁、贊助視窗(前往贊助/作者主頁)
 const APP_SHELL = [
   './',
   './index.html',
