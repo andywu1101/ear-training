@@ -2033,7 +2033,7 @@ window.addEventListener('resize', setVH); setVH();
         slot.style.top = SLOT_TOP + 'px'; 
         slot.style.width = (slotWidth - 6) + 'px'; slot.style.height = '64px';
         
-        let dispVal = opt.forceCorrectSlots ? this.questionSeq[i] : (userSeq[i] || '—');
+        let dispVal = opt.forceCorrectSlots ? (userSeq[i] || this.questionSeq[i] || '—') : (userSeq[i] || '—');
         slot.innerHTML = `<div class="slot-bar-num">${i+1}</div><div class="slot-value" style="font-size:15px;">${dispVal}</div>`;
         overlay.appendChild(slot);
 
@@ -2524,8 +2524,9 @@ window.addEventListener('resize', setVH); setVH();
   }
 </script>
 <script>
-/* 附加（不改動既有邏輯）：1) 錯題本摘要同步 localStorage 供 index 總覽整合＋#review 直達；2) 玩法說明按鈕與彈窗。 */
+/* 附加（不改動既有邏輯）：1) 錯題本完整資料持久化＋載入還原；2) 玩法說明按鈕與彈窗。 */
 (function(){
+  var KEY='fourpart';
   if(!window.REVIEW_STORE){
     window.REVIEW_STORE = {
       PREFIX:'earTrainer.review.',
@@ -2534,15 +2535,22 @@ window.addEventListener('resize', setVH); setVH();
       clear:function(t){this.save(t,[])},count:function(t){return this.load(t).length}
     };
   }
-  function persist(){
+  function buildStorable(){
+    var m=window.fptModule; if(!m) return [];
+    return (m.reviewItems||[]).map(function(it){
+      var kn = it.keyObj ? it.keyObj.name : '';
+      return { id:it.id, bars:it.bars, keyObj:it.keyObj, userKeyAns:it.userKeyAns, userSeq:it.userSeq, userBass:it.userBass, questionSeq:it.questionSeq, questionVoicings:it.questionVoicings, results:it.results, ts: it.ts || Date.now(), label: kn, correctText: kn ? ('正解調性 '+kn) : '（四部和聲）', yourText:'' };
+    });
+  }
+  function persist(){ try{ window.REVIEW_STORE.save(KEY, buildStorable()); }catch(e){} }
+  function hydrate(){
     try{
-      var m = window.fptModule; if(!m) return;
-      var items = m.reviewItems || [];
-      var out = items.map(function(it){
-        var kn = it.keyObj ? it.keyObj.name : '';
-        return { id:'fp'+it.id, ts: it.ts || Date.now(), label: kn, correctText: kn ? ('正解調性 '+kn) : '（四部和聲）', yourText:'' };
-      });
-      window.REVIEW_STORE.save('fourpart', out);
+      var m=window.fptModule; if(!m) return;
+      var stored=window.REVIEW_STORE.load(KEY);
+      if(stored && stored.length && (!m.reviewItems || m.reviewItems.length===0)){
+        m.reviewItems = stored.map(function(s){ return { id:s.id, bars:s.bars, keyObj:s.keyObj, userKeyAns:s.userKeyAns, userSeq:s.userSeq, userBass:s.userBass, questionSeq:s.questionSeq, questionVoicings:s.questionVoicings, results:s.results, ts:s.ts }; });
+        if(typeof m.updateReviewCount==='function') m.updateReviewCount();
+      }
     }catch(e){}
   }
   var tries=0;
@@ -2550,16 +2558,14 @@ window.addEventListener('resize', setVH); setVH();
     tries++;
     if(window.fptModule && typeof window.fptModule.addToReview==='function'){
       clearInterval(iv);
-      var orig=window.fptModule.addToReview.bind(window.fptModule);
-      window.fptModule.addToReview=function(){ var r=orig.apply(window.fptModule,arguments); persist(); return r; };
+      hydrate();
+      var origAdd=window.fptModule.addToReview.bind(window.fptModule);
+      window.fptModule.addToReview=function(){ var r=origAdd.apply(window.fptModule,arguments); persist(); return r; };
       var clr=document.getElementById('fpt-clearReviewBtn');
       if(clr) clr.addEventListener('click', function(){ setTimeout(persist,60); });
-      persist();
       if(location.hash==='#review' && typeof showPage==='function') showPage('fpt-review');
     } else if(tries>40){ clearInterval(iv); }
   },150);
-
-  /* ---- 玩法說明按鈕與彈窗 ---- */
   var hcss = ''
     + '.help-btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--accent);background:#fff;border:1px solid var(--accent-line);padding:8px 14px;border-radius:999px;cursor:pointer;touch-action:manipulation;white-space:nowrap;}'
     + '.help-btn:hover,.help-btn:active{background:var(--accent);color:var(--panel);border-color:var(--accent);}'
@@ -2579,7 +2585,6 @@ window.addEventListener('resize', setVH); setVH();
     + '.help-foot{margin-top:16px;text-align:center;}'
     + '.help-foot button{font-family:var(--font-body);font-weight:700;font-size:14px;padding:11px 30px;border-radius:999px;background:var(--accent);color:var(--panel);border:none;cursor:pointer;touch-action:manipulation;}';
   var st=document.createElement('style'); st.textContent=hcss; document.head.appendChild(st);
-
   var hhtml = ''
     + '<div class="help-box">'
     + '<button class="help-close" data-help-close aria-label="關閉">×</button>'

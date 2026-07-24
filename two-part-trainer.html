@@ -901,26 +901,44 @@ function showPage(pageId) {
       document.getElementById('acc-s').className = `p-btn acc-btn ${acc === '#' ? 'active' : ''}`;
     },
 
-    // 升降按鈕：與八度邏輯一致——剛輸入完一個音時，直接修改該聲部剛輸入的那個音（事後修飾，含連結線）；
-    // 否則維持「先按記號、再輸入音名」的舊行為。
+    // 升降按鈕邏輯（依目前編輯的聲部 activePart）：
+    //  1) 剛輸入完一個音（lastEditedNoteIdx[p]）→ 直接修改那個音（事後修飾，不前進）。
+    //  2) 沒有剛輸入的音、但目前有選中的音（activeNoteIdx[p]，例如用點選跳過去的）→ 套用到該音一次，然後跳到下一個音。
+    //  3) 都沒有（焦點已到結尾）→ 暫存記號待下次輸入。
     setAccidental: function(acc) {
       let p = this.activePart;
-      let targetIdx = this.lastEditedNoteIdx[p];
-      if (targetIdx !== null && targetIdx !== -1 && this.userPitch[p][targetIdx]) {
-        let base = this.userPitch[p][targetIdx];
-        let np = this.sanitizePitch({ step: base.step, oct: base.oct, acc: acc });
-        this.userPitch[p][targetIdx] = np;
-        let propagateIdx = targetIdx;
-        while (this.isNoteTiedToNext(p, propagateIdx)) {
-          if (propagateIdx + 1 < this.userPitch[p].length) this.userPitch[p][propagateIdx + 1] = { step: np.step, oct: np.oct, acc: np.acc };
-          propagateIdx++;
-        }
-        this.currentOctave = np.oct; this.updateOctaveLabels();
-        this.setPendingAccidental('n'); // 記號鍵回到還原，避免影響下一個新輸入的音
+      let afterIdx = this.lastEditedNoteIdx[p];
+      if (afterIdx !== null && afterIdx !== -1 && this.userPitch[p][afterIdx]) {
+        this._applyAccidentalToIdx(p, afterIdx, acc);
+        this.setPendingAccidental('n');
         this.updateUI();
-      } else {
-        this.setPendingAccidental(acc);
+        return;
       }
+      let selIdx = this.activeNoteIdx[p];
+      if (selIdx !== -1 && this.userPitch[p][selIdx]) {
+        this._applyAccidentalToIdx(p, selIdx, acc);
+        this.lastEditedNoteIdx[p] = selIdx; // 記住剛修飾的音，之後再按記號可再改同一音
+        let totalNotes = this.getTotalNoteCount(p);
+        let nextIdx = selIdx + 1;
+        while (nextIdx < totalNotes && this.isNoteTiedToPrevious(p, nextIdx)) nextIdx++;
+        this.activeNoteIdx[p] = (nextIdx < totalNotes) ? nextIdx : -1;
+        this.setPendingAccidental('n');
+        this.updateUI();
+        return;
+      }
+      this.setPendingAccidental(acc);
+    },
+
+    _applyAccidentalToIdx: function(p, idx, acc) {
+      let base = this.userPitch[p][idx];
+      let np = this.sanitizePitch({ step: base.step, oct: base.oct, acc: acc });
+      this.userPitch[p][idx] = np;
+      let propagateIdx = idx;
+      while (this.isNoteTiedToNext(p, propagateIdx)) {
+        if (propagateIdx + 1 < this.userPitch[p].length) this.userPitch[p][propagateIdx + 1] = { step: np.step, oct: np.oct, acc: np.acc };
+        propagateIdx++;
+      }
+      this.currentOctave = np.oct; this.updateOctaveLabels();
     },
 
     updateOctaveLabels: function() {
@@ -1371,7 +1389,7 @@ function showPage(pageId) {
     <h3>設定</h3>
     <p>可選拍號、小節數、速度與要出現的節奏型；測驗模式可限制重播次數。</p>
     <h3>作答</h3>
-    <p>播放時可選「<b>雙聲部</b>」一起聽，或單獨聽「<b>高音</b>」「<b>低音</b>」孤立聲部。作答分「編輯節奏／編輯音高」兩個分頁，並可切換目前編輯的聲部（點譜上高音區或低音區即可切換，右上會顯示「目前編輯：高音／低音」）。音高輸入方式與單旋律相同（先打音名，再事後修飾升降與八度）。填完提交 → 解答頁雙譜對照、紅色標錯，可聆聽你的作答／正解雙軌。</p>
+    <p>播放時可選「<b>雙聲部</b>」一起聽，或單獨聽「<b>高音</b>」「<b>低音</b>」孤立聲部。作答分「編輯節奏／編輯音高」兩個分頁，並可切換目前編輯的聲部（點譜上高音區或低音區即可切換，右上會顯示「目前編輯：高音／低音」）。音高輸入方式與單旋律相同：點到某個音後，直接按 ♯／♭／♮ 就會套用到該音並自動跳到下一個音（剛打完的音也能直接按記號修改），八度可事後微調。填完提交 → 解答頁雙譜對照、紅色標錯，可聆聽你的作答／正解雙軌。</p>
     <div class="help-common">
       <h3>共通規則（六個練習都適用）</h3>
       <p><b>練習模式</b>可無限聆聽、不限時間；<b>測驗模式</b>限制重播次數，模擬考試。</p>

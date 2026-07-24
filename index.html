@@ -91,13 +91,34 @@
   .cover-note{ position:absolute; font-family: var(--font-display); color: var(--accent); opacity:0.10; user-select:none; line-height:1; }
   .cover-card{ position:relative; z-index:1; max-width: 540px; }
   .cover-clef{ font-family: var(--font-display); font-size: 92px; color: var(--accent); opacity:0.9; line-height:1; margin-bottom: 2px; }
-  .cover-title{ font-family: var(--font-display); font-weight:600; font-size: 40px; margin: 0 0 6px; letter-spacing:-0.01em; }
-  .cover-sub{ font-family: var(--font-mono); font-size: 12px; letter-spacing:0.22em; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 26px; }
-  .cover-msg{ font-size: 15px; line-height: 1.95; color: var(--ink); background: var(--panel); border:1px solid var(--panel-border); border-radius: var(--radius); padding: 22px 24px; margin: 0 auto 28px; box-shadow: 0 4px 16px rgba(51,65,92,0.06); }
-  .cover-start{ font-family: var(--font-body); font-weight:700; font-size: 17px; padding: 16px 44px; border-radius: 999px; background: var(--accent); color: var(--panel); border:none; cursor:pointer; box-shadow: 0 6px 20px rgba(51,65,92,0.25); transition: all .15s ease; display:inline-flex; align-items:center; gap:10px; touch-action: manipulation; }
+  .cover-title{ font-family: var(--font-display); font-weight:600; font-size: 46px; margin: 0 0 6px; letter-spacing:-0.01em; }
+  .cover-sub{ font-family: var(--font-mono); font-size: 13px; letter-spacing:0.22em; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 26px; }
+  .cover-msg{ font-size: 17px; line-height: 1.95; color: var(--ink); text-align:center; background: var(--panel); border:1px solid var(--panel-border); border-radius: var(--radius); padding: 22px 24px; margin: 0 auto 28px; box-shadow: 0 4px 16px rgba(51,65,92,0.06); }
+  .cover-start{ font-family: var(--font-body); font-weight:700; font-size: 18px; padding: 16px 44px; border-radius: 999px; background: var(--accent); color: var(--panel); border:none; cursor:pointer; box-shadow: 0 6px 20px rgba(51,65,92,0.25); transition: all .15s ease; display:inline-flex; align-items:center; gap:10px; touch-action: manipulation; }
   .cover-start:hover, .cover-start:active{ filter:brightness(1.12); transform: translateY(-2px); box-shadow: 0 10px 26px rgba(51,65,92,0.32); }
-  .cover-foot{ margin-top: 22px; font-size: 12px; color: var(--ink-soft); }
-  @media (max-width:480px){ .cover-title{ font-size:32px; } .cover-clef{ font-size:76px; } .cover-msg{ font-size:14px; padding:18px 18px; } }
+  .cover-foot{ margin-top: 20px; font-size: 13.5px; color: var(--ink-soft); }
+  /* 封面作者列與小額贊助 */
+  .cover-author{ margin-top: 16px; font-size: 13.5px; color: var(--ink-soft); }
+  .cover-donate-wrap{ margin-top: 10px; }
+  .donate-btn{ display:inline-flex; align-items:center; gap:7px; font-family:var(--font-body); font-weight:700; font-size:14.5px; padding:11px 26px; border-radius:999px; background:var(--wrong); color:var(--panel); border:none; cursor:pointer; box-shadow:0 4px 14px rgba(166,73,59,0.28); transition:all .15s ease; touch-action:manipulation; }
+  .donate-btn:hover, .donate-btn:active{ filter:brightness(1.08); transform:translateY(-1px); box-shadow:0 6px 18px rgba(166,73,59,0.34); }
+  /* 選單左上角回封面鈕 */
+  .cover-back-btn{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--ink); background:var(--panel); border:1px solid var(--panel-border); padding:8px 14px; border-radius:999px; cursor:pointer; margin-bottom:16px; touch-action:manipulation; }
+  .cover-back-btn:hover, .cover-back-btn:active{ border-color:var(--accent); background:var(--accent); color:var(--panel); }
+  /* 選單裡的贊助卡（全寬、較矮、暖赤陶色） */
+  .donate-card{ grid-column: 1 / -1; background: var(--wrong-soft); border-color: rgba(166,73,59,0.35); cursor:pointer; padding:16px 22px; }
+  .donate-card:hover, .donate-card:active{ transform: translateY(-2px); border-color: var(--wrong); box-shadow: 0 8px 20px rgba(166,73,59,0.14); }
+  .donate-card .menu-card-title{ color: var(--wrong); margin:0 0 4px; font-size:18px; }
+  .donate-card .menu-card-desc{ color: var(--ink-soft); }
+  /* 贊助佔位彈窗 */
+  .donate-modal{ display:none; position:fixed; inset:0; z-index:1200; background:rgba(38,36,32,0.55); padding:24px 16px; overflow-y:auto; }
+  .donate-modal.open{ display:flex; align-items:center; justify-content:center; }
+  .donate-box{ background:var(--paper); border:1px solid var(--panel-border); border-radius:16px; max-width:400px; width:100%; padding:30px 26px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.28); }
+  .donate-box .dico{ font-size:40px; line-height:1; }
+  .donate-box h3{ font-family:var(--font-display); font-size:22px; font-weight:600; margin:10px 0 8px; }
+  .donate-box p{ font-size:14px; color:var(--ink-soft); line-height:1.75; margin:0 0 18px; }
+  .donate-box .ok-btn{ font-family:var(--font-body); font-weight:700; font-size:15px; padding:11px 30px; border-radius:999px; background:var(--accent); color:var(--panel); border:none; cursor:pointer; touch-action:manipulation; }
+  @media (max-width:480px){ .cover-title{ font-size:34px; } .cover-clef{ font-size:76px; } .cover-msg{ font-size:15px; padding:18px 18px; } }
 </style>
 </head>
 <body>
@@ -117,15 +138,18 @@
         <div class="cover-clef">𝄞</div>
         <h1 class="cover-title">音樂聽力練習</h1>
         <div class="cover-sub">Ear Training</div>
-        <p class="cover-msg">這個工具永久免費，你可以自由使用、也歡迎推薦給同學和老師；如果它對你的教學或練習有幫助，歡迎小額贊助支持後續開發與維護。</p>
+        <p class="cover-msg">這個工具永久免費，你可以自由使用，<br>也歡迎推薦給同學和老師。<br>如果它對你的教學或練習有幫助，<br>歡迎小額贊助支持後續開發與維護。</p>
         <button class="cover-start" onclick="showMenu()">開始練習 →</button>
         <div class="cover-foot">為音樂班、音樂系的學生與老師而做 🎵</div>
+        <div class="cover-author">作者：伍祐恆 Heng_Heng Wu</div>
+        <div class="cover-donate-wrap"><button class="donate-btn" onclick="showDonate()">❤ 小額贊助</button></div>
       </div>
     </div>
   </div>
 
   <!-- 主目錄 -->
   <div id="pageMenu" class="page-view">
+    <button class="cover-back-btn" onclick="showCover()">← 封面</button>
     <div class="staff-header">
       <div class="clef-mark">𝄞</div>
       <div class="staff-line"></div><div class="staff-line"></div><div class="staff-line"></div>
@@ -141,7 +165,7 @@
         <div>
           <div class="menu-card-num">01</div>
           <h3 class="menu-card-title">音程練習</h3>
-          <p class="menu-card-desc">訓練對兩個音符之間距離的敏感度，支援單純音程與寬廣的副（複）音程聽辨。</p>
+          <p class="menu-card-desc">聽辨兩音之間的音程性質，涵蓋協和／不協和與超過八度的複音程，可單題或連續聽寫。</p>
         </div>
       </a>
 
@@ -150,7 +174,7 @@
         <div>
           <div class="menu-card-num">02</div>
           <h3 class="menu-card-title">和絃辨認</h3>
-          <p class="menu-card-desc">聽辨各種三和絃、七和絃與九和絃的色彩與性質，支援單題作答與連續聽寫。</p>
+          <p class="menu-card-desc">聽辨三和絃、七和絃到九和絃的性質與轉位，支援單題作答與整段連續聽寫。</p>
         </div>
       </a>
 
@@ -159,7 +183,7 @@
         <div>
           <div class="menu-card-num">03</div>
           <h3 class="menu-card-title">節奏練習</h3>
-          <p class="menu-card-desc">訓練拍子感與常見節奏型的記憶與默寫，支援單/複拍子與雙音顆粒訓練。</p>
+          <p class="menu-card-desc">聽寫單／複拍子的常見節奏型，含預備拍與雙音顆粒訓練，逐格填出節奏。</p>
         </div>
       </a>
 
@@ -168,7 +192,7 @@
         <div>
           <div class="menu-card-num">04</div>
           <h3 class="menu-card-title">單旋律曲調</h3>
-          <p class="menu-card-desc">從短句到完整樂句的旋律聽寫，鍛鍊樂感與首調／固定調音感。</p>
+          <p class="menu-card-desc">聽寫單旋律的節奏與音高，以臨時記號作答，鍛鍊樂句記憶與音感。</p>
         </div>
       </a>
 
@@ -177,7 +201,7 @@
         <div>
           <div class="menu-card-num">05</div>
           <h3 class="menu-card-title">兩聲部曲調</h3>
-          <p class="menu-card-desc">同時聆聽高低兩個聲部的交織，加強對位與多線條的聽覺注意力。</p>
+          <p class="menu-card-desc">大譜表雙軌聽寫，可分聲部聆聽，同時寫出高、低兩聲部的節奏與音高。</p>
         </div>
       </a>
 
@@ -186,9 +210,17 @@
         <div>
           <div class="menu-card-num">06</div>
           <h3 class="menu-card-title">四部和聲進行</h3>
-          <p class="menu-card-desc">古典與流行和聲連接聽辨，從 I-IV-V-I 體驗混聲合唱與和弦走向。</p>
+          <p class="menu-card-desc">聽辨古典四部和聲，判斷調性、寫出低音線條與功能級數、轉位。</p>
         </div>
       </a>
+
+      <!-- 歡迎小額贊助（全寬、較矮） -->
+      <div class="menu-card donate-card" onclick="showDonate()">
+        <div>
+          <h3 class="menu-card-title">❤ 歡迎小額贊助</h3>
+          <p class="menu-card-desc">這個工具永久免費。如果它對你的教學或練習有幫助，歡迎小額贊助支持後續開發與維護。</p>
+        </div>
+      </div>
 
       <!-- 整合錯題本入口 -->
       <div class="menu-card review-hub-card" onclick="showHub()">
@@ -210,6 +242,16 @@
     <p class="subtitle">這裡整合六項練習累積的錯題（儲存在本機瀏覽器）。點「跳回複習」會直接開啟該練習的錯題本。</p>
     <div class="hub-total" id="hubTotal"></div>
     <div id="hubGroups"></div>
+  </div>
+</div>
+
+<!-- 小額贊助佔位彈窗 -->
+<div class="donate-modal" id="donateModal" onclick="if(event.target===this) closeDonate()">
+  <div class="donate-box">
+    <div class="dico">🙏</div>
+    <h3>感謝你的支持</h3>
+    <p>贊助管道建置中，敬請期待！<br>你的支持會用於這個工具後續的開發與維護 ❤</p>
+    <button class="ok-btn" onclick="closeDonate()">好的</button>
   </div>
 </div>
 
@@ -253,6 +295,10 @@ function showPageId(id){
 }
 function showMenu(){ showPageId('pageMenu'); updateHubBadge(); }
 function showHub(){ renderHub(); showPageId('pageHub'); }
+function showCover(){ showPageId('pageCover'); }
+function showDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.add('open'); }
+function closeDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.remove('open'); }
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDonate(); });
 
 function updateHubBadge(){
   const el = document.getElementById('hubBadge');
