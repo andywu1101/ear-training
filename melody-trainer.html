@@ -887,7 +887,7 @@ function showPage(pageId) {
         let totalNotes = this.getTotalNoteCount(this.userSeq);
         let nextIdx = selIdx + 1;
         while (nextIdx < totalNotes && this.isNoteTiedToPrevious(nextIdx)) nextIdx++;
-        this.activeNoteIdx = (nextIdx < totalNotes) ? nextIdx : -1;
+        this.activeNoteIdx = (nextIdx < totalNotes) ? nextIdx : selIdx; // 最後一格：框留在該音
         this.setPendingAccidental('n');
         this.updateUI();
         return;
@@ -964,7 +964,7 @@ function showPage(pageId) {
       }
 
       if(nextIdx < totalNotes) this.activeNoteIdx = nextIdx;
-      else this.activeNoteIdx = -1;
+      // 已是最後一個音：框留在最後一格（不消失），方便繼續修改／加記號
 
       this.updateUI();
     },
@@ -973,7 +973,7 @@ function showPage(pageId) {
       if(!pianoInst || this.isPlaying) return;
       this.isPlaying = true; this.updatePlayBtn();
 
-      if(this.activeTab === 'rhythm') { this.activeSlotIdx = 0; }
+      // 播放／重播不移動作答框，維持在原本位置
       this.updateUI();
 
       const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;
@@ -1025,7 +1025,7 @@ function showPage(pageId) {
             for(let k=0; k<overshot; k++) this.userSeq.splice(this.activeSlotIdx + 1 + k, 0, 'placeholder');
             this.rebuildUserPitchArray();
             let nextSlot = this.activeSlotIdx + 1;
-            if(nextSlot < this.userSeq.length) this.activeSlotIdx = nextSlot; else this.activeSlotIdx = 0;
+            if(nextSlot < this.userSeq.length) this.activeSlotIdx = nextSlot; else this.activeSlotIdx = this.userSeq.length - 1;
             this.updateUI();
           }
         };
