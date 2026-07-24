@@ -69,6 +69,7 @@
   .custom-item{ display:flex; align-items:center; gap: 8px; padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: 8px; font-size: 13.5px; color: var(--ink); cursor:pointer; transition: border-color 0.12s ease; touch-action: manipulation; }
   .custom-item:hover{ border-color: var(--accent-line); }
   .custom-item input{ cursor:pointer; accent-color: var(--accent); width: 18px; height: 18px; }
+  .custom-item.select-all { background: var(--accent-soft); font-weight: 600; border-color: var(--accent-line); }
   .custom-hint{ font-size: 12.5px; color: var(--wrong); margin-top: 12px; display:none; }
   .custom-hint.show{ display:block; }
   .replay-select-row{ display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:18px; font-size:13.5px; color:var(--ink-soft); flex-wrap: wrap; }
@@ -570,8 +571,10 @@ function showPage(pageId) {
       { id: 6, name: 'Lv6 九和絃', pool: ['major9','minor9','dominant9','dominant7b9','halfDim9'] },
       { id: CUSTOM_ID, name: '自訂和絃', pool: ['major','minor','dominant7','major7'] },
     ];
-    let customPool = LEVELS[6].pool;
+    let customPool = [...ORDER];   // 自訂和絃：預設全選
     let mode = 'practice', qtype = 'single', inversion = false, curLevel = LEVELS[0];
+    // 目前實際使用的和絃清單：自訂難度用 customPool，其餘用該難度的 pool
+    function activePool(){ return curLevel.id === CUSTOM_ID ? customPool : curLevel.pool; }
     let score = { correct: 0, total: 0, streak: 0 }, qIndex = 1, current = null, answered = false;
     let testSession = null, dictSession = null, hasPlayed = false;
 
@@ -583,7 +586,7 @@ function showPage(pageId) {
       return baseIvs.map((semis, idx) => ({ step: idx * 2, semis: idx < invIdx ? semis + 12 : semis })).sort((a,b) => a.semis - b.semis);
     }
     function generateQ(){
-      const pool = curLevel.pool; const key = pool[Math.floor(Math.random() * pool.length)];
+      const pool = activePool(); const key = pool[Math.floor(Math.random() * pool.length)];
       const root = ROOT_MIN + Math.floor(Math.random() * (ROOT_MAX - ROOT_MIN + 1));
       const baseIvs = QUALITIES[key].intervals; const invIdx = inversion ? Math.floor(Math.random() * baseIvs.length) : 0;
       const voiced = applyInv(baseIvs, invIdx);
@@ -591,7 +594,7 @@ function showPage(pageId) {
     }
     function generateDictQs(count, allowRepeat){
       if(allowRepeat){ const qs = []; for(let i=0; i<count; i++) qs.push(generateQ()); return qs; }
-      return shuffleCopy(curLevel.pool).slice(0, count).map(key => {
+      return shuffleCopy(activePool()).slice(0, count).map(key => {
         const root = ROOT_MIN + Math.floor(Math.random() * (ROOT_MAX - ROOT_MIN + 1));
         const baseIvs = QUALITIES[key].intervals; const invIdx = inversion ? Math.floor(Math.random() * baseIvs.length) : 0;
         const voiced = applyInv(baseIvs, invIdx);
@@ -610,13 +613,24 @@ function showPage(pageId) {
     }
     function updateCustomVis(){ document.getElementById('chr-customPanel').style.display = curLevel.id === CUSTOM_ID ? 'block' : 'none'; }
     function updateStartBtn(){
-      const insufficient = curLevel.id === CUSTOM_ID && curLevel.pool.length < 2;
+      const insufficient = curLevel.id === CUSTOM_ID && activePool().length < 2;
       const btn = document.getElementById('chr-enterBtn'); btn.disabled = insufficient;
       btn.textContent = insufficient ? '⚠️ 請至少勾選 2 種和絃性質才能開始' : `🎯 確認設定，進入「和絃${mode==='test'?'測驗':'練習'}」 →`;
     }
     function updateStatus(){ document.getElementById('chr-statusBadge').textContent = `${curLevel.name}｜${qtype==='single'?'單題作答':'連續聽寫'} (${mode==='test'?'測驗模式':'練習模式'})`; }
     function renderCustom(){
       const grid = document.getElementById('chr-customGrid'); grid.innerHTML = '';
+
+      const allItem = document.createElement('label'); allItem.className = 'custom-item select-all';
+      const allCb = document.createElement('input'); allCb.type = 'checkbox';
+      allCb.checked = customPool.length === ORDER.length;
+      allCb.onchange = () => {
+        if (allCb.checked) customPool = [...ORDER];
+        else customPool = [];
+        renderCustom(); updateStartBtn(); updateDictCount();
+      };
+      allItem.appendChild(allCb); allItem.appendChild(document.createTextNode('☑️ 全選 / 全不選')); grid.appendChild(allItem);
+
       ORDER.forEach(key => {
         const item = document.createElement('label'); item.className = 'custom-item';
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = customPool.includes(key);
@@ -624,6 +638,8 @@ function showPage(pageId) {
           if(cb.checked){ if(!customPool.includes(key)) customPool.push(key); }
           else customPool = customPool.filter(k => k !== key);
           document.getElementById('chr-customHint').classList.toggle('show', customPool.length < 2);
+          const selectAllCb = document.querySelector('.select-all input');
+          if (selectAllCb) selectAllCb.checked = customPool.length === ORDER.length;
           updateStartBtn(); updateDictCount();
         };
         item.appendChild(cb); item.appendChild(document.createTextNode(QUALITIES[key].label)); grid.appendChild(item);
@@ -632,8 +648,8 @@ function showPage(pageId) {
     function updateDictCount(){
       const repeat = document.querySelector('input[name="chr-dictRepeat"]:checked').value;
       const input = document.getElementById('chr-dictationCountInput');
-      document.getElementById('chr-uniqueHint').textContent = curLevel.pool.length;
-      if(repeat === 'unique'){ input.value = curLevel.pool.length; input.disabled = true; } else { input.disabled = false; }
+      document.getElementById('chr-uniqueHint').textContent = activePool().length;
+      if(repeat === 'unique'){ input.value = activePool().length; input.disabled = true; } else { input.disabled = false; }
     }
     function updateSettingsVis(){
       document.getElementById('chr-singleTestSettings').style.display = 'none';
@@ -663,7 +679,7 @@ function showPage(pageId) {
     }
     function renderGrid(){
       const grid = document.getElementById('chr-answerGrid'); grid.innerHTML = '';
-      curLevel.pool.forEach(key => {
+      activePool().forEach(key => {
         const btn = document.createElement('button'); btn.className = 'answer-btn pending-lock'; btn.disabled = !hasPlayed;
         btn.textContent = QUALITIES[key].label; btn.dataset.key = key;
         btn.onclick = () => handleAns(key); grid.appendChild(btn);
@@ -780,7 +796,7 @@ function showPage(pageId) {
       dictSession.questions.forEach((q,i) => { dots.innerHTML += `<div class="dict-dot" id="chr-dot-${i}">${i+1}</div>`; });
       const bank = document.getElementById('chr-dictBank'); bank.innerHTML = '';
 
-      curLevel.pool.forEach(k => {
+      activePool().forEach(k => {
         const tag = document.createElement('div'); tag.className = 'dict-tag'; tag.dataset.key = k; tag.textContent = QUALITIES[k].label;
         tag.onclick = () => {
           if(!dictSession || dictSession.submitted) return;
@@ -826,7 +842,7 @@ function showPage(pageId) {
         document.getElementById('chr-inversionToggle').onchange = e => { inversion = e.target.checked; };
         document.querySelectorAll('input[name="chr-dictRepeat"]').forEach(r => r.onchange = updateDictCount);
         document.getElementById('chr-enterBtn').onclick = () => {
-          if(curLevel.id === CUSTOM_ID && curLevel.pool.length < 2) return;
+          if(curLevel.id === CUSTOM_ID && activePool().length < 2) return;
           window.stopAllPlayback(); testSession = null; dictSession = null;
           document.getElementById('chr-questionPanel').style.display = qtype === 'single' ? 'block' : 'none';
           document.getElementById('chr-dictPanel').style.display = qtype === 'dictation' ? 'block' : 'none';
@@ -839,7 +855,7 @@ function showPage(pageId) {
             const v = document.getElementById('chr-dictReplaySelect').value; const max = mode==='test'?(v==='inf'?Infinity:parseInt(v,10)):Infinity;
             const styleVal = document.querySelector('input[name="chr-playbackStyle"]:checked').value;
             const allowRepeat = document.querySelector('input[name="chr-dictRepeat"]:checked').value === 'allow';
-            const count = allowRepeat ? parseInt(document.getElementById('chr-dictationCountInput').value,10)||10 : curLevel.pool.length;
+            const count = allowRepeat ? parseInt(document.getElementById('chr-dictationCountInput').value,10)||10 : activePool().length;
             dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, playbackStyle: styleVal, hasPlayed: false, activeIndex: 0 };
             renderDictBoard();
           }
@@ -919,7 +935,7 @@ function showPage(pageId) {
           const v = document.getElementById('chr-dictReplaySelect').value; const max = mode==='test'?(v==='inf'?Infinity:parseInt(v,10)):Infinity;
           const styleVal = document.querySelector('input[name="chr-playbackStyle"]:checked').value;
           const allowRepeat = document.querySelector('input[name="chr-dictRepeat"]:checked').value === 'allow';
-          const count = allowRepeat ? parseInt(document.getElementById('chr-dictationCountInput').value,10)||10 : curLevel.pool.length;
+          const count = allowRepeat ? parseInt(document.getElementById('chr-dictationCountInput').value,10)||10 : activePool().length;
           dictSession = { questions: generateDictQs(count, allowRepeat), maxReplays: max, replaysLeft: max, submitted: false, playbackStyle: styleVal, hasPlayed: false, activeIndex: 0 };
           renderDictBoard();
         };
