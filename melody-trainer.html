@@ -258,7 +258,7 @@
   <div id="pageMelPractice" class="page-view">
     <div class="practice-top-fixed">
       <div class="top-bar-practice">
-        <button class="nav-back-btn" style="margin:0;" onclick="showPage('mel-settings')">← 返回</button>
+        <button class="nav-back-btn" style="margin:0;" onclick="showPage('mel-settings')">← 返回設定頁</button>
         <span class="practice-status-badge" id="mel-statusBadge">高音｜2/4拍｜2小節｜80 BPM</span>
         <div class="score-box"><div class="num" id="mel-scoreNum">0/0</div></div>
       </div>
@@ -337,12 +337,15 @@
     <div class="unified-action-row" style="margin-top:18px;">
       <button class="action-btn btn-submit" id="mel-ansNextBtn" style="flex:1; padding:14px;">下一題 →</button>
     </div>
+    <div class="unified-action-row" style="margin-top:10px;">
+      <button class="nav-back-btn" style="flex:1; margin:0;" onclick="location.href='index.html#menu'">🏠 回選單</button>
+    </div>
   </div>
 
   <!-- 【單旋律】錯題本頁 -->
   <div id="pageMelReview" class="page-view">
     <div class="nav-header-row">
-      <button class="nav-back-btn" onclick="showPage('mel-settings')">← 返回設定</button>
+      <button class="nav-back-btn" onclick="location.href='index.html#menu'">← 回選單</button>
       <button class="reset-cache-btn" id="mel-clearReviewBtn">🗑️ 清空錯題本</button>
     </div>
     <h1>錯題本</h1>
@@ -897,7 +900,8 @@ function showPage(pageId) {
 
     _applyAccidentalToIdx: function(idx, acc) {
       let base = this.userPitch[idx];
-      let np = this.sanitizePitch({ step: base.step, oct: base.oct, acc: acc });
+      // 作答輸入不做異名同音轉換：你按什麼就顯示什麼（A♯ 就是 A♯）。對錯以音高比對，不受拼法影響。
+      let np = { step: base.step, oct: base.oct, acc: acc };
       this.userPitch[idx] = np;
       let propagateIdx = idx;
       while (this.isNoteTiedToNext(propagateIdx)) {

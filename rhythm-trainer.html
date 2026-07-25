@@ -233,7 +233,7 @@
   <div id="pageRhyPractice" class="page-view">
     <div class="practice-top-fixed">
       <div class="top-bar-practice">
-        <button class="nav-back-btn" style="margin:0;" onclick="showPage('rhy-settings')">← 返回</button>
+        <button class="nav-back-btn" style="margin:0;" onclick="showPage('rhy-settings')">← 返回設定頁</button>
         <span class="practice-status-badge" id="rhy-statusBadge">2/4拍｜2小節｜80 BPM</span>
         <div class="score-box"><div class="num" id="rhy-scoreNum">0/0</div></div>
       </div>
@@ -282,12 +282,15 @@
     <div class="unified-action-row" style="margin-top:18px;">
       <button class="action-btn btn-submit" id="rhy-ansNextBtn" style="flex:1; padding:14px;">下一題 →</button>
     </div>
+    <div class="unified-action-row" style="margin-top:10px;">
+      <button class="nav-back-btn" style="flex:1; margin:0;" onclick="location.href='index.html#menu'">🏠 回選單</button>
+    </div>
   </div>
 
   <!-- 【節奏練習】錯題本頁 -->
   <div id="pageRhyReview" class="page-view">
     <div class="nav-header-row">
-      <button class="nav-back-btn" onclick="showPage('rhy-settings')">← 返回設定</button>
+      <button class="nav-back-btn" onclick="location.href='index.html#menu'">← 回選單</button>
       <button class="reset-cache-btn" id="rhy-clearReviewBtn">🗑️ 清空錯題本</button>
     </div>
     <h1>錯題本</h1>

@@ -250,7 +250,7 @@
   <div id="pageTpPractice" class="page-view">
     <div class="practice-top-fixed">
       <div class="top-bar-practice">
-        <button class="nav-back-btn" style="margin:0;" onclick="showPage('tp-settings')">← 返回</button>
+        <button class="nav-back-btn" style="margin:0;" onclick="showPage('tp-settings')">← 返回設定頁</button>
         <span class="practice-status-badge" id="tp-statusBadge">大譜表｜2/4拍｜2小節</span>
         <div class="score-box"><div class="num" id="tp-scoreNum">0/0</div></div>
       </div>
@@ -332,12 +332,15 @@
     <div class="unified-action-row" style="margin-top:18px;">
       <button class="action-btn btn-submit" id="tp-ansNextBtn" style="flex:1; padding:14px;">下一題 →</button>
     </div>
+    <div class="unified-action-row" style="margin-top:10px;">
+      <button class="nav-back-btn" style="flex:1; margin:0;" onclick="location.href='index.html#menu'">🏠 回選單</button>
+    </div>
   </div>
 
   <!-- 【兩聲部】錯題本頁 -->
   <div id="pageTpReview" class="page-view">
     <div class="nav-header-row">
-      <button class="nav-back-btn" onclick="showPage('tp-settings')">← 返回設定</button>
+      <button class="nav-back-btn" onclick="location.href='index.html#menu'">← 回選單</button>
       <button class="reset-cache-btn" id="tp-clearReviewBtn">🗑️ 清空錯題本</button>
     </div>
     <h1>錯題本</h1>
@@ -931,7 +934,8 @@ function showPage(pageId) {
 
     _applyAccidentalToIdx: function(p, idx, acc) {
       let base = this.userPitch[p][idx];
-      let np = this.sanitizePitch({ step: base.step, oct: base.oct, acc: acc });
+      // 作答輸入不做異名同音轉換：你按什麼就顯示什麼（A♯ 就是 A♯）。對錯以音高比對，不受拼法影響。
+      let np = { step: base.step, oct: base.oct, acc: acc };
       this.userPitch[p][idx] = np;
       let propagateIdx = idx;
       while (this.isNoteTiedToNext(p, propagateIdx)) {
