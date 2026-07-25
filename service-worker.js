@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v20'; // v20：封面作者連品牌頁、贊助視窗(前往贊助/作者主頁)
+const CACHE_NAME = 'ear-training-shell-v23'; // v23：修音程複音程完全一度/八度、iOS 靜音也能播放
 const APP_SHELL = [
   './',
   './index.html',
