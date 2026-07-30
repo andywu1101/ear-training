@@ -127,6 +127,24 @@
   .donate-dismiss{ font-family:var(--font-body); font-size:13px; color:var(--ink-soft); background:transparent; border:none; cursor:pointer; text-decoration:underline; touch-action:manipulation; }
   .cover-author a{ color:var(--ink-soft); text-decoration:none; border-bottom:1px dashed var(--accent-line); padding-bottom:1px; transition:all .15s ease; }
   .cover-author a:hover, .cover-author a:active{ color:var(--accent); border-color:var(--accent); }
+  /* 封面作者列（改為開啟彈窗） */
+  .author-link{ font:inherit; color:var(--ink-soft); background:none; border:none; border-bottom:1px dashed var(--accent-line); padding:0 0 1px; cursor:pointer; transition:all .15s ease; touch-action:manipulation; }
+  .author-link:hover, .author-link:active{ color:var(--accent); border-color:var(--accent); }
+  /* 彈窗項目（作者主頁 / 停用項） */
+  .author-item, .donate-item{ display:flex; align-items:center; justify-content:center; gap:9px; font-family:var(--font-body); font-weight:700; font-size:15px; padding:13px 18px; border-radius:14px; text-decoration:none; cursor:pointer; transition:all .15s ease; touch-action:manipulation; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); }
+  .author-item:hover, .author-item:active{ border-color:var(--accent); background:var(--accent-soft); }
+  .author-item .ai-ico{ display:inline-flex; align-items:center; }
+  .donate-item.disabled{ color:var(--ink-soft); background:var(--panel); border-style:dashed; opacity:0.6; cursor:not-allowed; }
+  /* 街口支付 QR 卡（整張可點） */
+  .jkopay-card{ display:block; text-decoration:none; border:1px solid var(--panel-border); border-radius:16px; overflow:hidden; background:#fff; cursor:pointer; transition:all .15s ease; }
+  .jkopay-card:hover, .jkopay-card:active{ border-color:var(--accent); box-shadow:0 6px 18px rgba(51,65,92,0.14); transform:translateY(-1px); }
+  .jkopay-card img{ display:block; width:100%; max-width:270px; margin:14px auto 6px; }
+  .jkopay-label{ display:block; font-family:var(--font-body); font-weight:700; font-size:15px; color:var(--panel); background:var(--accent); padding:11px; text-align:center; }
+  /* 可複製街口帳號 */
+  .jkopay-acct{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; color:var(--ink-soft); margin:10px 0 2px; }
+  .jkopay-acct b{ color:var(--ink); font-family:var(--font-mono); letter-spacing:0.03em; }
+  .copy-btn{ font-family:var(--font-body); font-size:12px; font-weight:700; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:999px; padding:3px 12px; cursor:pointer; touch-action:manipulation; }
+  .copy-btn:hover, .copy-btn:active{ background:var(--accent); color:var(--panel); }
   @media (max-width:480px){ .cover-title{ font-size:34px; } .cover-clef{ font-size:76px; } .cover-msg{ font-size:15px; padding:18px 18px; } }
 </style>
 </head>
@@ -150,7 +168,7 @@
         <p class="cover-msg">這個工具永久免費，你可以自由使用，<br>也歡迎推薦給同學和老師。<br>如果它對你的教學或練習有幫助，<br>歡迎小額贊助支持後續開發與維護。</p>
         <button class="cover-start" onclick="showMenu()">開始練習 →</button>
         <div class="cover-foot">為音樂班、音樂系的學生與老師而做 🎵</div>
-        <div class="cover-author"><a href="https://portaly.cc/heng-heng.music" target="_blank" rel="noopener">作者：伍祐恆 Heng_Heng Wu ↗</a></div>
+        <div class="cover-author"><button type="button" class="author-link" onclick="showAuthor()">作者：伍祐恆 Heng_Heng Wu ▸</button></div>
         <div class="cover-donate-wrap"><button class="donate-btn" onclick="showDonate()">❤ 小額贊助</button></div>
       </div>
     </div>
@@ -254,18 +272,37 @@
   </div>
 </div>
 
-<!-- 小額贊助彈窗（前往贊助 / 作者主頁） -->
+<!-- 前往贊助彈窗（Portaly 尚未開放 / 街口支付 / 作者主頁入口） -->
 <div class="donate-modal" id="donateModal" onclick="if(event.target===this) closeDonate()">
   <div class="donate-box">
     <div class="dico">❤</div>
     <h3>支持這個工具</h3>
     <p>這個工具永久免費。你的支持會用於後續的開發與維護，感謝你 🙏</p>
     <div class="donate-links">
-      <!-- 待 Portaly 贊助頁審核通過後，把此連結改成專屬贊助連結即可 -->
-      <a class="donate-go" href="https://portaly.cc/heng-heng.music" target="_blank" rel="noopener">❤ 前往贊助</a>
-      <a class="donate-home" href="https://portaly.cc/heng-heng.music" target="_blank" rel="noopener">🔗 作者主頁（Portaly）</a>
+      <!-- Portaly 贊助頁審核中：通過後移除 disabled、改成 <a class="author-item" href="專屬贊助連結" target="_blank" rel="noopener"> -->
+      <span class="donate-item disabled">❤ Portaly 小額贊助（尚未開放）</span>
+      <a class="jkopay-card" href="https://service.jkopay.com/r/transfer?j=Transfer:902103863" target="_blank" rel="noopener">
+        <img src="jkopay-qr.png" alt="街口支付 QR 碼，Heng-Heng Music，帳號 902103863">
+        <span class="jkopay-label">街口支付贊助</span>
+      </a>
+      <div class="jkopay-acct">街口帳號 <b>902103863</b><button class="copy-btn" type="button" onclick="copyAcct(event)">複製</button></div>
     </div>
+    <button type="button" class="author-item" style="width:100%; margin-bottom:12px;" onclick="closeDonate(); showAuthor();"><span class="ai-ico">🔗</span> 作者主頁</button>
     <button class="donate-dismiss" onclick="closeDonate()">關閉</button>
+  </div>
+</div>
+
+<!-- 作者主頁彈窗（Portaly 主頁 / YouTube 頻道，可擴充） -->
+<div class="donate-modal" id="authorModal" onclick="if(event.target===this) closeAuthor()">
+  <div class="donate-box">
+    <div class="dico">🎼</div>
+    <h3>作者主頁</h3>
+    <p>伍祐恆 Heng_Heng Wu</p>
+    <div class="donate-links">
+      <a class="author-item" href="https://portaly.cc/heng-heng.music" target="_blank" rel="noopener"><span class="ai-ico">🔗</span> Portaly 主頁</a>
+      <a class="author-item" href="https://www.youtube.com/@HengHengWu" target="_blank" rel="noopener"><span class="ai-ico"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#FF0000" d="M23 7.6a3 3 0 0 0-2.1-2.1C19 5 12 5 12 5s-7 0-8.9.5A3 3 0 0 0 1 7.6 31.3 31.3 0 0 0 .5 12 31.3 31.3 0 0 0 1 16.4a3 3 0 0 0 2.1 2.1C5 19 12 19 12 19s7 0 8.9-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 23.5 12 31.3 31.3 0 0 0 23 7.6z"/><path fill="#fff" d="M9.75 15.5l6-3.5-6-3.5z"/></svg></span> YouTube 頻道</a>
+    </div>
+    <button class="donate-dismiss" onclick="closeAuthor()">關閉</button>
   </div>
 </div>
 
@@ -312,7 +349,19 @@ function showHub(){ renderHub(); showPageId('pageHub'); }
 function showCover(){ showPageId('pageCover'); }
 function showDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.add('open'); }
 function closeDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.remove('open'); }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDonate(); });
+function showAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.add('open'); }
+function closeAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.remove('open'); }
+function _fallbackCopy(t){ try{ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }catch(_){} }
+function copyAcct(e){
+  if(e){ e.preventDefault(); e.stopPropagation(); }
+  var num='902103863'; var btn = e && e.target;
+  function done(){ if(btn){ var t=btn.textContent; btn.textContent='已複製'; setTimeout(function(){ btn.textContent=t; }, 1400); } }
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(num).then(done, function(){ _fallbackCopy(num); done(); }); }
+    else { _fallbackCopy(num); done(); }
+  }catch(_){ _fallbackCopy(num); done(); }
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeDonate(); closeAuthor(); } });
 
 function updateHubBadge(){
   const el = document.getElementById('hubBadge');
