@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v38'; // v38：考試按鈕置於作答區最下方＋底部安全留白
+const CACHE_NAME = 'ear-training-shell-v39'; // v39：封面與選單加入介紹影片連結
 const APP_SHELL = [
   './',
   './index.html',

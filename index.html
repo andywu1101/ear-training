@@ -100,6 +100,14 @@
   /* 封面作者列與小額贊助 */
   .cover-author{ margin-top: 16px; font-size: 13.5px; color: var(--ink-soft); }
   .cover-donate-wrap{ margin-top: 10px; }
+  /* 封面：網站介紹影片（外框樣式，與贊助鈕同尺寸但不搶焦點） */
+  .cover-intro-wrap{ margin-top: 10px; }
+  .intro-btn{ display:inline-flex; align-items:center; gap:7px; font-family:var(--font-body); font-weight:700; font-size:14.5px; padding:11px 26px; border-radius:999px; background:transparent; color:var(--accent); border:1px solid var(--accent-line); cursor:pointer; text-decoration:none; transition:all .15s ease; touch-action:manipulation; }
+  .intro-btn:hover, .intro-btn:active{ background:var(--accent); color:var(--panel); border-color:var(--accent); transform:translateY(-1px); }
+  /* 選單：標題下方的介紹短片連結 */
+  .intro-line{ font-size:13.5px; color:var(--ink-soft); margin:-14px 0 20px; }
+  .intro-line a{ color:var(--accent); font-weight:700; text-decoration:none; border-bottom:1px solid var(--accent-line); padding-bottom:1px; }
+  .intro-line a:hover, .intro-line a:active{ border-color:var(--accent); }
   .donate-btn{ display:inline-flex; align-items:center; gap:7px; font-family:var(--font-body); font-weight:700; font-size:14.5px; padding:11px 26px; border-radius:999px; background:var(--wrong); color:var(--panel); border:none; cursor:pointer; box-shadow:0 4px 14px rgba(166,73,59,0.28); transition:all .15s ease; touch-action:manipulation; }
   .donate-btn:hover, .donate-btn:active{ filter:brightness(1.08); transform:translateY(-1px); box-shadow:0 6px 18px rgba(166,73,59,0.34); }
   /* 選單左上角回封面鈕 */
@@ -170,6 +178,7 @@
         <div class="cover-foot">為音樂班、音樂系的學生與老師而做 🎵</div>
         <div class="cover-author"><button type="button" class="author-link" onclick="showAuthor()">作者：伍祐恆 Heng_Heng Wu ▸</button></div>
         <div class="cover-donate-wrap"><button class="donate-btn" onclick="showDonate()">❤ 小額贊助</button></div>
+        <div class="cover-intro-wrap"><a class="intro-btn" href="https://youtu.be/fF4-J2NGAnw" target="_blank" rel="noopener">▶ 網站介紹與說明</a></div>
       </div>
     </div>
   </div>
@@ -185,6 +194,7 @@
 
     <h1>音樂聽力練習</h1>
     <p class="subtitle">歡迎使用聽力訓練系統，請從下方目錄選擇今天要練習的項目：</p>
+    <p class="intro-line">首次使用？<a href="https://youtu.be/fF4-J2NGAnw" target="_blank" rel="noopener">▶ 先看介紹短片</a></p>
 
     <div class="menu-grid">
       <a href="interval-trainer.html" class="menu-card active-feature">
