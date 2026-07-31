@@ -331,7 +331,6 @@
           <button class="kb-btn deg-btn" data-deg="5">V</button>
           <button class="kb-btn deg-btn" data-deg="6">VI</button>
           <button class="kb-btn deg-btn" data-deg="7">VII</button>
-          <button class="kb-btn deg-btn" id="btn-deg-N" style="display:none;" data-deg="N6">N6</button>
         </div>
         <div class="kb-row" id="kb-row-inv">
           <button class="kb-btn" id="btn-sev-switch" style="background:#f0eef9; border-color:#ccd;">7和絃 [關]</button>
@@ -340,7 +339,9 @@
           <button class="kb-btn inv-btn" id="inv-btn-2" data-inv="64">64</button>
           <button class="kb-btn inv-btn" id="inv-btn-3" data-inv="42" style="display:none;">42</button>
         </div>
+        <!-- 變化和絃列：拿坡里六（Lv4 起）與增六三種（Lv5 起） -->
         <div class="kb-row" id="kb-row-aug6" style="display:none;">
+          <button class="kb-btn deg-btn" id="btn-deg-N" style="display:none; background:#eef4f0; border-color:#bcd;" data-deg="N6">N6</button>
           <button class="kb-btn aug6-btn" data-aug6="It6" style="background:#eef4f0; border-color:#bcd;">It+6</button>
           <button class="kb-btn aug6-btn" data-aug6="Fr6" style="background:#eef4f0; border-color:#bcd;">Fr+6</button>
           <button class="kb-btn aug6-btn" data-aug6="Ger6" style="background:#eef4f0; border-color:#bcd;">Ger+6</button>
@@ -1946,8 +1947,11 @@ window.addEventListener('resize', setVH); setVH();
       document.getElementById('btn-slash').style.display = (this.curLevel.id >= 4) ? 'inline-block' : 'none';
       document.getElementById('inv-btn-1').style.display = (this.curLevel.id >= 2) ? 'inline-block' : 'none';
       document.getElementById('inv-btn-2').style.display = (this.curLevel.id >= 2) ? 'inline-block' : 'none';
-      // 增六和絃按鈕列：僅 Lv.5 顯示
-      document.getElementById('kb-row-aug6').style.display = (this.curLevel.id >= 5) ? 'flex' : 'none';
+      // 變化和絃列：Lv.4 起顯示（此時只有 N6），Lv.5 起才加上增六三種
+      document.getElementById('kb-row-aug6').style.display = (this.curLevel.id >= 4) ? 'flex' : 'none';
+      document.querySelectorAll('#kb-row-aug6 .aug6-btn').forEach(function(b){
+        b.style.display = (this.curLevel.id >= 5) ? 'inline-block' : 'none';
+      }, this);
       // 切換難度時重置 7 和絃開關與 42 按鈕，避免殘留上一個難度的狀態
       let sevBtn = document.getElementById('btn-sev-switch');
       sevBtn.classList.remove('active-toggle');
@@ -2582,7 +2586,12 @@ window.addEventListener('resize', setVH); setVH();
         let isUpper = e.target.classList.contains('active-toggle');
         e.target.textContent = isUpper ? '大寫 (A)' : '小寫 (a)';
         document.querySelectorAll('.deg-btn').forEach((btn, idx) => {
-          if (btn.dataset.deg !== 'N') btn.textContent = isUpper ? ['I','II','III','IV','V','VI','VII'][idx] : ['i','ii','iii','iv','v','vi','vii'][idx];
+          // N6（拿坡里六和絃）不參與大小寫切換；此處原本比對 'N' 但實際屬性是 'N6'，
+          // 導致 N6 被當成第 8 個級數去取陣列值（陣列只有 7 個）而被清成空白。
+          if (btn.dataset.deg === 'N6') return;
+          const up = ['I','II','III','IV','V','VI','VII'], low = ['i','ii','iii','iv','v','vi','vii'];
+          const label = isUpper ? up[idx] : low[idx];
+          if (label) btn.textContent = label;
         });
       };
       document.getElementById('btn-sev-switch').onclick = (e) => {

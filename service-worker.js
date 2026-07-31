@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v42'; // v42：贊助彈窗字級放大
+const CACHE_NAME = 'ear-training-shell-v44'; // v44：N6 移至變化和絃列並統一樣式
 const APP_SHELL = [
   './',
   './index.html',
