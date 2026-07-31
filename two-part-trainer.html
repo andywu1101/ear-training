@@ -302,7 +302,7 @@
           <button class="tab-btn active" id="tab-rhythm" onclick="tpModule.switchTab('rhythm')">🎵 1. 編輯節奏</button>
           <button class="tab-btn" id="tab-pitch" onclick="tpModule.switchTab('pitch')">🎹 2. 編輯音高</button>
         </div>
-        <div class="part-indicator" id="partIndicator">目前編輯：高音譜表</div>
+        <div class="part-indicator" id="partIndicator" style="display:none;">目前編輯：高音譜表</div>
       </div>
 
       <div id="panel-rhythm">
@@ -1565,7 +1565,7 @@ function showPage(pageId) {
     <h3>設定</h3>
     <p>可選拍號、小節數、速度與要出現的節奏型；測驗模式可限制重播次數。</p>
     <h3>作答</h3>
-    <p>播放時可選「<b>雙聲部</b>」一起聽，或單獨聽「<b>高音</b>」「<b>低音</b>」孤立聲部。作答分「編輯節奏／編輯音高」兩個分頁，並可切換目前編輯的聲部（點譜上高音區或低音區即可切換，右上會顯示「目前編輯：高音／低音」）。音高輸入方式與單旋律相同：點到某個音後，直接按 ♯／♭／♮ 就會套用到該音並自動跳到下一個音（剛打完的音也能直接按記號修改），八度可事後微調。填完提交 → 解答頁雙譜對照、紅色標錯，可聆聽你的作答／正解雙軌。</p>
+    <p>播放時可選「<b>雙聲部</b>」一起聽，或單獨聽「<b>高音</b>」「<b>低音</b>」孤立聲部。作答分「編輯節奏／編輯音高」兩個分頁，並可切換目前編輯的聲部（點譜上高音區或低音區即可切換）。音高輸入方式與單旋律相同：點到某個音後，直接按 ♯／♭／♮ 就會套用到該音並自動跳到下一個音（剛打完的音也能直接按記號修改），八度可事後微調。填完提交 → 解答頁雙譜對照、紅色標錯，可聆聽你的作答／正解雙軌。</p>
     <div class="help-common">
       <h3>共通規則（六個練習都適用）</h3>
       <p><b>練習模式</b>可無限聆聽、不限時間；<b>測驗模式</b>限制重播次數，模擬考試。</p>

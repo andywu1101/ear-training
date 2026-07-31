@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v35'; // v35：上方區不壓縮、移除播放提示字
+const CACHE_NAME = 'ear-training-shell-v38'; // v38：考試按鈕置於作答區最下方＋底部安全留白
 const APP_SHELL = [
   './',
   './index.html',

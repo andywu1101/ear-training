@@ -178,7 +178,14 @@
       qs('resumeSlot').innerHTML = '';
     }
   }
-  function startExam(){ EX.startStandard(); location.href = EX.SECTIONS[EX.PHASE1[0]].page + '?exam=1'; }
+  function startExam(){
+    var msg = '即將開始模擬測驗\n\n'
+            + '考試前建議準備空白五線譜與鉛筆，聽寫時直接在紙上作答，再將答案填上測驗系統，作答會更順手。\n\n'
+            + '考試中每段僅能播放固定次數，作答可自由往返修改，最後按「交卷」一次計分。\n\n'
+            + '準備好了嗎？';
+    if(!window.confirm(msg)) return;
+    EX.startStandard(); location.href = EX.SECTIONS[EX.PHASE1[0]].page + '?exam=1';
+  }
   function resumeExam(){ var s=EX.loadSession(); if(!s){ renderStart(); return; } var k=EX.currentSection(s); if(!k){ location.href='exam.html?done=1'; return; } location.href = EX.SECTIONS[k].page + '?exam=1'; }
   function abandonExam(){ if(window.confirm('確定放棄這份未完成的考試嗎？此動作無法復原。')){ EX.clearSession(); renderStart(); } }
   function goStart(){ renderStart(); showView('pageStart'); }

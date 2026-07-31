@@ -273,16 +273,26 @@
     if (document.getElementById('exam-bar')) return;
     var s = loadSession(); if (!s) return;
     var last = isLast(s);
+    /* 放進「會捲動的作答區」末端，避免固定在視窗最底而誤觸手機底部手勢列 */
+    var scrollHost = host.querySelector('.practice-bottom-scroll') || host.querySelector('.fpt-keyboard-area') || host;
     if (!document.getElementById('exam-warnmsg')) {
       var wm = document.createElement('div'); wm.id = 'exam-warnmsg';
-      host.appendChild(wm);
+      (scrollHost === host ? host : scrollHost).appendChild(wm);
     }
     var bar = document.createElement('div'); bar.id = 'exam-bar';
+    if (scrollHost !== host) { bar.style.marginTop = '28px'; bar.style.paddingBottom = '18px'; }
     bar.innerHTML =
       '<button id="exam-prev"' + (s.cursor === 0 ? ' disabled' : '') + '>← 上一段</button>' +
       '<button id="exam-next" class="' + (last ? 'submit' : '') + '">' + (last ? '📤 交卷' : '下一段 →') + '</button>' +
       '<button id="exam-more">⋯ 更多</button>';
-    host.appendChild(bar);
+    /* 一律放在作答區最下面（四部＝編輯低音／級數面板之後），往下捲即可看到。
+       底部保留安全距離，避免貼齊畫面邊緣而壓到手機的底部手勢列。 */
+    if (scrollHost !== host) {
+      bar.style.marginTop = '24px';
+      bar.style.paddingBottom = 'calc(28px + env(safe-area-inset-bottom))';
+      scrollHost.style.paddingBottom = 'calc(16px + env(safe-area-inset-bottom))';
+    }
+    scrollHost.appendChild(bar);
 
     var modal = document.createElement('div'); modal.className = 'exam-modal'; modal.id = 'exam-moreModal';
     modal.innerHTML =

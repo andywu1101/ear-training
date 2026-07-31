@@ -141,7 +141,9 @@
   .dictation-progress{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:18px; }
   .dict-dot{ width:28px; height:28px; border-radius:50%; border:1px solid var(--panel-border); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); transition:all .15s ease; flex-shrink:0; }
   .dict-dot.active{ background:var(--accent); border-color:var(--accent); color:var(--panel); }
-  .dictation-bank{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; padding:16px; margin: 18px 0; border:1px dashed var(--panel-border); border-radius:10px; min-height: 52px; }
+  .dictation-bank{ display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; padding:14px; margin: 14px 0 18px; border:1px dashed var(--panel-border); border-radius:10px; min-height: 52px; }
+  .dictation-bank .dict-tag{ width:100%; text-align:center; padding:10px 4px; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  @media (min-width: 560px){ .dictation-bank{ grid-template-columns: repeat(4, 1fr); } }
   .dict-tag{ font-family:var(--font-body); font-size:13px; font-weight:600; padding:9px 14px; background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent); border-radius:999px; cursor:pointer; user-select:none; transition: all 0.1s ease; touch-action: manipulation; }
   .dict-tag:active{ transform: scale(0.95); }
   .dictation-slots{ display:grid; grid-template-columns: repeat(auto-fit, minmax(96px,1fr)); gap:10px; margin-bottom: 22px; }
@@ -328,8 +330,8 @@
           <div class="play-caption" id="int-dictCaption">音色載入中，請稍候</div>
         </div>
         <p class="dictation-hint">點擊選中欲作答的題號格子，接著點擊下方選項即可填入答案，系統會自動跳至下一題！若要修改，可點擊格子內的選項清除，或直接點選新題號。</p>
-        <div class="dictation-bank" id="int-dictBank"></div>
         <div class="dictation-slots" id="int-dictSlots"></div>
+        <div class="dictation-bank" id="int-dictBank"></div>
         <button class="next-btn show" id="int-dictSubmitBtn">提交作答</button>
       </div>
 
@@ -545,7 +547,7 @@ function showPage(pageId) {
       m3:    { label: '小三度',        semitones: 3,  baseStep: 2 },
       M3:    { label: '大三度',        semitones: 4,  baseStep: 2 },
       P4:    { label: '完全四度',      semitones: 5,  baseStep: 3 },
-      A4_d5: { label: '增四度/減五度',  semitones: 6,  baseStep: 3 },
+      A4_d5: { label: '增四/減五',  semitones: 6,  baseStep: 3 },
       P5:    { label: '完全五度',      semitones: 7,  baseStep: 4 },
       m6:    { label: '小六度',        semitones: 8,  baseStep: 5 },
       M6:    { label: '大六度',        semitones: 9,  baseStep: 5 },
