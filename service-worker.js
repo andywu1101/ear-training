@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v41'; // v41：銀行轉帳、TWQR說明、贊助者名單、回報表單
+const CACHE_NAME = 'ear-training-shell-v42'; // v42：贊助彈窗字級放大
 const APP_SHELL = [
   './',
   './index.html',

@@ -123,8 +123,8 @@
   .donate-modal.open{ display:flex; align-items:center; justify-content:center; }
   .donate-box{ background:var(--paper); border:1px solid var(--panel-border); border-radius:16px; max-width:400px; width:100%; padding:30px 26px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.28); }
   .donate-box .dico{ font-size:40px; line-height:1; }
-  .donate-box h3{ font-family:var(--font-display); font-size:22px; font-weight:600; margin:10px 0 8px; }
-  .donate-box p{ font-size:14px; color:var(--ink-soft); line-height:1.75; margin:0 0 18px; }
+  .donate-box h3{ font-family:var(--font-display); font-size:23px; font-weight:600; margin:10px 0 8px; }
+  .donate-box p{ font-size:15px; color:var(--ink-soft); line-height:1.8; margin:0 0 18px; }
   .donate-box .ok-btn{ font-family:var(--font-body); font-weight:700; font-size:15px; padding:11px 30px; border-radius:999px; background:var(--accent); color:var(--panel); border:none; cursor:pointer; touch-action:manipulation; }
   .donate-links{ display:flex; flex-direction:column; gap:10px; margin:6px 0 14px; }
   .donate-go, .donate-home{ display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--font-body); font-weight:700; font-size:15px; padding:13px 20px; border-radius:999px; text-decoration:none; cursor:pointer; transition:all .15s ease; touch-action:manipulation; }
@@ -132,14 +132,14 @@
   .donate-go:hover, .donate-go:active{ filter:brightness(1.08); transform:translateY(-1px); }
   .donate-home{ background:transparent; color:var(--ink); border:1px solid var(--panel-border); }
   .donate-home:hover, .donate-home:active{ border-color:var(--accent); background:var(--accent-soft); }
-  .donate-dismiss{ font-family:var(--font-body); font-size:13px; color:var(--ink-soft); background:transparent; border:none; cursor:pointer; text-decoration:underline; touch-action:manipulation; }
+  .donate-dismiss{ font-family:var(--font-body); font-size:14px; color:var(--ink-soft); background:transparent; border:none; cursor:pointer; text-decoration:underline; touch-action:manipulation; }
   .cover-author a{ color:var(--ink-soft); text-decoration:none; border-bottom:1px dashed var(--accent-line); padding-bottom:1px; transition:all .15s ease; }
   .cover-author a:hover, .cover-author a:active{ color:var(--accent); border-color:var(--accent); }
   /* 封面作者列（改為開啟彈窗） */
   .author-link{ font:inherit; color:var(--ink-soft); background:none; border:none; border-bottom:1px dashed var(--accent-line); padding:0 0 1px; cursor:pointer; transition:all .15s ease; touch-action:manipulation; }
   .author-link:hover, .author-link:active{ color:var(--accent); border-color:var(--accent); }
   /* 彈窗項目（作者主頁 / 停用項） */
-  .author-item, .donate-item{ display:flex; align-items:center; justify-content:center; gap:9px; font-family:var(--font-body); font-weight:700; font-size:15px; padding:13px 18px; border-radius:14px; text-decoration:none; cursor:pointer; transition:all .15s ease; touch-action:manipulation; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); }
+  .author-item, .donate-item{ display:flex; align-items:center; justify-content:center; gap:9px; font-family:var(--font-body); font-weight:700; font-size:15.5px; padding:13px 18px; border-radius:14px; text-decoration:none; cursor:pointer; transition:all .15s ease; touch-action:manipulation; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); }
   .author-item:hover, .author-item:active{ border-color:var(--accent); background:var(--accent-soft); }
   .author-item .ai-ico{ display:inline-flex; align-items:center; }
   .donate-item.disabled{ color:var(--ink-soft); background:var(--panel); border-style:dashed; opacity:0.6; cursor:not-allowed; }
@@ -149,22 +149,22 @@
   .jkopay-card img{ display:block; width:100%; max-width:270px; margin:14px auto 6px; }
   .jkopay-label{ display:block; font-family:var(--font-body); font-weight:700; font-size:15px; color:var(--panel); background:var(--accent); padding:11px; text-align:center; }
   /* 可複製街口帳號 */
-  .jkopay-acct{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; color:var(--ink-soft); margin:10px 0 2px; }
+  .jkopay-acct{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px; color:var(--ink-soft); margin:10px 0 2px; }
   .jkopay-acct b{ color:var(--ink); font-family:var(--font-mono); letter-spacing:0.03em; }
-  .copy-btn{ font-family:var(--font-body); font-size:12px; font-weight:700; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:999px; padding:3px 12px; cursor:pointer; touch-action:manipulation; }
+  .copy-btn{ font-family:var(--font-body); font-size:13px; font-weight:700; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:999px; padding:3px 12px; cursor:pointer; touch-action:manipulation; }
   .copy-btn:hover, .copy-btn:active{ background:var(--accent); color:var(--panel); }
   /* 付款說明、表單連結 */
-  .pay-note{ font-size:12.5px; color:var(--ink-soft); line-height:1.7; margin:8px 2px 4px; text-align:center; }
+  .pay-note{ font-size:14px; color:var(--ink); line-height:1.8; margin:10px 2px 6px; text-align:center; }
   .pay-note b{ color:var(--ink); }
-  .form-link{ display:block; font-size:13px; font-weight:700; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:12px; padding:11px 12px; text-align:center; text-decoration:none; margin-top:4px; }
+  .form-link{ display:block; font-size:14px; font-weight:700; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:12px; padding:11px 12px; text-align:center; text-decoration:none; margin-top:4px; }
   .form-link:hover, .form-link:active{ background:var(--accent); color:var(--panel); }
   /* 銀行轉帳 */
-  .bank-row{ display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:11px 14px; font-size:14.5px; }
-  .bank-row .bk{ font-size:12px; color:var(--ink-soft); flex-shrink:0; width:34px; text-align:left; }
+  .bank-row{ display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:12px 14px; font-size:15.5px; }
+  .bank-row .bk{ font-size:13px; color:var(--ink-soft); flex-shrink:0; width:34px; text-align:left; }
   .bank-row b{ flex:1; font-family:var(--font-mono); letter-spacing:0.02em; text-align:left; }
   /* 贊助者名單 */
   .sponsor-list{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; padding:14px 10px; border:1px dashed var(--panel-border); border-radius:12px; }
-  .sponsor-list span{ font-size:14px; font-weight:600; color:var(--ink); background:var(--panel); border:1px solid var(--panel-border); border-radius:999px; padding:7px 14px; }
+  .sponsor-list span{ font-size:15px; font-weight:600; color:var(--ink); background:var(--panel); border:1px solid var(--panel-border); border-radius:999px; padding:7px 14px; }
   @media (max-width:480px){ .cover-title{ font-size:34px; } .cover-clef{ font-size:76px; } .cover-msg{ font-size:15px; padding:18px 18px; } }
 </style>
 </head>
