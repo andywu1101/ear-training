@@ -41,6 +41,13 @@
   .exam-card{ background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius); padding:22px; margin-bottom:16px; box-shadow:0 4px 16px rgba(51,65,92,0.06); }
   .exam-card h2{ font-family:var(--font-display); font-size:20px; font-weight:600; margin:0 0 6px; }
   .exam-card p{ font-size:13.5px; color:var(--ink-soft); line-height:1.6; margin:0 0 16px; }
+  .exam-card p b{ color:var(--ink); }
+  /* 配分明細 */
+  .score-breakdown{ list-style:none; margin:0; padding:0; border-top:1px dashed var(--hairline); }
+  .score-breakdown li{ display:flex; align-items:baseline; gap:8px; padding:9px 2px; border-bottom:1px dashed var(--hairline); font-size:14px; }
+  .score-breakdown li span{ flex:0 0 auto; font-weight:600; color:var(--ink); }
+  .score-breakdown li b{ font-family:var(--font-mono); color:var(--accent); font-size:13.5px; }
+  .score-breakdown li em{ flex:1; text-align:right; font-style:normal; font-size:12px; color:var(--ink-soft); }
   .big-btn{ display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; font-family:var(--font-body); font-weight:700; font-size:17px; padding:16px; border-radius:999px; background:var(--accent); color:var(--panel); border:none; cursor:pointer; box-shadow:0 6px 20px rgba(51,65,92,0.22); transition:all .15s ease; touch-action:manipulation; }
   .big-btn:hover, .big-btn:active{ filter:brightness(1.1); transform:translateY(-2px); }
   .soon-card{ opacity:0.55; }
@@ -102,12 +109,21 @@
   <div id="pageStart" class="page-view active">
     <button class="nav-back-btn" onclick="location.href='index.html#menu'">← 回選單</button>
     <h1>模擬測驗</h1>
-    <p class="subtitle">六大項綜合的模擬考卷，計分並追蹤你的長期進步。目前為第一階段（音程＋和絃），其餘項目陸續開放。</p>
+    <p class="subtitle">六大項綜合、滿分 100 分的模擬考卷，一次交卷計分，並記錄你的長期進步曲線。</p>
     <div id="startStats"></div>
     <div id="resumeSlot"></div>
     <div class="exam-card">
       <h2>標準考卷 <span style="font-weight:400;font-size:14px;color:var(--ink-soft);">（模擬大學入學考試難度）</span></h2>
-      <p>固定範圍、隨機出題。第一階段：音程 10 題＋和絃 10 題，滿分 20 分。作答方式為整段填答，播放模式每次隨機（會清楚標示）。</p>
+      <p>六大項綜合、<b>滿分 100 分</b>，固定範圍、隨機出題。全部作答完畢後一次交卷計分。</p>
+      <ul class="score-breakdown">
+        <li><span>一、音程</span><b>10 分</b><em>10 題</em></li>
+        <li><span>二、和絃性質判斷</span><b>10 分</b><em>10 題</em></li>
+        <li><span>三、節奏</span><b>20 分</b><em>單拍子、複拍子各 1 題</em></li>
+        <li><span>四、單旋律</span><b>20 分</b><em>單拍子、複拍子各 1 題</em></li>
+        <li><span>五、兩聲部</span><b>20 分</b><em>1 題</em></li>
+        <li><span>六、四部和聲</span><b>20 分</b><em>1 題</em></li>
+      </ul>
+      <p style="margin-top:12px;">每段播放次數固定，作答期間可自由往返修改。</p>
       <button class="big-btn" onclick="startExam()">開始標準考卷 →</button>
     </div>
     <div class="exam-card soon-card">
@@ -197,8 +213,7 @@
     qs('resultScope').textContent = rec.scope || '標準考卷';
     qs('resultHero').innerHTML =
       '<div class="score-hero"><div class="pct">'+rec.pct+'<span style="font-size:28px;">%</span></div>' +
-      '<div class="raw">'+rec.total+' / '+rec.max+' 分</div>' +
-      '<div class="cap">目前為第一階段（音程＋和絃），其餘四段尚未開放。</div></div>';
+      '<div class="raw">'+rec.total+' / '+rec.max+' 分</div></div>';
     var rowsHtml = '';
     EX.FULL_ORDER.forEach(function(k){
       var def = EX.SECTIONS[k]; var sc = rec.sections[k];

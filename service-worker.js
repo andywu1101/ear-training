@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v44'; // v44：N6 移至變化和絃列並統一樣式
+const CACHE_NAME = 'ear-training-shell-v45'; // v45：標準考卷說明與配分更新
 const APP_SHELL = [
   './',
   './index.html',
