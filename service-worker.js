@@ -1,7 +1,9 @@
-const CACHE_NAME = 'ear-training-shell-v26'; // v26：贊助改版（作者主頁 Portaly+YouTube、街口支付 QR）
+const CACHE_NAME = 'ear-training-shell-v35'; // v35：上方區不壓縮、移除播放提示字
 const APP_SHELL = [
   './',
   './index.html',
+  './exam.html',
+  './exam-common.js',
   './chord-trainer.html',
   './interval-trainer.html',
   './rhythm-trainer.html',

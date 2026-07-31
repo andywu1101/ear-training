@@ -146,6 +146,28 @@
   .help-common p{ font-size:12.5px; line-height:1.75; color:var(--ink-soft); }
   .help-foot{ margin-top:16px; text-align:center; }
   .help-foot button{ font-family:var(--font-body); font-weight:700; font-size:14px; padding:11px 30px; border-radius:999px; background:var(--accent); color:var(--panel); border:none; cursor:pointer; touch-action:manipulation; }
+
+  /* ===== 版面壓縮：比照四部和聲的密度（考試與練習皆適用） =====
+     重點：上方固定區可壓縮（flex:0 1 auto）、譜例設高度上限，
+     讓下方作答鍵盤拿到剩餘空間，不再被譜例擠扁。 */
+  /* 上方區不壓縮：播放列一定完整顯示；空間不足時由下方鍵盤區自行捲動 */
+  .practice-top-fixed { flex: 0 0 auto; min-height: 0; display: flex; flex-direction: column; overflow: visible; padding: 8px 10px; }
+  .practice-bottom-scroll { min-height: 0; }
+  /* 提示字沒有內容時不佔空間（播放中／播放完畢仍會顯示） */
+  .play-caption:empty { display: none; }
+  .top-bar-practice { margin-bottom: 6px; }
+  /* 不可壓縮：避免考試模式下外框被擠短而切到譜例；內容垂直置中，真的放不下才捲動 */
+  .staff-scroll-container { flex: 0 0 auto; min-height: 0; max-height: 40dvh; max-height: calc(var(--app-vh, 1vh) * 40); overflow-y: auto; display: flex; align-items: center; padding: 4px 3px; margin-bottom: 4px; }
+  .unified-action-row { margin-bottom: 4px; }
+  .play-caption { margin-top: 0; }
+  .practice-bottom-scroll { padding: 10px 10px 14px; }
+  @media (min-width: 768px) {
+    .practice-top-fixed { padding: 10px 24px; }
+    .practice-bottom-scroll { padding: 12px 24px 16px; }
+  }
+  @media (orientation: landscape) and (max-width: 900px) {
+    .staff-scroll-container { max-height: 52dvh; max-height: calc(var(--app-vh, 1vh) * 52); }
+  }
 </style>
 </head>
 <body>
@@ -252,7 +274,7 @@
           <button class="action-btn btn-submit" id="rhy-submitBtn" disabled>✔ 提交</button>
         </span>
       </div>
-      <div class="play-caption" id="rhy-playCaption">請點擊上方播放按鈕</div>
+      <div class="play-caption" id="rhy-playCaption"></div>
     </div>
 
     <div class="practice-bottom-scroll">
@@ -300,6 +322,7 @@
   </div>
 </div>
 
+<script src="exam-common.js"></script>
 <script>
 /* ===== 統一錯題本儲存（六個練習共用，寫入 localStorage，供 index 總覽聚合） ===== */
 window.REVIEW_STORE = {
@@ -486,7 +509,7 @@ function showPage(pageId) {
       const usableWidth = totalWidth - 10;
 
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-      renderer.resize(totalWidth, 130);
+      renderer.resize(totalWidth, 100);
       const ctx = renderer.getContext();
 
       let xPos = 5;
@@ -508,7 +531,7 @@ function showPage(pageId) {
       for (let b = 0; b < cfg.barsCount; b++) {
         const isFirst = (b === 0);
         const sWidth = isFirst ? barWidth + 60 : barWidth;
-        const stave = new VF.Stave(xPos, 15, sWidth);
+        const stave = new VF.Stave(xPos, -5, sWidth);
         if (isFirst) stave.addClef('treble').addTimeSignature(cfg.meter);
         stave.setContext(ctx).draw();
 
@@ -616,6 +639,7 @@ function showPage(pageId) {
     const ctx = ensureAudio(); if(!ctx) return;
     Soundfont.instrument(ctx, 'acoustic_grand_piano').then(inst => {
       pianoInst = inst; document.getElementById('loadingBanner').style.display = 'none'; rhyModule.updatePlayBtn();
+      if(window.EXAM && window.EXAM.isExamMode() && rhyModule._examReady) rhyModule._examReady();
     }).catch(()=>{ document.getElementById('loadingBanner').innerHTML = '⚠️ 載入失敗，請重試 <button onclick="loadPiano()">🔁</button>'; });
   };
 
@@ -664,7 +688,7 @@ function showPage(pageId) {
           isTied = tieNext[nextIdx];
           nextIdx++;
         }
-        pianoInst.play(pitchMode==='dual'?currentPitch:69, time, { duration: totalLen * secPer16th * 0.9, gain: 4.0 });
+        pianoInst.play(pitchMode==='dual'?currentPitch:69, time, { duration: totalLen * secPer16th * 0.9, gain: 3.5 });
         if(pitchMode==='dual') currentPitch = (currentPitch===69) ? 64 : 69;
         time += totalLen * secPer16th;
         i = nextIdx;
@@ -757,7 +781,7 @@ function showPage(pageId) {
             nextIdx++;
           }
 
-          pianoInst.play(this.pitchMode==='dual'?currentPitch:69, time, { duration: totalLen * secPer16th * 0.9, gain: 4.0 });
+          pianoInst.play(this.pitchMode==='dual'?currentPitch:69, time, { duration: totalLen * secPer16th * 0.9, gain: 3.5 });
           if(this.pitchMode==='dual') currentPitch = (currentPitch===69) ? 64 : 69;
 
           time += totalLen * secPer16th;
@@ -868,6 +892,102 @@ function showPage(pageId) {
 
     refreshReviewCount: function() {
       const el = document.getElementById('rhy-reviewCount'); if(el) el.textContent = window.REVIEW_STORE.count('rhythm');
+    },
+
+    /* ===== 模擬測驗：考試模式 ===== */
+    examBootstrap: function() {
+      const EXm = window.EXAM; if(!EXm) return;
+      const KEY = EXm.currentSection(); if(!KEY || KEY.indexOf('rhythm') !== 0) return;
+      const cfg = EXm.configFor(KEY) || {};
+      const self = this;
+
+      ensureAudio(); window.rhyStopAll();
+      this.mode = 'practice';
+      this.meter = cfg.meter; this.meterType = cfg.meterType;
+      this.barsCount = cfg.bars; this.bpm = cfg.bpm || 80;
+      this.pitchMode = cfg.pitchMode || 'single';
+      this.beatsPerBar = parseInt(this.meter.split('/')[0], 10);
+      if(this.meterType === 'compound') this.beatsPerBar /= 3;
+      this.totalBeats = this.barsCount * this.beatsPerBar;
+      // 節奏型全選
+      const order = this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER;
+      this.selectedPatterns = new Set(order);
+
+      // 題目只產生一次；起始音（A/E 交替用）也一併保存，確保每次播放一致
+      const sd = EXm.sectionData(KEY, function(){
+        self.generateQuestion();
+        return { questions: { seq: self.questionSeq.slice(), startPitch: self.lockedStartPitch } , labels: {} };
+      });
+      if(!sd) return;
+      this.questionSeq = sd.questions.seq.slice();
+      this.lockedStartPitch = sd.questions.startPitch;
+      this.userSeq = (sd.answers && sd.answers.length) ? sd.answers.slice() : Array(this.totalBeats).fill('placeholder');
+      this.hasPlayed = !!sd.played; this.activeSlotIdx = 0;
+
+      const badge = document.getElementById('rhy-statusBadge');
+      if(badge) badge.textContent = `${this.meter}拍｜${this.barsCount}小節｜${this.bpm}BPM`;
+      const back = document.querySelector('#pageRhyPractice .nav-back-btn'); if(back) back.style.display = 'none';
+      const sub = document.getElementById('rhy-submitBtn'); if(sub) sub.style.display = 'none';
+
+      this.renderKeypad(); showPage('rhy-practice');
+      setTimeout(() => self.updateUI(), 150);
+
+      const host = document.getElementById('pageRhyPractice');
+      const wrap = document.getElementById('staffContainerOuter'); if(wrap && !wrap.id.indexOf) {}
+      const lockEl = document.querySelector('#pageRhyPractice .practice-top-fixed');
+      if(lockEl && !lockEl.id) lockEl.id = 'exam-lockwrap';
+
+      const maxPlays = cfg.plays || 5;
+      let used = (sd.playCount || 0);
+      function headText(){ return '播放剩餘 <b>' + Math.max(0, maxPlays - used) + '</b> / ' + maxPlays + ' 次'; }
+      EXm.buildHeader(host, KEY, headText());
+
+      // 作答即時保存＋即時計分（每個錯拍 -2）
+      function saveNow(){
+        EXm.saveAnswers(KEY, self.userSeq.slice());
+        let wrong = 0, blank = 0;
+        for(let i=0; i<self.questionSeq.length; i++){
+          const u = self.userSeq[i];
+          if(!u || u === 'placeholder') { blank++; wrong++; }
+          else if(u !== self.questionSeq[i]) wrong++;
+        }
+        const max = EXm.SECTIONS[KEY].max;
+        EXm.saveResult(KEY, { score: EXm.scoreRhythm(wrong, max), max: max, unanswered: blank,
+          detail: [{ correct: wrong===0, your: '錯 '+wrong+' 拍', right: '共 '+self.questionSeq.length+' 拍' }] });
+      }
+      saveNow();
+      const _origUpdateUI = this.updateUI.bind(this);
+      this.updateUI = function(){ _origUpdateUI(); saveNow(); };
+
+      // 播放：最多 5 次，手動按
+      const pb = document.getElementById('rhy-playBtn');
+      function refreshPlayBtn(){
+        const left = maxPlays - used;
+        if(self.isPlaying){ pb.textContent = '🔊 播放中...'; pb.disabled = true; return; }
+        pb.disabled = !pianoInst || left <= 0;
+        pb.textContent = left > 0 ? `▶ 播放題目（剩餘 ${left} 次）` : '▶ 已用完播放次數';
+        EXm.buildHeader(host, KEY, headText());
+      }
+      this.updatePlayBtn = function(){ refreshPlayBtn(); };
+      this._examReady = refreshPlayBtn;
+      refreshPlayBtn();
+
+      pb.onclick = function(){
+        ensureAudio();
+        if(!pianoInst || self.isPlaying || used >= maxPlays) return;
+        used++; self.hasPlayed = true;
+        const s = EXm.loadSession(); if(s && s.data && s.data[KEY]){ s.data[KEY].playCount = used; s.data[KEY].played = true; EXm.saveSession(s); }
+        EXm.setPlaying(true); refreshPlayBtn();
+        document.getElementById('rhy-playCaption').textContent = '🔊 播放中...';
+        self.playSequence(self.questionSeq, function(){
+          EXm.setPlaying(false);
+          document.getElementById('rhy-playCaption').textContent = (maxPlays - used) > 0 ? `✅ 播放完畢，可再播 ${maxPlays-used} 次` : '✅ 播放次數已用完，請完成作答';
+          refreshPlayBtn();
+        });
+      };
+
+      EXm.guardVisibility(KEY, function(){ window.rhyStopAll(); EXm.setPlaying(false); refreshPlayBtn(); });
+      EXm.buildBar(host, saveNow);
     },
 
     // 提交後：進入解答頁（你的作答 vs 正解對照）
@@ -1049,6 +1169,7 @@ function showPage(pageId) {
 
   window.rhyModule = rhyModule;
   rhyModule.initSettings(); rhyModule.setupEvents(); rhyModule.refreshReviewCount(); loadPiano();
+  if(window.EXAM && window.EXAM.isExamMode()){ rhyModule.examBootstrap(); }
   // 由 index 錯題本總覽「跳回複習」進入時，直接開啟錯題本頁
   if(location.hash === '#review') showPage('rhy-review');
 })();
@@ -1081,6 +1202,10 @@ function showPage(pageId) {
 function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); }
 function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('.help-modal.open').forEach(function(m){ m.classList.remove('open'); }); } });
+</script>
+<script>
+(function(){ function setVH(){ document.documentElement.style.setProperty('--app-vh', window.innerHeight*0.01+'px'); }
+  setVH(); window.addEventListener('resize', setVH); window.addEventListener('orientationchange', setVH); })();
 </script>
 <script>
 /* iOS 靜音鍵下也能播放（像 YouTube）：AudioSession API 為主，無聲音檔解鎖為後備；Android 會自動略過、無副作用。 */

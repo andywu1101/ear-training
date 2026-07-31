@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>四部和聲進行 - 音樂聽力練習</title>
+<!-- 可編輯工作檔（自 v30 的成品轉出，已含歷來所有修正）；自此不再使用打包補丁 -->
+
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -176,6 +178,8 @@
   .review-staff { background: var(--panel); border-radius: 8px; padding: 10px 4px; margin-bottom: 12px; border: 1px solid var(--hairline); width: 100%; overflow-x: auto; overflow-y: hidden; }
 
   .loading-banner { text-align: center; font-size: 12px; color: var(--ink-soft); background: #fff; padding: 8px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--panel-border); }
+  /* 提示字沒有內容時不佔空間 */
+  .play-caption:empty { display: none; }
 </style>
 </head>
 <body>
@@ -278,6 +282,7 @@
       <div class="unified-action-row fpt-play-sticky">
         <button class="play-btn" id="btn-play-all" disabled>🔊 完整四部 (SATB)</button>
         <button class="play-btn" id="btn-play-arp" disabled>🎵 分解＋完整</button>
+        <button class="action-btn" id="tuningABtn" title="播放標準音 A（2 秒）">🎵 標準音 A</button>
       </div>
       <div class="editor-tabs-container">
         <div class="editor-tabs">
@@ -393,6 +398,7 @@
   </div>
 </div>
 
+<script src="exam-common.js"></script>
 <script>
 function forceResetCache() {
   if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(r => r.forEach(x => x.unregister()));
@@ -1812,10 +1818,126 @@ window.addEventListener('resize', setVH); setVH();
       this.currentAccidental = 'n'; this.accidentalExplicit = false;
       
       document.getElementById('fpt-statusBadge').textContent = `${this.curLevel.name}｜${this.bars}小節`;
-      let _cap = document.getElementById('fpt-playCaption'); if (_cap) _cap.textContent = '請點擊上方按鈕聆聽和聲進行';
+      let _cap = document.getElementById('fpt-playCaption'); if (_cap) _cap.textContent = '';
       this.updateKeyboardVisibility();
       this.updateUI();
       this.updatePlayBtns();
+    },
+
+    /* ===== 模擬測驗：考試模式 ===== */
+    examBootstrap: function() {
+      const EXm = window.EXAM; if(!EXm) return;
+      const KEY = EXm.currentSection(); if(KEY !== 'fourpart') return;
+      const cfg = EXm.configFor(KEY) || {};
+      const self = this;
+
+      ensureAudio(); window.fptStopAll();
+      this.mode = 'practice';
+      this.bars = cfg.bars || 10;
+      this.bpm = cfg.bpm || 100;
+      this.keyPref = 'mix';                                   // 隨機 24 大小調
+      const lv = LEVELS.filter(function(l){ return l.id === (cfg.levelId || 4); })[0];
+      if(lv) this.curLevel = lv;                              // Lv.4：含副屬和絃
+
+      const sd = EXm.sectionData(KEY, function(){
+        self.generateQuestion();
+        return { questions: { seq: self.questionSeq.slice(), voicings: JSON.parse(JSON.stringify(self.questionVoicings)), keyObj: JSON.parse(JSON.stringify(self.keyObj)) }, labels: {} };
+      });
+      if(!sd) return;
+      this.questionSeq = sd.questions.seq.slice();
+      this.questionVoicings = JSON.parse(JSON.stringify(sd.questions.voicings));
+      this.keyObj = JSON.parse(JSON.stringify(sd.questions.keyObj));
+      const a = sd.answers || {};
+      this.userSeq = (a.seq && a.seq.length) ? a.seq.slice() : Array(this.bars).fill('');
+      this.userBass = (a.bass && a.bass.length) ? JSON.parse(JSON.stringify(a.bass)) : Array(this.bars).fill(null);
+      this.userKeyAns = a.keyAns || '';
+      this.isSubmitted = false; this.hasPlayed = !!sd.played;
+      this.activeSlot = 0; this.lastEditedBassSlot = null; this.lastEditedChordSlot = null;
+      this.pendingSlashSlot = null; this.pendingSlashStage = 0;
+      this.currentAccidental = 'n'; this.accidentalExplicit = false;
+
+      document.getElementById('fpt-statusBadge').textContent = `${this.curLevel.name}｜${this.bars}小節｜${this.bpm}BPM`;
+      this.updateKeyboardVisibility(); this.updateUI(); this.updatePlayBtns();
+      showPage('fpt-practice');
+      const back = document.querySelector('#pageFptPractice .nav-back-btn'); if(back) back.style.display = 'none';
+      const sub = document.getElementById('fpt-submitBtn'); if(sub) sub.style.display = 'none';
+
+      const host = document.getElementById('pageFptPractice');
+      const lockEl = host ? host.querySelector('.fpt-staff-area') : null;
+      if(lockEl && !lockEl.id) lockEl.id = 'exam-lockwrap';
+
+      const maxPlays = cfg.plays || 6;
+      let used = (sd.playCount || 0);
+      function headText(){ return '播放剩餘 <b>' + Math.max(0, maxPlays-used) + '</b> / ' + maxPlays + ' 次'; }
+      EXm.buildHeader(host, KEY, headText());
+
+      // 計分：每小節低音錯 -1、級數錯 -1；調性錯 -1（僅一次）；封頂 20、下限 0
+      function saveNow(){
+        EXm.saveAnswers(KEY, { seq: self.userSeq.slice(), bass: JSON.parse(JSON.stringify(self.userBass)), keyAns: self.userKeyAns });
+        const max = EXm.SECTIONS[KEY].max;
+        let lost = 0, blank = 0;
+        if(self.userKeyAns !== self.keyObj.name) lost += 1;
+        if(!self.userKeyAns) blank++;
+        for(let i=0; i<self.bars; i++){
+          const uNorm = normalizeChord(self.userSeq[i], self.keyObj.isMin);
+          const qNorm = normalizeChord(self.questionSeq[i], self.keyObj.isMin);
+          const chordOK = (self.userSeq[i] !== '' && uNorm === qNorm);
+          const bassOK = (self.userBass[i] != null) && (self.userBass[i].midi === self.questionVoicings[i][3]);
+          if(!chordOK) lost += 1;
+          if(!bassOK) lost += 1;
+          if(!self.userSeq[i] || self.userSeq[i] === '' || String(self.userSeq[i]).endsWith('/')) blank++;
+          if(self.userBass[i] == null) blank++;
+        }
+        EXm.saveResult(KEY, { score: Math.max(0, max - lost), max: max, unanswered: blank,
+          detail: [{ correct: lost===0, your: '扣 '+Math.min(lost,max)+' 分', right: '調性＋'+self.bars+' 小節低音與級數' }] });
+      }
+      saveNow();
+      const _origUpdateUI = this.updateUI.bind(this);
+      this.updateUI = function(){ _origUpdateUI(); saveNow(); };
+      const _origCheckSubmit = this.checkSubmitState ? this.checkSubmitState.bind(this) : null;
+      this.checkSubmitState = function(){ if(_origCheckSubmit) try{ _origCheckSubmit(); }catch(e){} saveNow(); };
+
+      const bAll = document.getElementById('btn-play-all');
+      const bArp = document.getElementById('btn-play-arp');
+      function refreshPlayBtn(){
+        const left = maxPlays - used;
+        if(self.isPlaying || self._examTuning){ bAll.disabled = true; bArp.disabled = true; return; }
+        const off = !pianoInst || left <= 0;
+        bAll.disabled = off; bArp.disabled = off;
+        bAll.textContent = left > 0 ? `🔊 完整四部（剩餘 ${left} 次）` : '🚫 次數用盡';
+        EXm.buildHeader(host, KEY, headText());
+      }
+      this.updatePlayBtns = function(){ refreshPlayBtn(); };
+      this._examReady = refreshPlayBtn;
+      refreshPlayBtn();
+
+      function doPlay(modeStr){
+        ensureAudio();
+        if(!pianoInst || self.isPlaying || self._examTuning || used >= maxPlays) return;
+        const firstTime = (used === 0);
+        used++;
+        const s = EXm.loadSession(); if(s && s.data && s.data[KEY]){ s.data[KEY].playCount = used; s.data[KEY].played = true; EXm.saveSession(s); }
+        self.hasPlayed = true; EXm.setPlaying(true);
+        function runSeq(){
+          self._examTuning = false;
+          self.playProgression(modeStr);
+          const dur = (self.bars * 4 * (60/self.bpm) + 1.2) * 1000;
+          const tid = setTimeout(function(){ EXm.setPlaying(false); refreshPlayBtn(); }, dur);
+          pendingTimers.push(tid);
+        }
+        if(firstTime){
+          self._examTuning = true; refreshPlayBtn();
+          const cap = document.getElementById('fpt-playCaption'); if(cap) cap.textContent = '🎵 標準音 A＝440Hz（2 秒）…';
+          pianoInst.play(69, ensureAudio().currentTime + 0.05, { duration: 2.0, gain: 3.5 });
+          const tid = setTimeout(runSeq, 2600); pendingTimers.push(tid);
+        } else runSeq();
+        refreshPlayBtn();
+      }
+      bAll.onclick = function(){ doPlay('block'); };
+      bArp.onclick = function(){ doPlay('arpeggio'); };
+
+      EXm.guardVisibility(KEY, function(){ window.fptStopAll(); self._examTuning=false; EXm.setPlaying(false); refreshPlayBtn(); });
+      EXm.buildBar(host, saveNow);
     },
 
     updateKeyboardVisibility: function() {
@@ -2150,14 +2272,11 @@ window.addEventListener('resize', setVH); setVH();
       this.updateSlotsOverlay(); 
       
       let capEl = document.getElementById('fpt-playCaption');
-      if (capEl) capEl.textContent = '🎵 標準音 A4，準備聆聽題目...';
+      if (capEl) capEl.textContent = '🔊 準備聆聽題目...';
 
       const ctx = ensureAudio();
-      // 先給作答者標準音 A4（MIDI 69），音量比照題目外聲部（gain 3.5），約 1 秒，
-      // 之後停頓 2 秒才開始播放題目。
-      let refStart = ctx.currentTime + 0.1;
-      pianoInst.play(69, refStart, { duration: 1.0, gain: 3.5 });
-      let t = refStart + 1.0 + 2.0; // 標準音 1 秒 + 停頓 2 秒
+      // 標準音改為由「🎵 標準音 A」按鈕自行播放（考試模式則於第一次播放前自動給 2 秒）
+      let t = ctx.currentTime + 0.1;
       let secPerBeat = 60 / this.bpm;
       let measureDur = 4 * secPerBeat;
 
@@ -2517,6 +2636,25 @@ window.addEventListener('resize', setVH); setVH();
 
   window.fptModule = fptModule;
   fptModule.init(); loadPiano();
+  if(window.EXAM && window.EXAM.isExamMode()){ fptModule.examBootstrap(); }
+
+  /* 「🎵 標準音 A」按鈕：隨時可按，播放 A4（440Hz）2 秒，不影響題目播放次數 */
+  (function(){
+    var btn = document.getElementById('tuningABtn'); if(!btn) return;
+    // 考試模式已於第一次播放前自動給標準音，不需要這顆按鈕
+    if(window.EXAM && window.EXAM.isExamMode()){ btn.style.display = 'none'; return; }
+    btn.onclick = function(){
+      try{
+        ensureAudio();
+        if(!pianoInst) return;
+        var ctx = ensureAudio();
+        pianoInst.play(69, ctx.currentTime + 0.02, { duration: 2.0, gain: 3.5 });
+        var t = btn.textContent; btn.textContent = '🎵 A 響起…';
+        setTimeout(function(){ btn.textContent = t; }, 2000);
+      }catch(e){}
+    };
+  })();
+
 })();
 </script>
 <script>

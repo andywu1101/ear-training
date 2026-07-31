@@ -241,6 +241,16 @@
         </div>
       </a>
 
+      <!-- 模擬測驗（全寬、置於贊助卡上方） -->
+      <a href="exam.html" class="menu-card active-feature" style="grid-column:1 / -1; border-color:var(--accent-line);">
+        <span class="menu-badge badge-ready" id="examCardBadge" style="display:none;"></span>
+        <div>
+          <div class="menu-card-num">★ 模擬測驗</div>
+          <h3 class="menu-card-title">📝 模擬測驗</h3>
+          <p class="menu-card-desc">六大項綜合的模擬考卷，計分並追蹤長期進步。<span id="examCardStat"></span></p>
+        </div>
+      </a>
+
       <!-- 歡迎小額贊助（全寬、較矮） -->
       <div class="menu-card donate-card" onclick="showDonate()">
         <div>
@@ -278,14 +288,20 @@
     <div class="dico">❤</div>
     <h3>支持這個工具</h3>
     <p>這個工具永久免費。你的支持會用於後續的開發與維護，感謝你 🙏</p>
-    <div class="donate-links">
+    <!-- 管道清單（日後要加新管道，在這裡多一顆按鈕即可） -->
+    <div class="donate-links" id="donateChannels">
       <!-- Portaly 贊助頁審核中：通過後移除 disabled、改成 <a class="author-item" href="專屬贊助連結" target="_blank" rel="noopener"> -->
       <span class="donate-item disabled">❤ Portaly 小額贊助（尚未開放）</span>
+      <button type="button" class="author-item" onclick="showJko(true)"><span class="ai-ico">📱</span> 街口支付贊助</button>
+    </div>
+    <!-- 街口支付明細（點上面按鈕才展開） -->
+    <div class="donate-links" id="donateJko" style="display:none;">
       <a class="jkopay-card" href="https://service.jkopay.com/r/transfer?j=Transfer:902103863" target="_blank" rel="noopener">
         <img src="jkopay-qr.png" alt="街口支付 QR 碼，Heng-Heng Music，帳號 902103863">
-        <span class="jkopay-label">街口支付贊助</span>
+        <span class="jkopay-label">開啟街口支付</span>
       </a>
       <div class="jkopay-acct">街口帳號 <b>902103863</b><button class="copy-btn" type="button" onclick="copyAcct(event)">複製</button></div>
+      <button type="button" class="author-item" onclick="showJko(false)">← 返回贊助管道</button>
     </div>
     <button type="button" class="author-item" style="width:100%; margin-bottom:12px;" onclick="closeDonate(); showAuthor();"><span class="ai-ico">🔗</span> 作者主頁</button>
     <button class="donate-dismiss" onclick="closeDonate()">關閉</button>
@@ -313,6 +329,7 @@ if (location.hash === '#menu') {
   if (_c) _c.classList.remove('active'); if (_m) _m.classList.add('active');
 }
 </script>
+<script src="exam-common.js"></script>
 <script>
 /* ===== 統一錯題本儲存（與各練習頁共用同一組 localStorage key） ===== */
 window.REVIEW_STORE = {
@@ -347,7 +364,12 @@ function showPageId(id){
 function showMenu(){ showPageId('pageMenu'); updateHubBadge(); }
 function showHub(){ renderHub(); showPageId('pageHub'); }
 function showCover(){ showPageId('pageCover'); }
-function showDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.add('open'); }
+function showJko(on){
+  var ch=document.getElementById('donateChannels'), jk=document.getElementById('donateJko');
+  if(ch) ch.style.display = on ? 'none' : 'flex';
+  if(jk) jk.style.display = on ? 'flex' : 'none';
+}
+function showDonate(){ showJko(false); var m=document.getElementById('donateModal'); if(m) m.classList.add('open'); }
 function closeDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.remove('open'); }
 function showAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.add('open'); }
 function closeAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.remove('open'); }
@@ -362,6 +384,15 @@ function copyAcct(e){
   }catch(_){ _fallbackCopy(num); done(); }
 }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeDonate(); closeAuthor(); } });
+/* 模擬測驗卡片：顯示最佳／最近得分率 */
+(function(){
+  try{
+    if(!window.EXAM) return;
+    var st = window.EXAM.historyStats('standard'); if(!st) return;
+    var stat = document.getElementById('examCardStat'); if(stat) stat.textContent = ' ｜ 最近 '+st.last+'%';
+    var b = document.getElementById('examCardBadge'); if(b){ b.textContent = '最佳 '+st.best+'%'; b.style.display=''; }
+  }catch(e){}
+})();
 
 function updateHubBadge(){
   const el = document.getElementById('hubBadge');
