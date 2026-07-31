@@ -153,6 +153,18 @@
   .jkopay-acct b{ color:var(--ink); font-family:var(--font-mono); letter-spacing:0.03em; }
   .copy-btn{ font-family:var(--font-body); font-size:12px; font-weight:700; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:999px; padding:3px 12px; cursor:pointer; touch-action:manipulation; }
   .copy-btn:hover, .copy-btn:active{ background:var(--accent); color:var(--panel); }
+  /* 付款說明、表單連結 */
+  .pay-note{ font-size:12.5px; color:var(--ink-soft); line-height:1.7; margin:8px 2px 4px; text-align:center; }
+  .pay-note b{ color:var(--ink); }
+  .form-link{ display:block; font-size:13px; font-weight:700; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent-line); border-radius:12px; padding:11px 12px; text-align:center; text-decoration:none; margin-top:4px; }
+  .form-link:hover, .form-link:active{ background:var(--accent); color:var(--panel); }
+  /* 銀行轉帳 */
+  .bank-row{ display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:11px 14px; font-size:14.5px; }
+  .bank-row .bk{ font-size:12px; color:var(--ink-soft); flex-shrink:0; width:34px; text-align:left; }
+  .bank-row b{ flex:1; font-family:var(--font-mono); letter-spacing:0.02em; text-align:left; }
+  /* 贊助者名單 */
+  .sponsor-list{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; padding:14px 10px; border:1px dashed var(--panel-border); border-radius:12px; }
+  .sponsor-list span{ font-size:14px; font-weight:600; color:var(--ink); background:var(--panel); border:1px solid var(--panel-border); border-radius:999px; padding:7px 14px; }
   @media (max-width:480px){ .cover-title{ font-size:34px; } .cover-clef{ font-size:76px; } .cover-msg{ font-size:15px; padding:18px 18px; } }
 </style>
 </head>
@@ -302,16 +314,38 @@
     <div class="donate-links" id="donateChannels">
       <!-- Portaly 贊助頁審核中：通過後移除 disabled、改成 <a class="author-item" href="專屬贊助連結" target="_blank" rel="noopener"> -->
       <span class="donate-item disabled">❤ Portaly 小額贊助（尚未開放）</span>
-      <button type="button" class="author-item" onclick="showJko(true)"><span class="ai-ico">📱</span> 街口支付贊助</button>
+      <button type="button" class="author-item" onclick="showPanel('Jko')"><span class="ai-ico">📱</span> 街口支付贊助</button>
+      <button type="button" class="author-item" onclick="showPanel('Bank')"><span class="ai-ico">🏦</span> 銀行轉帳贊助</button>
+      <button type="button" class="author-item" id="sponsorEntryBtn" style="display:none;" onclick="showPanel('Sponsors')"><span class="ai-ico">💛</span> 贊助者名單</button>
     </div>
+
     <!-- 街口支付明細（點上面按鈕才展開） -->
     <div class="donate-links" id="donateJko" style="display:none;">
       <a class="jkopay-card" href="https://service.jkopay.com/r/transfer?j=Transfer:902103863" target="_blank" rel="noopener">
         <img src="jkopay-qr.png" alt="街口支付 QR 碼，Heng-Heng Music，帳號 902103863">
         <span class="jkopay-label">開啟街口支付</span>
       </a>
-      <div class="jkopay-acct">街口帳號 <b>902103863</b><button class="copy-btn" type="button" onclick="copyAcct(event)">複製</button></div>
-      <button type="button" class="author-item" onclick="showJko(false)">← 返回贊助管道</button>
+      <div class="jkopay-acct">街口帳號 <b>902103863</b><button class="copy-btn" type="button" onclick="copyText(event,'902103863')">複製</button></div>
+      <p class="pay-note">此 QR 為 <b>TWQR 共通碼</b>，可用街口支付，或<b>任一家銀行的網銀 App</b> 掃描付款。</p>
+      <a class="form-link" href="https://forms.gle/72e7fguVdx6RT3RZ9" target="_blank" rel="noopener">📝 贊助完成後，歡迎填寫表單讓我知道 🙏</a>
+      <button type="button" class="author-item" onclick="showPanel('')">← 返回贊助管道</button>
+    </div>
+
+    <!-- 銀行轉帳明細 -->
+    <div class="donate-links" id="donateBank" style="display:none;">
+      <div class="bank-row"><span class="bk">銀行</span><b>中國信託（822）</b><button class="copy-btn" type="button" onclick="copyText(event,'822')">複製代號</button></div>
+      <div class="bank-row"><span class="bk">帳號</span><b>163540424795</b><button class="copy-btn" type="button" onclick="copyText(event,'163540424795')">複製</button></div>
+      <div class="bank-row"><span class="bk">戶名</span><b>伍○恆</b></div>
+      <p class="pay-note">轉帳僅需銀行代號與帳號；戶名供核對用。</p>
+      <a class="form-link" href="https://forms.gle/72e7fguVdx6RT3RZ9" target="_blank" rel="noopener">📝 贊助完成後，歡迎填寫表單讓我知道 🙏</a>
+      <button type="button" class="author-item" onclick="showPanel('')">← 返回贊助管道</button>
+    </div>
+
+    <!-- 贊助者名單（名單有人時才會出現入口） -->
+    <div class="donate-links" id="donateSponsors" style="display:none;">
+      <div id="sponsorList" class="sponsor-list"></div>
+      <p class="pay-note">感謝每一位支持這個工具的朋友 🙏</p>
+      <button type="button" class="author-item" onclick="showPanel('')">← 返回贊助管道</button>
     </div>
     <button type="button" class="author-item" style="width:100%; margin-bottom:12px;" onclick="closeDonate(); showAuthor();"><span class="ai-ico">🔗</span> 作者主頁</button>
     <button class="donate-dismiss" onclick="closeDonate()">關閉</button>
@@ -374,19 +408,39 @@ function showPageId(id){
 function showMenu(){ showPageId('pageMenu'); updateHubBadge(); }
 function showHub(){ renderHub(); showPageId('pageHub'); }
 function showCover(){ showPageId('pageCover'); }
-function showJko(on){
-  var ch=document.getElementById('donateChannels'), jk=document.getElementById('donateJko');
-  if(ch) ch.style.display = on ? 'none' : 'flex';
-  if(jk) jk.style.display = on ? 'flex' : 'none';
+/* ===================================================================
+ *  贊助者名單：要新增名字，複製下面一行、改成對方希望顯示的名稱即可。
+ *  （名單為空時，贊助彈窗不會出現「贊助者名單」按鈕）
+ *  例：  { name: '王小明' },
+ * =================================================================== */
+var SPONSORS = [
+  // { name: '王小明' },
+  // { name: '陳老師' },
+];
+
+/* 贊助彈窗的分頁切換：'' = 管道清單、'Jko' = 街口、'Bank' = 銀行、'Sponsors' = 名單 */
+function showPanel(which){
+  var ids = ['Jko','Bank','Sponsors'];
+  var ch = document.getElementById('donateChannels');
+  if(ch) ch.style.display = which ? 'none' : 'flex';
+  ids.forEach(function(k){
+    var el = document.getElementById('donate'+k);
+    if(el) el.style.display = (which === k) ? 'flex' : 'none';
+  });
+  if(which === 'Sponsors') renderSponsors();
 }
-function showDonate(){ showJko(false); var m=document.getElementById('donateModal'); if(m) m.classList.add('open'); }
+function renderSponsors(){
+  var box = document.getElementById('sponsorList'); if(!box) return;
+  box.innerHTML = SPONSORS.map(function(s){ return '<span>'+escapeHtml(s.name)+'</span>'; }).join('');
+}
+function showDonate(){ showPanel(''); var m=document.getElementById('donateModal'); if(m) m.classList.add('open'); }
 function closeDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.remove('open'); }
 function showAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.add('open'); }
 function closeAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.remove('open'); }
 function _fallbackCopy(t){ try{ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }catch(_){} }
-function copyAcct(e){
+function copyText(e, text){
   if(e){ e.preventDefault(); e.stopPropagation(); }
-  var num='902103863'; var btn = e && e.target;
+  var num=text; var btn = e && e.target;
   function done(){ if(btn){ var t=btn.textContent; btn.textContent='已複製'; setTimeout(function(){ btn.textContent=t; }, 1400); } }
   try{
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(num).then(done, function(){ _fallbackCopy(num); done(); }); }
@@ -394,6 +448,14 @@ function copyAcct(e){
   }catch(_){ _fallbackCopy(num); done(); }
 }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeDonate(); closeAuthor(); } });
+/* 贊助者名單：有人才顯示入口按鈕 */
+(function(){
+  try{
+    var b = document.getElementById('sponsorEntryBtn');
+    if(b && window.SPONSORS && SPONSORS.length) b.style.display = '';
+  }catch(e){}
+})();
+
 /* 模擬測驗卡片：顯示最佳／最近得分率 */
 (function(){
   try{
