@@ -344,7 +344,7 @@
     <!-- 贊助者名單（名單有人時才會出現入口） -->
     <div class="donate-links" id="donateSponsors" style="display:none;">
       <div id="sponsorList" class="sponsor-list"></div>
-      <p class="pay-note">感謝每一位支持這個工具的朋友 🙏</p>
+      <p class="pay-note">每一位同意公開的贊助者，都會列在贊助者名單中，感謝你的支持 🙏</p>
       <button type="button" class="author-item" onclick="showPanel('')">← 返回贊助管道</button>
     </div>
     <button type="button" class="author-item" style="width:100%; margin-bottom:12px;" onclick="closeDonate(); showAuthor();"><span class="ai-ico">🔗</span> 作者主頁</button>
@@ -414,8 +414,8 @@ function showCover(){ showPageId('pageCover'); }
  *  例：  { name: '王小明' },
  * =================================================================== */
 var SPONSORS = [
-  // { name: '王小明' },
-  // { name: '陳老師' },
+  { name: 'Chu' },
+  // { name: '王小明' },   ← 要新增就複製這一行、拿掉前面的「//」、把名字改掉
 ];
 
 /* 贊助彈窗的分頁切換：'' = 管道清單、'Jko' = 街口、'Bank' = 銀行、'Sponsors' = 名單 */

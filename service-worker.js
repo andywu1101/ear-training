@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v50'; // v50：移除播放提示語，省下一列空間
+const CACHE_NAME = 'ear-training-shell-v52'; // v52：贊助者名單說明文案
 const APP_SHELL = [
   './',
   './index.html',
