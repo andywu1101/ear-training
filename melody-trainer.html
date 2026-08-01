@@ -670,6 +670,7 @@ function showPage(pageId) {
             slot.style.width = Math.max(w, 18) + 'px'; slot.style.height = h + 'px';
             slot.style.cursor = 'pointer'; slot.style.pointerEvents = 'auto'; slot.style.borderRadius = '6px'; slot.style.transition = 'all 0.1s';
             if(i === activeNote && activeNote !== -1) { slot.style.border = '2px solid var(--accent)'; slot.style.backgroundColor = 'var(--accent-soft)'; slot.style.zIndex = '10'; }
+            else if(melModule.lastEditedNoteIdx === i) { /* 記號會套用到的音 */ slot.style.border = '2px dashed var(--accent-line)'; slot.style.zIndex = '5'; }
             else { slot.style.border = '1px dashed transparent'; slot.style.zIndex = '1'; }
             slot.onclick = () => { melModule.activeNoteIdx = i; melModule.lastEditedNoteIdx = null; melModule.updateUI(); };
             overlay.appendChild(slot);
@@ -912,10 +913,8 @@ function showPage(pageId) {
       if (selIdx !== -1 && this.userPitch[selIdx]) {
         this._applyAccidentalToIdx(selIdx, acc);
         this.lastEditedNoteIdx = selIdx; // 記住剛修飾的音，之後再按記號可再改同一音
-        let totalNotes = this.getTotalNoteCount(this.userSeq);
-        let nextIdx = selIdx + 1;
-        while (nextIdx < totalNotes && this.isNoteTiedToPrevious(nextIdx)) nextIdx++;
-        this.activeNoteIdx = (nextIdx < totalNotes) ? nextIdx : selIdx; // 最後一格：框留在該音
+        // 修改既有音：框留在該音不移動，連按多次都改同一個音（所見即所改）
+        this.activeNoteIdx = selIdx;
         this.setPendingAccidental('n');
         this.updateUI();
         return;

@@ -734,7 +734,7 @@ function showPage(pageId) {
       if(!pianoInst || this.isPlaying) return;
       this.isPlaying = true; this.updatePlayBtn();
 
-      this.activeSlotIdx = 0;
+      // 播放／重播不移動作答框，維持在原本位置
       this.updateUI();
 
       const ctx = ensureAudio(); let time = ctx.currentTime + 0.1;

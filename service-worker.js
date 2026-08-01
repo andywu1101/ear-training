@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v45'; // v45：標準考卷說明與配分更新
+const CACHE_NAME = 'ear-training-shell-v46'; // v46：播放不跳格、記號修改不移動框並標示目標音
 const APP_SHELL = [
   './',
   './index.html',

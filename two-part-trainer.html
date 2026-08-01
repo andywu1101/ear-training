@@ -675,6 +675,9 @@ function showPage(pageId) {
 
                if(sName === activePart && i === (type==='slot'?activeSlot:activeNote) && ((type==='slot'&&activeSlot!==-1) || (type==='note'&&activeNote!==-1))) {
                    slot.style.border = '2px solid var(--accent)'; slot.style.backgroundColor = 'var(--accent-soft)'; slot.style.zIndex = '10';
+               } else if(type==='note' && sName === activePart && tpModule.lastEditedNoteIdx[sName] === i) {
+                   /* 記號會套用到的音 */
+                   slot.style.border = '2px dashed var(--accent-line)'; slot.style.zIndex = '5';
                } else {
                    slot.style.border = '1px dashed transparent'; slot.style.zIndex = '1';
                }
@@ -945,10 +948,8 @@ function showPage(pageId) {
       if (selIdx !== -1 && this.userPitch[p][selIdx]) {
         this._applyAccidentalToIdx(p, selIdx, acc);
         this.lastEditedNoteIdx[p] = selIdx; // 記住剛修飾的音，之後再按記號可再改同一音
-        let totalNotes = this.getTotalNoteCount(p);
-        let nextIdx = selIdx + 1;
-        while (nextIdx < totalNotes && this.isNoteTiedToPrevious(p, nextIdx)) nextIdx++;
-        this.activeNoteIdx[p] = (nextIdx < totalNotes) ? nextIdx : selIdx; // 最後一格：框留在該音
+        // 修改既有音：框留在該音不移動，連按多次都改同一個音（所見即所改）
+        this.activeNoteIdx[p] = selIdx;
         this.setPendingAccidental('n');
         this.updateUI();
         return;
