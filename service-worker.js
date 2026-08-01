@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v52'; // v52：贊助者名單說明文案
+const CACHE_NAME = 'ear-training-shell-v53'; // v53：贊助者名單新增
 const APP_SHELL = [
   './',
   './index.html',
