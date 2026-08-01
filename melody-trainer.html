@@ -1406,7 +1406,7 @@ function showPage(pageId) {
         this.generateQuestion();
         this.rebuildUserPitchArray();
 
-        document.getElementById('mel-playCaption').textContent = '請點擊播放按鈕聆聽';
+        document.getElementById('mel-playCaption').textContent = '';
 
         this.updatePlayBtn();
         this.renderKeypad(); showPage('mel-practice');
@@ -1506,7 +1506,7 @@ function showPage(pageId) {
         this.generateQuestion();
         this.rebuildUserPitchArray();
         if (this.mode === 'test') { this.testSession.replaysLeft = this.testSession.totalPlays; }
-        document.getElementById('mel-playCaption').textContent = '請點擊播放按鈕聆聽';
+        document.getElementById('mel-playCaption').textContent = '';
         this.updatePlayBtn();
         this.renderKeypad();
         this.switchTab('rhythm');

@@ -1099,7 +1099,7 @@ function showPage(pageId) {
         this.userSeq = Array(this.totalBeats).fill('placeholder');
         this.hasPlayed = false; this.activeSlotIdx = 0; this.generateQuestion();
 
-        document.getElementById('rhy-playCaption').textContent = '請點擊播放按鈕聆聽';
+        document.getElementById('rhy-playCaption').textContent = '';
 
         this.renderKeypad(); showPage('rhy-practice');
         setTimeout(() => this.updateUI(), 150);
@@ -1166,7 +1166,7 @@ function showPage(pageId) {
         ensureAudio(); window.rhyStopAll();
         this.userSeq = Array(this.totalBeats).fill('placeholder');
         this.hasPlayed = false; this.activeSlotIdx = 0; this.generateQuestion();
-        document.getElementById('rhy-playCaption').textContent = '請點擊播放按鈕聆聽';
+        document.getElementById('rhy-playCaption').textContent = '';
         this.renderKeypad();
         showPage('rhy-practice');
         setTimeout(() => this.updateUI(), 150);

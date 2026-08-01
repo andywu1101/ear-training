@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v49'; // v49：符桿方向修正＋電腦版版面放寬
+const CACHE_NAME = 'ear-training-shell-v50'; // v50：移除播放提示語，省下一列空間
 const APP_SHELL = [
   './',
   './index.html',
