@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v46'; // v46：播放不跳格、記號修改不移動框並標示目標音
+const CACHE_NAME = 'ear-training-shell-v49'; // v49：符桿方向修正＋電腦版版面放寬
 const APP_SHELL = [
   './',
   './index.html',

@@ -186,6 +186,20 @@
   @media (orientation: landscape) and (max-width: 900px) {
     .staff-scroll-container { max-height: 52dvh; max-height: calc(var(--app-vh, 1vh) * 52); }
   }
+
+  /* ===== 電腦版（螢幕寬 ≥1024px）：放寬版面，手機不受影響 ===== */
+  @media (min-width: 1024px) {
+    .staff-scroll-container { max-height: 55vh; max-height: calc(var(--app-vh, 1vh) * 55); padding: 14px 10px; margin-bottom: 12px; }
+    .practice-top-fixed { padding: 18px 28px; }
+    .top-bar-practice { margin-bottom: 14px; }
+    .unified-action-row { margin-bottom: 10px; gap: 12px; }
+    .practice-bottom-scroll { padding: 20px 28px 28px; }
+    .action-btn, .play-btn { font-size: 15px; padding: 13px 24px; }
+    .rhythm-btn { height: 84px; }
+    .rhythm-keypad { gap: 16px; }
+    .p-btn { font-size: 16px; }
+    .pattern-item { height: 72px; }
+  }
 </style>
 </head>
 <body>
@@ -482,14 +496,14 @@ function showPage(pageId) {
     if (block.isTuplet) {
       for(let i=0; i<3; i++) {
         let pObj = pitchArray ? pitchArray[startIndex + i] : null;
-        let n = new VF.StaveNote({ clef: clef, keys: [getVexKey(pObj, clef)], duration: '8' });
+        let n = new VF.StaveNote({ clef: clef, keys: [getVexKey(pObj, clef)], duration: '8', auto_stem: true });
         applyAccidental(n, pObj, measureAccState);
         if(isWrong) n.setStyle({ fillStyle: 'var(--wrong)', strokeStyle: 'var(--wrong)' });
         if((startIndex + i) === activeNoteIdx) n.setStyle({ fillStyle: 'var(--accent)', strokeStyle: 'var(--accent)' });
         notes.push(n);
       }
       tuplet = new VF.Tuplet(notes, { num_notes: 3, notes_occupied: 2, ratioed: false });
-      let beams = [new VF.Beam(notes)];
+      let beams = [new VF.Beam(notes, true)];
       return { notes, ties, beams, tuplet, noteCount: 3 };
     }
 
@@ -497,11 +511,11 @@ function showPage(pageId) {
     lengths.forEach((len, idx) => {
       let pObj = pitchArray ? pitchArray[startIndex + idx] : null;
       let n1;
-      if(len===1) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'16' });
-      else if(len===2) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'8' });
-      else if(len===3) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'8' }).addDot(0);
-      else if(len===4) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'q' });
-      else if(len===6) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'q' }).addDot(0);
+      if(len===1) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'16', auto_stem: true });
+      else if(len===2) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'8', auto_stem: true });
+      else if(len===3) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'8', auto_stem: true }).addDot(0);
+      else if(len===4) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'q', auto_stem: true });
+      else if(len===6) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'q', auto_stem: true }).addDot(0);
 
       applyAccidental(n1, pObj, measureAccState);
 
@@ -516,7 +530,7 @@ function showPage(pageId) {
     }
 
     const beamNotes = notes.filter(n => n.duration.includes('8') || n.duration.includes('16'));
-    const beams = beamNotes.length > 1 ? [new VF.Beam(beamNotes)] : [];
+    const beams = beamNotes.length > 1 ? [new VF.Beam(beamNotes, true)] : [];
     return { notes, ties, beams, tuplet, noteCount };
   }
 
@@ -550,7 +564,7 @@ function showPage(pageId) {
 
       const minMeasureWidth = 240; const requiredWidth = (minMeasureWidth * cfg.barsCount) + 60;
       const totalWidth = requiredWidth; const usableWidth = totalWidth - 10;
-      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(totalWidth, 100);
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(totalWidth, 130);
       const ctx = renderer.getContext();
       let xPos = 5; const barWidth = (usableWidth - 60) / cfg.barsCount;
 
@@ -568,7 +582,7 @@ function showPage(pageId) {
 
       for(let b = 0; b < cfg.barsCount; b++) {
         const isFirst = (b === 0); const sWidth = isFirst ? barWidth + 60 : barWidth;
-        const stave = new VF.Stave(xPos, -5, sWidth);
+        const stave = new VF.Stave(xPos, 20, sWidth);
         if(isFirst) stave.addClef(clef).addTimeSignature(cfg.meter);
         stave.setContext(ctx).draw();
 
@@ -848,19 +862,67 @@ function showPage(pageId) {
       return this.isNoteTiedToNext(idx - 1);
     },
 
+    _noteCountOf: function(id) { return id === 'placeholder' ? 1 : ALL_BLOCKS[id].lengths.length; },
+
+    /* 依「拍」重建音高：改某一拍的節奏時，只重建那一拍，其餘各拍的音高原封不動。
+       （舊做法是照流水號對位，改一拍會讓後面所有音高整串位移。）
+       儲存格式不變，因此計分、繪譜、錯題本、考試存檔都不受影響。 */
     rebuildUserPitchArray: function() {
-      let totalNotes = this.getTotalNoteCount(this.userSeq);
-      let newPitch = []; let defOct = this.clef === 'treble' ? 4 : 3; let defStep = this.clef === 'treble' ? 'A' : 'C';
-      for(let i = 0; i < totalNotes; i++) {
-        if(this.userPitch[i]) newPitch.push(this.userPitch[i]);
-        else newPitch.push({ step: defStep, oct: defOct, acc: 'n' });
+      let defOct = this.clef === 'treble' ? 4 : 3, defStep = this.clef === 'treble' ? 'A' : 'C';
+      let seqNow = this.userSeq;
+      let seqPrev = this._pitchSeqSnapshot;
+      let newPitch = [];
+      if (Array.isArray(seqPrev) && seqPrev.length === seqNow.length) {
+        let oldOff = 0;
+        for (let b = 0; b < seqNow.length; b++) {
+          let oldN = this._noteCountOf(seqPrev[b]);
+          let newN = this._noteCountOf(seqNow[b]);
+          for (let k = 0; k < newN; k++) {
+            let src = (k < oldN) ? this.userPitch[oldOff + k] : null;
+            newPitch.push(src ? src : { step: defStep, oct: defOct, acc: 'n' });
+          }
+          oldOff += oldN;   // 一律照舊拍長前進，確保後面各拍仍對得回原位
+        }
+      } else {
+        // 沒有對照表（首次建立／小節數改變）時，退回原本的流水號對位
+        let totalNotes = this.getTotalNoteCount(this.userSeq);
+        for (let i = 0; i < totalNotes; i++) {
+          newPitch.push(this.userPitch[i] ? this.userPitch[i] : { step: defStep, oct: defOct, acc: 'n' });
+        }
       }
       this.userPitch = newPitch;
+      this._pitchSeqSnapshot = seqNow.slice();
+    },
+
+    /* 拍 ↔ 音 的對應：讓兩個分頁的游標互相同步 */
+    _firstNoteIdxOfBeat: function(beatIdx) {
+      let n = 0;
+      for (let i = 0; i < this.userSeq.length; i++) {
+        if (i === beatIdx) return n;
+        n += this._noteCountOf(this.userSeq[i]);
+      }
+      return Math.max(0, n - 1);
+    },
+    _beatIdxOfNote: function(noteIdx) {
+      let n = 0;
+      for (let i = 0; i < this.userSeq.length; i++) {
+        let c = this._noteCountOf(this.userSeq[i]);
+        if (noteIdx < n + c) return i;
+        n += c;
+      }
+      return Math.max(0, this.userSeq.length - 1);
     },
 
     switchTab: function(tab) {
+      let prevTab = this.activeTab;
       this.activeTab = tab;
       this.lastEditedNoteIdx = null;
+      // 切換分頁時同步游標：看到的框就是接下來會生效的位置
+      if (tab === 'rhythm' && prevTab === 'pitch' && this.activeNoteIdx !== -1) {
+        this.activeSlotIdx = this._beatIdxOfNote(this.activeNoteIdx);
+      } else if (tab === 'pitch' && prevTab === 'rhythm' && this.activeSlotIdx !== -1) {
+        this._pendingNoteFromSlot = this.activeSlotIdx;
+      }
       document.getElementById('tab-rhythm').className = `tab-btn ${tab === 'rhythm' ? 'active' : ''}`;
       document.getElementById('tab-pitch').className = `tab-btn ${tab === 'pitch' ? 'active' : ''}`;
       document.getElementById('panel-rhythm').style.display = tab === 'rhythm' ? 'block' : 'none';
@@ -875,6 +937,11 @@ function showPage(pageId) {
         }
         this.rebuildUserPitchArray();
 
+        // 由節奏分頁切過來：框停在該拍的第一個音
+        if (this._pendingNoteFromSlot !== undefined && this._pendingNoteFromSlot !== null) {
+          this.activeNoteIdx = this._firstNoteIdxOfBeat(this._pendingNoteFromSlot);
+          this._pendingNoteFromSlot = null;
+        }
         if(this.activeNoteIdx < 0 || this.activeNoteIdx >= this.userPitch.length) this.activeNoteIdx = 0;
 
         let totalNotes = this.getTotalNoteCount(this.userSeq);
@@ -1334,7 +1401,7 @@ function showPage(pageId) {
 
         document.getElementById('mel-statusBadge').textContent = `${this.clef === 'treble' ? '高音' : '低音'}｜${this.meter}拍｜${this.barsCount}小節｜${this.bpm}BPM`;
         this.userSeq = Array(this.totalBeats).fill('placeholder');
-        this.userPitch = [];
+        this.userPitch = []; this._pitchSeqSnapshot = null;
         this.hasPlayed = false; this.activeSlotIdx = 0; this.activeNoteIdx = 0; this.lastEditedNoteIdx = null;
         this.generateQuestion();
         this.rebuildUserPitchArray();
@@ -1398,10 +1465,10 @@ function showPage(pageId) {
       document.getElementById('mel-clearBtn').onclick = () => {
         if(!this.hasPlayed) return;
         if(this.activeTab === 'rhythm') {
-          this.userSeq = Array(this.totalBeats).fill('placeholder'); this.userPitch = [];
+          this.userSeq = Array(this.totalBeats).fill('placeholder'); this.userPitch = []; this._pitchSeqSnapshot = null;
           this.activeSlotIdx = 0; this.activeNoteIdx = 0;
         } else {
-          this.userPitch = []; this.rebuildUserPitchArray(); this.activeNoteIdx = 0;
+          this.userPitch = []; this._pitchSeqSnapshot = null; this.rebuildUserPitchArray(); this.activeNoteIdx = 0;
         }
         this.lastEditedNoteIdx = null;
         this.updateUI();
@@ -1434,7 +1501,7 @@ function showPage(pageId) {
       document.getElementById('mel-ansNextBtn').onclick = () => {
         ensureAudio(); window.melStopAll();
         this.userSeq = Array(this.totalBeats).fill('placeholder');
-        this.userPitch = [];
+        this.userPitch = []; this._pitchSeqSnapshot = null;
         this.hasPlayed = false; this.activeSlotIdx = 0; this.activeNoteIdx = 0; this.lastEditedNoteIdx = null;
         this.generateQuestion();
         this.rebuildUserPitchArray();

@@ -180,6 +180,18 @@
   .loading-banner { text-align: center; font-size: 12px; color: var(--ink-soft); background: #fff; padding: 8px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--panel-border); }
   /* 提示字沒有內容時不佔空間 */
   .play-caption:empty { display: none; }
+
+  /* ===== 電腦版（螢幕寬 ≥1024px）：不鎖視窗高度，改為正常捲動，版面更寬鬆 ===== */
+  @media (min-width: 1024px) {
+    body.practice-locked { height: auto; min-height: 100vh; overflow: visible; padding: 0 16px; }
+    body.practice-locked .wrap { height: auto; }
+    #pageFptPractice.fpt-practice-layout { height: auto; max-height: none; }
+    .fpt-staff-area { max-height: none; }
+    .fpt-staff-area .staff-scroll-container { overflow-y: visible; }
+    .fpt-keyboard-area { overflow-y: visible; }
+    .fpt-play-sticky { position: static; }
+    body.practice-locked .practice-top-fixed { padding-bottom: 16px; margin-bottom: 16px; }
+  }
 </style>
 </head>
 <body>
