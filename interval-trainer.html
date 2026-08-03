@@ -465,7 +465,10 @@ function showPage(pageId) {
     const trebleY = Math.round(height * 0.14); const bassY = Math.round(height * 0.52);
     const trebleStave = new VF.Stave(staveX, trebleY, staveWidth).addClef('treble');
     const bassStave = new VF.Stave(staveX, bassY, staveWidth).addClef('bass');
+    // 大譜表規範：終止線貫穿上下譜表
+    trebleStave.setEndBarType(VF.Barline.type.NONE); bassStave.setEndBarType(VF.Barline.type.NONE);
     trebleStave.setContext(context).draw(); bassStave.setContext(context).draw();
+    new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BOLD_DOUBLE_RIGHT).setContext(context).draw();
     new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
     new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
     const spelled = spellNotes(root, intervals, steps);
@@ -563,9 +566,9 @@ function showPage(pageId) {
     const ORDER = ['P1','m2','M2','m3','M3','P4','A4_d5','P5','m6','M6','m7','M7','P8'];
     const CUSTOM_ID = 4;
     const LEVELS = [
-      { id: 1, name: 'Lv1 協和音程', pool: ['P1','P4','P5','P8'] },
-      { id: 2, name: 'Lv2 不協和音程', pool: ['M2','m2','A4_d5','M7','m7'] },
-      { id: 3, name: 'Lv3 不完全協和', pool: ['M3','m3','M6','m6'] },
+      { id: 1, name: '協和音程', pool: ['P1','P4','P5','P8'] },
+      { id: 2, name: '不協和音程', pool: ['M2','m2','A4_d5','M7','m7'] },
+      { id: 3, name: '不完全協和音程', pool: ['M3','m3','M6','m6'] },
       { id: CUSTOM_ID, name: '自訂音程選項', pool: ['P1','M3','P5','P8'] }
     ];
     let customPool = [...ORDER];   // 自訂音程：預設全選（與和絃辨認一致）
@@ -955,7 +958,9 @@ function showPage(pageId) {
         var cfg = EXm.configFor(KEY) || {};
         var playM = EXm.playMode();
         compound = !!cfg.compound;
+        // 題庫：大學檔 13 種全開；高中檔排除完全一度
         var examPool = Object.keys(QUALITIES);
+        if(cfg.pool === 'NO_P1') examPool = examPool.filter(function(k){ return k !== 'P1'; });
         customPool = examPool.slice();
         curLevel = { id: CUSTOM_ID, name: '模擬測驗', pool: examPool };
         mode = 'test'; qtype = 'dictation';
@@ -1109,8 +1114,14 @@ function showPage(pageId) {
   </div>
 </div>
 <script>
-function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); }
-function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); }
+function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); _syncHelpLock(); }
+function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); _syncHelpLock(); }
+/* 彈窗開啟時鎖住背景捲動，避免手指滑到下層頁面 */
+function _syncHelpLock(){
+  var open = document.querySelectorAll('.help-modal.open').length > 0;
+  document.body.style.overflow = open ? 'hidden' : '';
+  document.body.style.touchAction = open ? 'none' : '';
+}
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('.help-modal.open').forEach(function(m){ m.classList.remove('open'); }); } });
 </script>
 <script>

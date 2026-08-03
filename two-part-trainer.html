@@ -178,7 +178,7 @@
   .play-caption:empty { display: none; }
   .top-bar-practice { margin-bottom: 6px; }
   /* 不可壓縮：避免考試模式下外框被擠短而切到譜例；內容垂直置中，真的放不下才捲動 */
-  .staff-scroll-container { flex: 0 0 auto; min-height: 0; max-height: 46dvh; max-height: calc(var(--app-vh, 1vh) * 46); overflow-y: auto; display: flex; align-items: center; padding: 4px 3px; margin-bottom: 4px; }
+  .staff-scroll-container { flex: 0 0 auto; min-height: 0; max-height: 46dvh; max-height: calc(var(--app-vh, 1vh) * 46); overflow-y: hidden; display: flex; align-items: center; padding: 4px 3px; margin-bottom: 4px; }
   .unified-action-row { margin-bottom: 4px; }
   .play-caption { margin-top: 0; }
   .practice-bottom-scroll { padding: 10px 10px 14px; }
@@ -565,7 +565,7 @@ function showPage(pageId) {
       container.innerHTML = '';
 
       const minMeasureWidth = 240;
-      const requiredWidth = (minMeasureWidth * cfg.barsCount) + 80;
+      const requiredWidth = (minMeasureWidth * cfg.barsCount) + 90;  // +10：終止線較寬，右側多留空間
       const totalWidth = requiredWidth;
       const usableWidth = totalWidth - 30;
 
@@ -596,7 +596,14 @@ function showPage(pageId) {
             staveT.addClef('treble').addTimeSignature(cfg.meter);
             staveB.addClef('bass').addTimeSignature(cfg.meter);
         }
+        // 大譜表規範：小節線與終止線一律貫穿上下譜表，各譜表本身不畫右側線
+        staveT.setEndBarType(VF.Barline.type.NONE);
+        staveB.setEndBarType(VF.Barline.type.NONE);
         staveT.setContext(ctx).draw(); staveB.setContext(ctx).draw();
+        new VF.StaveConnector(staveT, staveB)
+          .setType(b === cfg.barsCount - 1 ? VF.StaveConnector.type.BOLD_DOUBLE_RIGHT
+                                           : VF.StaveConnector.type.SINGLE_RIGHT)
+          .setContext(ctx).draw();
 
         if(isFirst) {
             new VF.StaveConnector(staveT, staveB).setType(VF.StaveConnector.type.BRACE).setContext(ctx).draw();
@@ -1223,9 +1230,9 @@ function showPage(pageId) {
             qOff += qN; uOff += uN;
           }
         });
-        const max = EXm.SECTIONS[KEY].max;
+        const max = EXm.maxFor(KEY);
         const bad = beats.filter(function(b){ return !b.rhythmOK || b.wrongPitches>0; }).length;
-        EXm.saveResult(KEY, { score: EXm.scoreBeats(beats, max), max: max, unanswered: blank,
+        EXm.saveResult(KEY, { lostUnits: EXm.beatLoss(beats), max: max, unanswered: blank,
           detail: [{ correct: bad===0, your: '有誤 '+bad+' 拍（上下聲部合計）', right: '共 '+beats.length+' 拍' }] });
       }
       saveNow();
@@ -1655,8 +1662,14 @@ function showPage(pageId) {
   </div>
 </div>
 <script>
-function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); }
-function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); }
+function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); _syncHelpLock(); }
+function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); _syncHelpLock(); }
+/* 彈窗開啟時鎖住背景捲動，避免手指滑到下層頁面 */
+function _syncHelpLock(){
+  var open = document.querySelectorAll('.help-modal.open').length > 0;
+  document.body.style.overflow = open ? 'hidden' : '';
+  document.body.style.touchAction = open ? 'none' : '';
+}
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('.help-modal.open').forEach(function(m){ m.classList.remove('open'); }); } });
 </script>
 <script>

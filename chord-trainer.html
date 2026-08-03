@@ -474,7 +474,10 @@ function showPage(pageId) {
     const trebleY = Math.round(height * 0.14); const bassY = Math.round(height * 0.52);
     const trebleStave = new VF.Stave(staveX, trebleY, staveWidth).addClef('treble');
     const bassStave = new VF.Stave(staveX, bassY, staveWidth).addClef('bass');
+    // 大譜表規範：終止線貫穿上下譜表
+    trebleStave.setEndBarType(VF.Barline.type.NONE); bassStave.setEndBarType(VF.Barline.type.NONE);
     trebleStave.setContext(context).draw(); bassStave.setContext(context).draw();
+    new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BOLD_DOUBLE_RIGHT).setContext(context).draw();
     new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
     new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
     const spelled = spellNotes(root, intervals, steps);
@@ -974,7 +977,18 @@ function showPage(pageId) {
         window.stopAllPlayback(); testSession = null;
         // 題目只產生一次，之後回到本段題目不變
         var sd = EXm.sectionData(KEY, function(){
-          var qs = generateDictQs(cfg.count||10, cfg.allowRepeat===true);
+          var qs;
+          if(cfg.pool === 'HS9'){
+            // 高中檔：Lv5 十種去掉增七＝9 種，出 10 題（9 種各一次＋隨機重複一種）
+            var pool9 = curLevel.pool.filter(function(k){ return k !== 'augmented7'; });
+            curLevel = { id: curLevel.id, name: curLevel.name, pool: pool9 };
+            qs = generateDictQs(pool9.length, false);                 // 9 種各一次
+            var extra = generateDictQs(1, true);                      // 再隨機補一題
+            qs = qs.concat(extra);
+            for(var i=qs.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=qs[i]; qs[i]=qs[j]; qs[j]=t; }
+          } else {
+            qs = generateDictQs(cfg.count||10, cfg.allowRepeat===true);
+          }
           var labels = {}; Object.keys(QUALITIES).forEach(function(k){ labels[k] = QUALITIES[k].label; });
           return { questions: qs, labels: labels };
         });
@@ -1121,8 +1135,14 @@ function showPage(pageId) {
   </div>
 </div>
 <script>
-function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); }
-function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); }
+function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); _syncHelpLock(); }
+function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); _syncHelpLock(); }
+/* 彈窗開啟時鎖住背景捲動，避免手指滑到下層頁面 */
+function _syncHelpLock(){
+  var open = document.querySelectorAll('.help-modal.open').length > 0;
+  document.body.style.overflow = open ? 'hidden' : '';
+  document.body.style.touchAction = open ? 'none' : '';
+}
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('.help-modal.open').forEach(function(m){ m.classList.remove('open'); }); } });
 </script>
 <script>

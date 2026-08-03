@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v60'; // v60：音程自訂預設全選
+const CACHE_NAME = 'ear-training-shell-v72'; // v72：關閉鍵字級微調
 
 /* 你自己的頁面與程式：採「網路優先」，一更新使用者下次開啟就是新版 */
 const APP_SHELL = [

@@ -61,7 +61,17 @@
   .report-wrap{ margin-top: 36px; text-align:center; }
   .report-btn{ display:inline-flex; align-items:center; gap:7px; font-family:var(--font-body); font-weight:700; font-size:13.5px; padding:10px 22px; border-radius:999px; background:transparent; color:var(--ink-soft); border:1px solid var(--panel-border); text-decoration:none; cursor:pointer; transition:all .15s ease; touch-action:manipulation; }
   .report-btn:hover, .report-btn:active{ border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
-  .app-version{ margin-top: 10px; font-family:var(--font-mono); font-size: 11px; color: var(--ink-soft); opacity:0.7; text-align:center; }
+  .app-version{ margin-top: 10px; text-align:center; }
+  .ver-btn{ font-family:var(--font-mono); font-size: 11px; color: var(--ink-soft); background:none; border:none; opacity:0.75; cursor:pointer; padding:6px 8px; touch-action:manipulation; }
+  .ver-btn:hover, .ver-btn:active{ color:var(--accent); opacity:1; text-decoration:underline; }
+  /* 更新日誌 */
+  .log-list{ text-align:left; max-height:60vh; overflow-y:auto; padding:4px 2px; -webkit-overflow-scrolling:touch; }
+  .log-item{ padding:12px 2px; border-top:1px dashed var(--hairline); }
+  .log-item:first-child{ border-top:none; }
+  .log-ver{ font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--accent); margin-bottom:5px; }
+  .log-item ul{ margin:0; padding-left:18px; }
+  .log-item li{ font-size:13.5px; line-height:1.75; color:var(--ink); }
+  .log-current{ font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--accent); text-align:center; margin:16px 0 4px; }
 
   /* 錯題本總覽卡片（整合入口） */
   .review-hub-card{ grid-column: 1 / -1; background: var(--ink); border-color: var(--ink); color: var(--panel); cursor:pointer; }
@@ -125,8 +135,9 @@
   .donate-card .menu-card-desc{ color: var(--ink-soft); }
   /* 贊助佔位彈窗 */
   .donate-modal{ display:none; position:fixed; inset:0; z-index:1200; background:rgba(38,36,32,0.55); padding:24px 16px; overflow-y:auto; }
-  .donate-modal.open{ display:flex; align-items:center; justify-content:center; }
-  .donate-box{ background:var(--paper); border:1px solid var(--panel-border); border-radius:16px; max-width:400px; width:100%; padding:30px 26px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.28); }
+  /* 用 margin:auto 置中：內容高過螢幕時卡片上緣才不會溢出捲動範圍被裁掉（圓角消失） */
+  .donate-modal.open{ display:flex; align-items:flex-start; justify-content:center; }
+  .donate-box{ background:var(--paper); border:1px solid var(--panel-border); border-radius:16px; overflow:hidden; margin:auto; max-width:400px; width:100%; padding:30px 26px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.28); }
   .donate-box .dico{ font-size:40px; line-height:1; }
   .donate-box h3{ font-family:var(--font-display); font-size:23px; font-weight:600; margin:10px 0 8px; }
   .donate-box p{ font-size:15px; color:var(--ink-soft); line-height:1.8; margin:0 0 18px; }
@@ -137,7 +148,7 @@
   .donate-go:hover, .donate-go:active{ filter:brightness(1.08); transform:translateY(-1px); }
   .donate-home{ background:transparent; color:var(--ink); border:1px solid var(--panel-border); }
   .donate-home:hover, .donate-home:active{ border-color:var(--accent); background:var(--accent-soft); }
-  .donate-dismiss{ font-family:var(--font-body); font-size:14px; color:var(--ink-soft); background:transparent; border:none; cursor:pointer; text-decoration:underline; touch-action:manipulation; }
+  .donate-dismiss{ font-family:var(--font-body); font-size:15.5px; color:var(--ink-soft); background:transparent; border:none; cursor:pointer; text-decoration:underline; touch-action:manipulation; }
   .cover-author a{ color:var(--ink-soft); text-decoration:none; border-bottom:1px dashed var(--accent-line); padding-bottom:1px; transition:all .15s ease; }
   .cover-author a:hover, .cover-author a:active{ color:var(--accent); border-color:var(--accent); }
   /* 封面作者列（改為開啟彈窗） */
@@ -168,8 +179,9 @@
   .bank-row .bk{ font-size:13px; color:var(--ink-soft); flex-shrink:0; width:34px; text-align:left; }
   .bank-row b{ flex:1; font-family:var(--font-mono); letter-spacing:0.02em; text-align:left; }
   /* 贊助者名單 */
-  .sponsor-list{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; padding:14px 10px; border:1px dashed var(--panel-border); border-radius:12px; }
-  .sponsor-list span{ font-size:15px; font-weight:600; color:var(--ink); background:var(--panel); border:1px solid var(--panel-border); border-radius:999px; padding:7px 14px; }
+  .sponsor-list{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; padding:14px 10px; border:1px dashed var(--panel-border); border-radius:12px; }
+  /* 固定行高與高度：避免中英文因字型行高不同而上下錯位 */
+  .sponsor-list span{ display:inline-flex; align-items:center; justify-content:center; min-height:34px; line-height:1; font-size:15px; font-weight:600; color:var(--ink); background:var(--panel); border:1px solid var(--panel-border); border-radius:999px; padding:0 14px; }
   @media (max-width:480px){ .cover-title{ font-size:34px; } .cover-clef{ font-size:76px; } .cover-msg{ font-size:15px; padding:18px 18px; } }
 </style>
 </head>
@@ -274,7 +286,7 @@
         <div>
           <div class="menu-card-num">★ 模擬測驗</div>
           <h3 class="menu-card-title">📝 模擬測驗</h3>
-          <p class="menu-card-desc">六大項綜合、滿分 100 分的模擬考卷，一次交卷計分，並記錄長期進步曲線。<span id="examCardStat"></span></p>
+          <p class="menu-card-desc">六大項綜合、滿分 100 分的模擬考卷，分大學檔與高中檔，一次交卷計分並記錄長期進步曲線。<span id="examCardStat"></span></p>
         </div>
       </a>
 
@@ -295,10 +307,10 @@
           <p class="menu-card-desc">整合所有練習答錯的題目，一次檢視各項目的錯題數量與最近紀錄，並可跳回該練習複習。</p>
         </div>
       </div>
-    </div>
+    </div>    <p class="footer-note">已加入主畫面？可以直接從主畫面圖示開啟，體驗會更接近原生 App。</p>
+
     <div class="report-wrap"><a class="report-btn" href="https://forms.gle/EdacP17KLz1VBpyE8" target="_blank" rel="noopener">🐞 回報問題或建議</a></div>
-    <p class="footer-note">已加入主畫面？可以直接從主畫面圖示開啟，體驗會更接近原生 App。</p>
-    <p class="app-version" id="appVersion">音樂聽力練習 v60</p>
+    <p class="app-version"><button type="button" class="ver-btn" id="appVersion" onclick="showChangelog()">音樂聽力練習 v72　·　更新日誌 ▸</button></p>
   </div>
 
   <!-- 錯題本總覽 -->
@@ -356,6 +368,18 @@
     </div>
     <button type="button" class="author-item" style="width:100%; margin-bottom:12px;" onclick="closeDonate(); showAuthor();"><span class="ai-ico">🔗</span> 作者主頁</button>
     <button class="donate-dismiss" onclick="closeDonate()">關閉</button>
+  </div>
+</div>
+
+<!-- 更新日誌彈窗 -->
+<div class="donate-modal" id="logModal" onclick="if(event.target===this) closeChangelog()">
+  <div class="donate-box">
+    <div class="dico">📝</div>
+    <h3>更新日誌</h3>
+    <p>由舊到新，最新的更新在最下方。</p>
+    <div class="log-list" id="logList"></div>
+    <p class="log-current" id="logCurrent"></p>
+    <button class="donate-dismiss" onclick="closeChangelog()">關閉</button>
   </div>
 </div>
 
@@ -424,10 +448,59 @@ var SPONSORS = [
   { name: 'Chu' },
   { name: '葉○佳' },
   { name: '陳○芳' },
+  { name: 'PEI YI' },
+  { name: '董○秀' },
   // { name: '王小明' },   ← 要新增就複製這一行、拿掉前面的「//」、把名字改掉
 ];
 
 /* 贊助彈窗的分頁切換：'' = 管道清單、'Jko' = 街口、'Bank' = 銀行、'Sponsors' = 名單 */
+/* ===================================================================
+ *  更新日誌：由舊到新排列（最新在最下方）。新增一版就在陣列末端加一筆。
+ * =================================================================== */
+var CHANGELOG = [
+  { v: 'v23', items: ['修正音程「複音程」模式下，完全一度與完全八度判定錯誤的問題'] },
+  { v: 'v31', items: ['新增「模擬測驗」：六大項綜合、滿分 100 分，含成績單與長期進步曲線'] },
+  { v: 'v41', items: ['贊助管道新增銀行轉帳與 TWQR 說明', '新增贊助者名單'] },
+  { v: 'v46', items: ['優化升降記號的操作：點選某個音後按記號，會套用在該音且作答框不再跳格'] },
+  { v: 'v47', items: ['修正回頭修改某一拍的節奏後，後面音高整串位移的問題'] },
+  { v: 'v48', items: ['修正切換「編輯節奏／編輯音高」時，作答框跑到別拍的問題'] },
+  { v: 'v49', items: ['修正音符符桿方向（第三線以上朝下），符尾不再超出譜表', '電腦版版面放寬，譜例與作答區更舒適'] },
+  { v: 'v55', items: ['支援完全離線使用：沒有網路也能畫譜、發聲與作答', '載入速度提升'] },
+  { v: 'v56', items: ['修正和絃轉位時的代號標示（例如 Cmaj7/E）', '四部和聲加上修飾目標的提示框'] },
+  { v: 'v59', items: ['新增「回報問題或建議」入口', '選單底部顯示版本號'] },
+  { v: 'v62', items: ['模擬測驗新增「高中檔（模擬音樂班甄選）」，與大學檔分開記錄進步曲線'] },
+  { v: 'v66', items: ['修正譜例在作答後會上下滑動、造成誤觸的問題'] },
+  { v: 'v69', items: ['譜例最後一小節改為終止線', '大譜表的小節線與終止線改為貫穿上下譜表'] },
+  { v: 'v70', items: ['新增「更新日誌」，可查看歷次更新內容', '修正贊助彈窗在手機上捲動時上緣圓角被裁切的問題'] }
+];
+
+function showChangelog(){
+  var box = document.getElementById('logList');
+  if(box){
+    box.innerHTML = CHANGELOG.map(function(g){
+      return '<div class="log-item"><div class="log-ver">' + escapeHtml(g.v) + '</div><ul>' +
+             g.items.map(function(t){ return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul></div>';
+    }).join('');
+  }
+  // 目前版本獨立顯示，與清單內容無關（版號未列入清單時也不會出錯）
+  var curEl = document.getElementById('logCurrent');
+  if(curEl){
+    var txt = (document.getElementById('appVersion')||{}).textContent || '';
+    var m = txt.match(/v\d+/);
+    curEl.textContent = m ? ('目前版本 ' + m[0]) : '';
+  }
+  var m2 = document.getElementById('logModal');
+  if(m2){ m2.classList.add('open'); syncBodyLock(); if(box) setTimeout(function(){ box.scrollTop = box.scrollHeight; }, 30); }
+}
+function closeChangelog(){ var m=document.getElementById('logModal'); if(m) m.classList.remove('open'); syncBodyLock(); }
+
+/* 彈窗開啟時鎖住背景捲動，避免手指滑到下層頁面 */
+function syncBodyLock(){
+  var open = document.querySelectorAll('.donate-modal.open').length > 0;
+  document.body.style.overflow = open ? 'hidden' : '';
+  document.body.style.touchAction = open ? 'none' : '';
+}
+
 function showPanel(which){
   var ids = ['Jko','Bank','Sponsors'];
   var ch = document.getElementById('donateChannels');
@@ -442,10 +515,10 @@ function renderSponsors(){
   var box = document.getElementById('sponsorList'); if(!box) return;
   box.innerHTML = SPONSORS.map(function(s){ return '<span>'+escapeHtml(s.name)+'</span>'; }).join('');
 }
-function showDonate(){ showPanel(''); var m=document.getElementById('donateModal'); if(m) m.classList.add('open'); }
-function closeDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.remove('open'); }
-function showAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.add('open'); }
-function closeAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.remove('open'); }
+function showDonate(){ showPanel(''); var m=document.getElementById('donateModal'); if(m) m.classList.add('open'); syncBodyLock(); }
+function closeDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.remove('open'); syncBodyLock(); }
+function showAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.add('open'); syncBodyLock(); }
+function closeAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.remove('open'); syncBodyLock(); }
 function _fallbackCopy(t){ try{ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }catch(_){} }
 function copyText(e, text){
   if(e){ e.preventDefault(); e.stopPropagation(); }
@@ -456,7 +529,7 @@ function copyText(e, text){
     else { _fallbackCopy(num); done(); }
   }catch(_){ _fallbackCopy(num); done(); }
 }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeDonate(); closeAuthor(); } });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeDonate(); closeAuthor(); closeChangelog(); } });
 /* 贊助者名單：有人才顯示入口按鈕 */
 (function(){
   try{
@@ -469,9 +542,15 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeDon
 (function(){
   try{
     if(!window.EXAM) return;
-    var st = window.EXAM.historyStats('standard'); if(!st) return;
-    var stat = document.getElementById('examCardStat'); if(stat) stat.textContent = ' ｜ 最近 '+st.last+'%';
-    var b = document.getElementById('examCardBadge'); if(b){ b.textContent = '最佳 '+st.best+'%'; b.style.display=''; }
+    var h = window.EXAM.loadHistory(); if(!h.length) return;
+    var last = h[h.length-1];
+    var pid = last.preset || (last.mode === 'standard-hs' ? 'highschool' : 'standard');
+    var name = ((window.EXAM.PRESETS||{})[pid]||{}).short || '';
+    var same = h.filter(function(r){ return (r.preset || (r.mode==='standard-hs'?'highschool':'standard')) === pid; });
+    var best = Math.max.apply(null, same.map(function(r){ return r.pct; }));
+    var stat = document.getElementById('examCardStat');
+    if(stat) stat.textContent = ' ｜ 最近 '+last.pct+'%（'+name+'）';
+    var b = document.getElementById('examCardBadge'); if(b){ b.textContent = '最佳 '+best+'%'; b.style.display=''; }
   }catch(e){}
 })();
 

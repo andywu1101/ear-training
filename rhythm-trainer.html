@@ -160,7 +160,7 @@
   .play-caption:empty { display: none; }
   .top-bar-practice { margin-bottom: 6px; }
   /* 不可壓縮：避免考試模式下外框被擠短而切到譜例；內容垂直置中，真的放不下才捲動 */
-  .staff-scroll-container { flex: 0 0 auto; min-height: 0; max-height: 40dvh; max-height: calc(var(--app-vh, 1vh) * 40); overflow-y: auto; display: flex; align-items: center; padding: 4px 3px; margin-bottom: 4px; }
+  .staff-scroll-container { flex: 0 0 auto; min-height: 0; max-height: 40dvh; max-height: calc(var(--app-vh, 1vh) * 40); overflow-y: hidden; display: flex; align-items: center; padding: 4px 3px; margin-bottom: 4px; }
   .unified-action-row { margin-bottom: 4px; }
   .play-caption { margin-top: 0; }
   .practice-bottom-scroll { padding: 10px 10px 14px; }
@@ -526,7 +526,7 @@ function showPage(pageId) {
       container.innerHTML = '';
 
       const minMeasureWidth = 240;
-      const requiredWidth = (minMeasureWidth * cfg.barsCount) + 60;
+      const requiredWidth = (minMeasureWidth * cfg.barsCount) + 70;  // +10：終止線較寬，右側多留空間
       const totalWidth = requiredWidth;
       const usableWidth = totalWidth - 10;
 
@@ -555,6 +555,7 @@ function showPage(pageId) {
         const sWidth = isFirst ? barWidth + 60 : barWidth;
         const stave = new VF.Stave(xPos, -5, sWidth);
         if (isFirst) stave.addClef('treble').addTimeSignature(cfg.meter);
+        if (b === cfg.barsCount - 1) stave.setEndBarType(VF.Barline.type.END);   // 最後一小節：終止線
         stave.setContext(ctx).draw();
 
         let allNotes = []; let allBeams = []; let allTies = []; let allTuplets = [];
@@ -973,8 +974,9 @@ function showPage(pageId) {
           if(!u || u === 'placeholder') { blank++; wrong++; }
           else if(u !== self.questionSeq[i]) wrong++;
         }
-        const max = EXm.SECTIONS[KEY].max;
-        EXm.saveResult(KEY, { score: EXm.scoreRhythm(wrong, max), max: max, unanswered: blank,
+        const max = EXm.maxFor(KEY);
+        // lostUnits＝錯拍數；實際扣幾分由檔位決定（大學每拍 -2、高中每拍 -1 且三題共用 20 分池）
+        EXm.saveResult(KEY, { lostUnits: wrong, max: max, unanswered: blank,
           detail: [{ correct: wrong===0, your: '錯 '+wrong+' 拍', right: '共 '+self.questionSeq.length+' 拍' }] });
       }
       saveNow();
@@ -1222,8 +1224,14 @@ function showPage(pageId) {
   </div>
 </div>
 <script>
-function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); }
-function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); }
+function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); _syncHelpLock(); }
+function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); _syncHelpLock(); }
+/* 彈窗開啟時鎖住背景捲動，避免手指滑到下層頁面 */
+function _syncHelpLock(){
+  var open = document.querySelectorAll('.help-modal.open').length > 0;
+  document.body.style.overflow = open ? 'hidden' : '';
+  document.body.style.touchAction = open ? 'none' : '';
+}
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('.help-modal.open').forEach(function(m){ m.classList.remove('open'); }); } });
 </script>
 <script>

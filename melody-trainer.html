@@ -178,7 +178,7 @@
   .play-caption:empty { display: none; }
   .top-bar-practice { margin-bottom: 6px; }
   /* 不可壓縮：避免考試模式下外框被擠短而切到譜例；內容垂直置中，真的放不下才捲動 */
-  .staff-scroll-container { flex: 0 0 auto; min-height: 0; max-height: 40dvh; max-height: calc(var(--app-vh, 1vh) * 40); overflow-y: auto; display: flex; align-items: center; padding: 4px 3px; margin-bottom: 4px; }
+  .staff-scroll-container { flex: 0 0 auto; min-height: 0; max-height: 40dvh; max-height: calc(var(--app-vh, 1vh) * 40); overflow-y: hidden; display: flex; align-items: center; padding: 4px 3px; margin-bottom: 4px; }
   .unified-action-row { margin-bottom: 4px; }
   .play-caption { margin-top: 0; }
   .practice-bottom-scroll { padding: 10px 10px 14px; }
@@ -570,7 +570,7 @@ function showPage(pageId) {
       }
       container.innerHTML = '';
 
-      const minMeasureWidth = 240; const requiredWidth = (minMeasureWidth * cfg.barsCount) + 60;
+      const minMeasureWidth = 240; const requiredWidth = (minMeasureWidth * cfg.barsCount) + 70;  // +10：終止線較寬，右側多留空間
       const totalWidth = requiredWidth; const usableWidth = totalWidth - 10;
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG); renderer.resize(totalWidth, 130);
       const ctx = renderer.getContext();
@@ -592,6 +592,7 @@ function showPage(pageId) {
         const isFirst = (b === 0); const sWidth = isFirst ? barWidth + 60 : barWidth;
         const stave = new VF.Stave(xPos, 20, sWidth);
         if(isFirst) stave.addClef(clef).addTimeSignature(cfg.meter);
+        if(b === cfg.barsCount - 1) stave.setEndBarType(VF.Barline.type.END);    // 最後一小節：終止線
         stave.setContext(ctx).draw();
 
         let barNotes = []; let barBeams = []; let barTies = []; let barTuplets = [];
@@ -1174,10 +1175,10 @@ function showPage(pageId) {
           beats.push({ rhythmOK: rhythmOK, sameCount: sameCount, wrongPitches: wrong });
           qOff += qN; uOff += uN;
         }
-        const max = EXm.SECTIONS[KEY].max;
-        const sc = EXm.scoreBeats(beats, max);
+        const max = EXm.maxFor(KEY);
+        const lost = EXm.beatLoss(beats);          // 逐拍失分單位
         const badBeats = beats.filter(function(b){ return !b.rhythmOK || b.wrongPitches>0; }).length;
-        EXm.saveResult(KEY, { score: sc, max: max, unanswered: blank,
+        EXm.saveResult(KEY, { lostUnits: lost, max: max, unanswered: blank,
           detail: [{ correct: badBeats===0, your: '有誤 '+badBeats+' 拍', right: '共 '+beats.length+' 拍' }] });
       }
       saveNow();
@@ -1583,8 +1584,14 @@ function showPage(pageId) {
   </div>
 </div>
 <script>
-function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); }
-function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); }
+function openHelp(id){ var m=document.getElementById(id); if(m) m.classList.add('open'); _syncHelpLock(); }
+function closeHelp(id){ var m=document.getElementById(id); if(m) m.classList.remove('open'); _syncHelpLock(); }
+/* 彈窗開啟時鎖住背景捲動，避免手指滑到下層頁面 */
+function _syncHelpLock(){
+  var open = document.querySelectorAll('.help-modal.open').length > 0;
+  document.body.style.overflow = open ? 'hidden' : '';
+  document.body.style.touchAction = open ? 'none' : '';
+}
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('.help-modal.open').forEach(function(m){ m.classList.remove('open'); }); } });
 </script>
 <script>
