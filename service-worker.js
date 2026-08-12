@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ear-training-shell-v79'; // v.79：玩法說明與加入主畫面提示，加上教學影片段落連結
+const CACHE_NAME = 'ear-training-shell-v81'; // v.81：修正四部和聲記號外洩與八度選擇的邊界問題
 
 /* 你自己的頁面與程式：採「網路優先」，一更新使用者下次開啟就是新版 */
 const APP_SHELL = [
@@ -12,6 +12,7 @@ const APP_SHELL = [
   './melody-trainer.html',
   './two-part-trainer.html',
   './four-part-trainer.html',
+  './pitch-error-trainer.html',
   './manifest.json'
 ];
 
