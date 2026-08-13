@@ -200,6 +200,9 @@
   .help-foot .help-video:hover, .help-foot .help-video:active{ background:var(--accent); color:var(--panel); }
   /* 提示字沒有內容時不佔空間 */
   .play-caption:empty { display: none; }
+
+  /* 左緣 24px 是防返回手勢的攔截區，作答頁的返回鍵往右挪一點避開 */
+  #pageIntPractice .nav-back-btn { margin-left: 18px; }
 </style>
 </head>
 <body>
@@ -1202,6 +1205,51 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
       Array.prototype.forEach.call(document.querySelectorAll('.js-review-links'), function(el){ el.style.display = 'none'; });
     }
   }catch(e){}
+})();
+</script>
+<script>
+/* 作答時關閉手機的「左滑返回」：在瀏覽歷史放一個記號，
+   使用者一觸發返回就把它補回去，等於什麼都沒發生。
+   只在作答頁生效，離開作答頁自動解除；畫面上的返回按鈕不受影響。 */
+(function(){
+  var ANSWER_PAGE = 'pageIntPractice';
+  var armed = false;
+  function isAnswering(){
+    var el = document.getElementById(ANSWER_PAGE);
+    return !!(el && el.classList.contains('active'));
+  }
+  function arm(){ if(armed) return; armed = true; try{ history.pushState({ answerGuard: 1 }, ''); }catch(e){} }
+  window.addEventListener('popstate', function(){
+    if(isAnswering()){ try{ history.pushState({ answerGuard: 1 }, ''); }catch(e){} }
+    else { armed = false; }
+  });
+  try{
+    var obs = new MutationObserver(function(){
+      var on = isAnswering();
+      if(on) arm(); else armed = false;
+      // 作答頁時整頁不把手勢往外傳（部分瀏覽器靠這個就能擋掉返回手勢）
+      try{
+        document.documentElement.style.overscrollBehaviorX = on ? 'none' : '';
+        document.body.style.overscrollBehaviorX = on ? 'none' : '';
+      }catch(e){}
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.page-view'), function(el){
+      obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+    });
+  }catch(e){}
+  if(isAnswering()) arm();
+
+  /* 攔截邊緣返回手勢。
+     touchmove 在 Safari 進入捲動狀態後會變成「不可取消」，攔不住；
+     touchstart 永遠可以取消，所以改在按下的當下就決定。
+     為了不吃掉左緣的操作，會先看手指按到什麼：
+     按到按鈕、輸入元件或音符熱區就放行，只有按在空白處才攔。 */
+  var EDGE = 24;
+  document.addEventListener('touchstart', function(e){
+    if(!isAnswering() || !e.touches || e.touches.length !== 1) return;
+    if(e.touches[0].clientX > EDGE) return;
+    if(e.cancelable) e.preventDefault();              // 左緣一律攔，返回手勢不會啟動
+  }, { passive: false });
 })();
 </script>
 <script>
