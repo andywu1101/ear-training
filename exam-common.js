@@ -11,9 +11,24 @@
 (function () {
   var LS_SESSION = 'earTrainer.exam.session';
   var LS_HISTORY = 'earTrainer.exam.history';
+  var LS_SCHEMA  = 'earTrainer.exam.schema';
+  var LS_PAPERS  = 'earTrainer.exam.papers';
   var HISTORY_CAP = 100;
+  var PAPERS_CAP  = 20;   // 完整考卷（含題目與作答）最多保留最近 20 份
+
+  /* 考卷結構版本。段落或配分一改就換這個字串，
+     未完成的考試會自動清掉（結構對不上會算錯分），歷史成績不受影響。 */
+  var SCHEMA = 'v82-pitcherr';
+  try {
+    if (localStorage.getItem(LS_SCHEMA) !== SCHEMA) {
+      localStorage.removeItem(LS_SESSION);
+      localStorage.setItem(LS_SCHEMA, SCHEMA);
+    }
+  } catch (e) {}
 
   var SECTIONS = {
+    pitcherr1:{ no: '一', label: '音高的辨認（第 1 題）', max: 5,  page: 'pitch-error-trainer.html', type: 'saved' },
+    pitcherr2:{ no: '一', label: '音高的辨認（第 2 題）', max: 5,  page: 'pitch-error-trainer.html', type: 'saved' },
     interval: { no: '一', label: '音程',              max: 10, page: 'interval-trainer.html', type: 'choice' },
     chord:    { no: '二', label: '和絃性質判斷',      max: 10, page: 'chord-trainer.html',    type: 'choice' },
     rhythm1:  { no: '三', label: '節奏（第 1 題）',   max: 10, page: 'rhythm-trainer.html',   type: 'saved' },
@@ -24,7 +39,7 @@
     twopart:  { no: '五', label: '兩聲部',            max: 20, page: 'two-part-trainer.html', type: 'saved' },
     fourpart: { no: '六', label: '四部和聲',          max: 20, page: 'four-part-trainer.html',type: 'saved' }
   };
-  var FULL_ORDER = ['interval', 'chord', 'rhythm1', 'rhythm2', 'rhythm3', 'melody1', 'melody2', 'twopart', 'fourpart'];
+  var FULL_ORDER = ['pitcherr1', 'pitcherr2', 'interval', 'chord', 'rhythm1', 'rhythm2', 'rhythm3', 'melody1', 'melody2', 'twopart', 'fourpart'];
 
   var SIMPLE_METERS = [ { meter: '4/4', bars: 2 }, { meter: '3/4', bars: 3 }, { meter: '2/4', bars: 4 } ];
   var COMPOUND_METER = { meter: '6/8', bars: 2 };
@@ -32,6 +47,15 @@
   var HS_METERS = [ { meter: '4/4', meterType: 'simple', bars: 2 },
                     { meter: '3/4', meterType: 'simple', bars: 3 },
                     { meter: '6/8', meterType: 'compound', bars: 3 } ];
+
+  /* 音高的辨認：四小節固定，各拍號的音符額度讓平均長度接近
+     （2/4 約 20、3/4 與 4/4 約 31～36、6/8 約 29） */
+  var PE_METERS = [
+    { meter: '2/4',  meterType: 'simple',   noteBudget: 24 },
+    { meter: '3/4',  meterType: 'simple',   noteBudget: 36 },
+    { meter: '4/4',  meterType: 'simple',   noteBudget: 36 },
+    { meter: '6/8',  meterType: 'compound', noteBudget: 32 }
+  ];
 
   var GAPS = { reps: 3, repGap: 500, questionGap: 2000, interleaveGap: 1500, roundGap: 2500 };
 
@@ -48,20 +72,34 @@
       mode: 'standard',
       label: '大學檔（模擬大學聯合招生難易度）',
       short: '大學檔',
-      queue: ['interval', 'chord', 'rhythm1', 'rhythm2', 'melody1', 'melody2', 'twopart', 'fourpart'],
+      queue: ['pitcherr1', 'pitcherr2', 'interval', 'chord', 'rhythm1', 'rhythm2', 'melody1', 'melody2', 'twopart', 'fourpart'],
+      /* 這一檔的大題編號（各檔不同，覆蓋 SECTIONS 的預設值） */
+      sectionNo: { pitcherr1: '一', pitcherr2: '一', interval: '二', chord: '三',
+                   rhythm1: '四', rhythm2: '四', melody1: '五', melody2: '五',
+                   twopart: '六', fourpart: '七' },
       groups: [
-        { no: '一', label: '音程',         max: 10, keys: ['interval'] },
-        { no: '二', label: '和絃性質判斷', max: 10, keys: ['chord'] },
-        { no: '三', label: '節奏',         max: 10, keys: ['rhythm1'], perUnit: 2, suffix: '（第 1 題）' },
-        { no: '三', label: '節奏',         max: 10, keys: ['rhythm2'], perUnit: 2, suffix: '（第 2 題）' },
-        { no: '四', label: '單旋律',       max: 10, keys: ['melody1'], perUnit: 1, suffix: '（第 1 題）' },
-        { no: '四', label: '單旋律',       max: 10, keys: ['melody2'], perUnit: 1, suffix: '（第 2 題）' },
-        { no: '五', label: '兩聲部',       max: 20, keys: ['twopart'], perUnit: 1 },
-        { no: '六', label: '四部和聲',     max: 20, keys: ['fourpart'], perUnit: 1 }
+        { no: '一', label: '音高的辨認',   max: 5,   keys: ['pitcherr1'], perUnit: 1, suffix: '（第 1 題）' },
+        { no: '一', label: '音高的辨認',   max: 5,   keys: ['pitcherr2'], perUnit: 1, suffix: '（第 2 題）' },
+        { no: '二', label: '音程',         max: 10,  keys: ['interval'] },
+        { no: '三', label: '和絃性質判斷', max: 10,  keys: ['chord'] },
+        { no: '四', label: '節奏',         max: 7.5, keys: ['rhythm1'], perUnit: 1.5, suffix: '（第 1 題）' },
+        { no: '四', label: '節奏',         max: 7.5, keys: ['rhythm2'], perUnit: 1.5, suffix: '（第 2 題）' },
+        { no: '五', label: '單旋律',       max: 10,  keys: ['melody1'], perUnit: 1, suffix: '（第 1 題）' },
+        { no: '五', label: '單旋律',       max: 10,  keys: ['melody2'], perUnit: 1, suffix: '（第 2 題）' },
+        { no: '六', label: '兩聲部',       max: 15,  keys: ['twopart'], perUnit: 1 },
+        { no: '七', label: '四部和聲',     max: 20,  keys: ['fourpart'], perUnit: 1 }
       ],
       buildConfig: function () {
         var r1 = pick(SIMPLE_METERS), m1 = pick(SIMPLE_METERS);
+        var pe1 = pick(PE_METERS), pe2 = pick(PE_METERS);
+        var clefOf = function () { return Math.random() < 0.5 ? 'treble' : 'bass'; };
         return {
+          pitcherr1: { tonal: 'tonal', krange: '3', kmode: 'both', clef: clefOf(),
+                       meter: pe1.meter, meterType: pe1.meterType, bars: 4, noteBudget: pe1.noteBudget,
+                       bpm: 72, plays: 5, errCount: 5, tuningA: true },
+          pitcherr2: { tonal: 'atonal', clef: clefOf(),
+                       meter: pe2.meter, meterType: pe2.meterType, bars: 4, noteBudget: pe2.noteBudget,
+                       bpm: 72, plays: 5, errCount: 5, tuningA: true },
           interval: { count: 10, allowRepeat: false, compound: true, pool: 'ALL13' },
           chord:    { count: 10, allowRepeat: false, inversion: false, pool: 'LV5' },
           rhythm1: { meter: r1.meter, meterType: 'simple', bars: r1.bars, bpm: 80, plays: 5, pitchMode: 'single' },
@@ -271,6 +309,36 @@
     });
   }
 
+  /* ===== 完整考卷（供「模擬考試回顧」逐題複習用） ===== */
+  function loadPapers() {
+    try { return JSON.parse(localStorage.getItem(LS_PAPERS) || '[]'); } catch (e) { return []; }
+  }
+  function savePapers(arr) {
+    try { localStorage.setItem(LS_PAPERS, JSON.stringify(arr)); } catch (e) {}
+  }
+  function getPaper(id) {
+    var a = loadPapers();
+    for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i];
+    return null;
+  }
+  function clearPapers() { savePapers([]); }
+  function papersSizeKB() {
+    try { return Math.round((localStorage.getItem(LS_PAPERS) || '').length / 1024); } catch (e) { return 0; }
+  }
+  /* 交卷時把整份考卷（出題設定＋題目＋作答）存起來。
+     存不下時（localStorage 滿）就從最舊的開始丟，丟到存得下為止。 */
+  function savePaper(rec, s) {
+    var arr = loadPapers();
+    arr.push({ id: rec.id, date: rec.date, preset: rec.preset, scope: rec.scope, play: rec.play,
+               total: rec.total, max: rec.max, pct: rec.pct, rows: rec.rows,
+               config: s.config || {}, data: s.data || {} });
+    while (arr.length > PAPERS_CAP) arr.shift();
+    for (var guard = 0; guard < PAPERS_CAP; guard++) {
+      try { localStorage.setItem(LS_PAPERS, JSON.stringify(arr)); return; }
+      catch (e) { if (arr.length <= 1) { try { localStorage.removeItem(LS_PAPERS); } catch (e2) {} return; } arr.shift(); }
+    }
+  }
+
   function finalize() {
     var s = loadSession(); if (!s) return null;
     var rows = buildScoreRows(s);
@@ -283,13 +351,14 @@
     var h = loadHistory(); h.push(rec);
     if (h.length > HISTORY_CAP) h = h.slice(h.length - HISTORY_CAP);
     try { localStorage.setItem(LS_HISTORY, JSON.stringify(h)); } catch (e) {}
+    savePaper(rec, s);          // 保留完整考卷供回顧
     clearSession();
     return rec;
   }
 
   /* ---------------- history ---------------- */
   function loadHistory() { try { return JSON.parse(localStorage.getItem(LS_HISTORY) || '[]'); } catch (e) { return []; } }
-  function clearHistory() { try { localStorage.removeItem(LS_HISTORY); } catch (e) {} }
+  function clearHistory() { try { localStorage.removeItem(LS_HISTORY); localStorage.removeItem(LS_PAPERS); } catch (e) {} }
   function historyStats(mode) {
     var h = loadHistory().filter(function (r) { return !mode || r.mode === mode; });
     if (!h.length) return null;
@@ -344,7 +413,9 @@
     var right = rightText || ('播放：' + playModeLabel(playMode()));
     if (exist) { exist.querySelector('.eh-play').innerHTML = right; return; }
     var bar = document.createElement('div'); bar.id = 'exam-head';
-    bar.innerHTML = '<span class="eh-title">' + def.no + '、' + def.label + '</span>' +
+    var pno = (presetOf() || {}).sectionNo;
+    var noTxt = (pno && pno[sectionKey]) ? pno[sectionKey] : def.no;
+    bar.innerHTML = '<span class="eh-title">' + noTxt + '、' + def.label + '</span>' +
                     '<span class="eh-play">' + right + '</span>';
     host.insertBefore(bar, host.firstChild);
   }
@@ -456,6 +527,7 @@
     gotoIndex: gotoIndex, gotoPrev: gotoPrev, gotoNext: gotoNext,
     unansweredReport: unansweredReport, computeResults: computeResults, finalize: finalize,
     loadHistory: loadHistory, clearHistory: clearHistory, historyStats: historyStats,
+    loadPapers: loadPapers, getPaper: getPaper, clearPapers: clearPapers, papersSizeKB: papersSizeKB, PAPERS_CAP: PAPERS_CAP,
     isExamMode: isExamMode,
     buildHeader: buildHeader, buildBar: buildBar, setPlaying: setPlaying, isLocked: isLocked,
     warnLocked: warnLocked, guardVisibility: guardVisibility
