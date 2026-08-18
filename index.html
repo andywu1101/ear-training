@@ -27,11 +27,14 @@
   .page-view.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-  .staff-header{ position: relative; height: 70px; margin-bottom: 20px; }
-  .staff-line{ position:absolute; left:0; right:0; height:1px; background: var(--hairline); }
-  .staff-line:nth-child(1){ top: 6px; } .staff-line:nth-child(2){ top: 22px; } .staff-line:nth-child(3){ top: 38px; }
-  .staff-line:nth-child(4){ top: 54px; } .staff-line:nth-child(5){ top: 70px; }
-  .clef-mark{ position:absolute; left: 8px; top: -14px; font-family: var(--font-display); font-size: 74px; font-weight: 400; color: var(--ink); opacity: 0.85; line-height: 1; user-select:none; }
+  /* 目錄頁背景：固定不動的淡音符點綴，捲動時卡片會從上面滑過。
+     縱向位置用 --app-vh 而非 %：手機瀏覽器的工具列收合會改變視窗高度，
+     用百分比的話音符會在載入後跳一下位置。橫向用 % 沒有這個問題。 */
+  .menu-notes{ position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .menu-note{ position: absolute; font-family: var(--font-display); color: var(--accent);
+              opacity: 0.07; line-height: 1; user-select: none; }
+  #pageMenu > *:not(.menu-notes){ position: relative; z-index: 1; }
+  #pageMenu h1{ margin-top: 6px; }
 
   h1{ font-family: var(--font-display); font-weight: 600; font-size: 30px; margin: 0 0 8px; letter-spacing: -0.01em; }
   .subtitle{ color: var(--ink-soft); font-size: 14px; margin: 0 0 22px; line-height: 1.6; }
@@ -52,11 +55,36 @@
   .menu-card-num { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
   .menu-card-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--ink); margin: 0 0 8px; }
   .menu-card-desc { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  /* 練習卡的說明：電腦版直接顯示描述文字；手機版空間不夠，改由右下角的 ▸ 開啟 */
+  .menu-info-btn{
+    display: none;                       /* 電腦版不顯示，有描述文字就夠了 */
+    position:absolute; right:6px; bottom:4px; width:34px; height:34px;
+    border:none; background:transparent; color:var(--ink-soft);
+    font-size:15px; line-height:1; cursor:pointer; touch-action:manipulation; padding:0;
+    align-items:center; justify-content:center;
+  }
+  .menu-info-btn:active{ color:var(--accent); }
+
+  /* 手機：練習卡改成兩欄，一個畫面看完八個項目 */
+  @media (max-width: 600px){
+    .menu-grid{ grid-template-columns: 1fr 1fr; gap: 14px; }
+    /* 下面三張（模擬測驗、贊助、錯題本總覽）維持單欄整排 */
+    .menu-grid > .menu-card:not(.practice-card){ grid-column: 1 / -1; }
+    .practice-card{ padding: 18px 12px 22px; }
+    .practice-card .menu-card-desc{ display: none; }      /* 說明改用 ▸ 開啟 */
+    .practice-card .menu-badge{ display: none; }          /* 整張卡都可以點，徽章省下來給標題 */
+    .practice-card .menu-card-num{ font-size: 11px; margin-bottom: 5px; }
+    .practice-card .menu-card-title{ font-size: 17px; margin: 0; }
+    .practice-card .menu-info-btn{ display: inline-flex; }
+  }
   .menu-badge { position: absolute; top: 18px; right: 18px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; font-family: var(--font-mono); }
   .badge-ready { background: var(--accent); color: var(--panel); }
   .badge-review { background: var(--wrong); color: var(--panel); }
   .badge-soon { background: var(--hairline); color: var(--ink-soft); }
-  .menu-new { position: absolute; right: 18px; bottom: 16px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 4px 10px; border-radius: 999px; background: var(--wrong); color: #fff; }
+  /* New! 標籤放卡片右上角；電腦版右上角有「開始練習」徽章，往左讓開並與它切齊
+     （top、字級、內距都要和 .menu-badge 一致，否則兩顆會一高一低） */
+  .menu-new { position: absolute; top: 18px; right: 96px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 4px 10px; border-radius: 999px; background: var(--wrong); color: #fff; }
+  @media (max-width: 600px){ .menu-new { top: 12px; right: 12px; } }
   .footer-note{ margin-top: 14px; font-size: 13.5px; color: var(--ink-soft); text-align:center; line-height:1.7; }
   .footer-link{ color: var(--accent); font-weight: 600; text-decoration: none; cursor: pointer; }
   .footer-link:hover{ text-decoration: underline; }
@@ -220,10 +248,19 @@
   <!-- 主目錄 -->
   <div id="pageMenu" class="page-view">
     <button class="cover-back-btn" onclick="showCover()">← 封面</button>
-    <div class="staff-header">
-      <div class="clef-mark">𝄞</div>
-      <div class="staff-line"></div><div class="staff-line"></div><div class="staff-line"></div>
-      <div class="staff-line"></div><div class="staff-line"></div>
+    <div class="menu-notes" aria-hidden="true">
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 4); right:6%; font-size:104px;">♫</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 13); left:-3%; font-size:132px;">♪</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 22); right:26%; font-size:62px;">♩</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 31); left:12%; font-size:78px;">♬</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 40); right:-4%; font-size:150px;">𝄞</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 49); left:2%; font-size:92px;">♪</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 58); right:14%; font-size:70px;">♫</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 67); left:-2%; font-size:120px;">♩</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 74); right:4%; font-size:96px;">♬</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 83); left:16%; font-size:64px;">♪</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 90); right:22%; font-size:110px;">𝄞</span>
+      <span class="menu-note" style="top:calc(var(--app-vh, 1vh) * 95); left:1%; font-size:82px;">♫</span>
     </div>
 
     <h1>音樂聽力練習</h1>
@@ -231,77 +268,85 @@
     <p class="intro-line">首次使用？<a href="https://youtu.be/fwHc6VuFatg" target="_blank" rel="noopener">▸ 請觀看完整使用教學</a></p>
 
     <div class="menu-grid">
-      <a href="interval-trainer.html" class="menu-card active-feature">
+      <a href="interval-trainer.html" class="menu-card active-feature practice-card">
         <span class="menu-badge badge-ready">開始練習</span>
         <div>
           <div class="menu-card-num">01</div>
           <h3 class="menu-card-title">音程練習</h3>
-          <p class="menu-card-desc">聽辨兩音之間的音程性質，涵蓋協和／不協和與超過八度的複音程，可單題或連續聽寫。</p>
+          <p class="menu-card-desc">判斷聽到的音程度數，並從選項中選出正確的音程名稱。</p>
         </div>
+        <button type="button" class="menu-info-btn" aria-label="說明" onclick="event.preventDefault();event.stopPropagation();showCardInfo(this)" data-title="音程練習" data-desc="判斷聽到的音程度數，並從選項中選出正確的音程名稱。">▸</button>
       </a>
 
-      <a href="chord-trainer.html" class="menu-card active-feature">
+      <a href="chord-trainer.html" class="menu-card active-feature practice-card">
         <span class="menu-badge badge-ready">開始練習</span>
         <div>
           <div class="menu-card-num">02</div>
           <h3 class="menu-card-title">和絃辨認</h3>
-          <p class="menu-card-desc">聽辨三和絃、七和絃到九和絃的性質與轉位，支援單題作答與整段連續聽寫。</p>
+          <p class="menu-card-desc">判斷聽到的和絃性質與轉位，從選項中選出正確的和絃性質名稱。</p>
         </div>
+        <button type="button" class="menu-info-btn" aria-label="說明" onclick="event.preventDefault();event.stopPropagation();showCardInfo(this)" data-title="和絃辨認" data-desc="判斷聽到的和絃性質與轉位，從選項中選出正確的和絃性質名稱。">▸</button>
       </a>
 
-      <a href="rhythm-trainer.html" class="menu-card active-feature">
+      <a href="rhythm-trainer.html" class="menu-card active-feature practice-card">
         <span class="menu-badge badge-ready">開始練習</span>
         <div>
           <div class="menu-card-num">03</div>
           <h3 class="menu-card-title">節奏練習</h3>
-          <p class="menu-card-desc">聽寫單／複拍子的常見節奏型，含預備拍與雙音顆粒訓練，逐格填出節奏。</p>
+          <p class="menu-card-desc">根據聽到的節奏，將正確的節奏型填入譜例中。</p>
         </div>
+        <button type="button" class="menu-info-btn" aria-label="說明" onclick="event.preventDefault();event.stopPropagation();showCardInfo(this)" data-title="節奏練習" data-desc="根據聽到的節奏，將正確的節奏型填入譜例中。">▸</button>
       </a>
 
-      <a href="melody-trainer.html" class="menu-card active-feature">
+      <a href="melody-trainer.html" class="menu-card active-feature practice-card">
         <span class="menu-badge badge-ready">開始練習</span>
         <div>
           <div class="menu-card-num">04</div>
           <h3 class="menu-card-title">單旋律曲調</h3>
-          <p class="menu-card-desc">聽寫單旋律的節奏與音高，以臨時記號作答，鍛鍊樂句記憶與音感。</p>
+          <p class="menu-card-desc">根據聆聽到的旋律與節奏填入譜例。</p>
         </div>
+        <button type="button" class="menu-info-btn" aria-label="說明" onclick="event.preventDefault();event.stopPropagation();showCardInfo(this)" data-title="單旋律曲調" data-desc="根據聆聽到的旋律與節奏填入譜例。">▸</button>
       </a>
 
-      <a href="two-part-trainer.html" class="menu-card active-feature">
+      <a href="two-part-trainer.html" class="menu-card active-feature practice-card">
         <span class="menu-badge badge-ready">開始練習</span>
         <div>
           <div class="menu-card-num">05</div>
           <h3 class="menu-card-title">兩聲部曲調</h3>
-          <p class="menu-card-desc">大譜表雙軌聽寫，可分聲部聆聽，同時寫出高、低兩聲部的節奏與音高。</p>
+          <p class="menu-card-desc">高音與低音同時演奏，將聆聽到的旋律與節奏填入大譜表譜例。</p>
         </div>
+        <button type="button" class="menu-info-btn" aria-label="說明" onclick="event.preventDefault();event.stopPropagation();showCardInfo(this)" data-title="兩聲部曲調" data-desc="高音與低音同時演奏，將聆聽到的旋律與節奏填入大譜表譜例。">▸</button>
       </a>
 
-      <a href="four-part-trainer.html" class="menu-card active-feature">
+      <a href="four-part-trainer.html" class="menu-card active-feature practice-card">
         <span class="menu-badge badge-ready">開始練習</span>
         <div>
           <div class="menu-card-num">06</div>
           <h3 class="menu-card-title">四部和聲進行</h3>
-          <p class="menu-card-desc">聽辨古典四部和聲，判斷調性、寫出低音線條與功能級數、轉位。</p>
+          <p class="menu-card-desc">聆聽四部和聲進行，將正確的調性、低音與級數填入譜例。</p>
         </div>
+        <button type="button" class="menu-info-btn" aria-label="說明" onclick="event.preventDefault();event.stopPropagation();showCardInfo(this)" data-title="四部和聲進行" data-desc="聆聽四部和聲進行，將正確的調性、低音與級數填入譜例。">▸</button>
       </a>
 
-      <a href="pitch-error-trainer.html" class="menu-card active-feature">
+      <a href="pitch-error-trainer.html" class="menu-card active-feature practice-card">
         <span class="menu-badge badge-ready">開始練習</span>
         <div>
           <div class="menu-card-num">07</div>
           <h3 class="menu-card-title">音高辨認 (找錯音)</h3>
-          <p class="menu-card-desc">聆聽旋律，並在題目的譜例上找出錯誤的音高。</p>
+          <p class="menu-card-desc">根據題目的譜例，從演奏片段中找出譜例上不相符的音高。</p>
         </div>
+        <button type="button" class="menu-info-btn" aria-label="說明" onclick="event.preventDefault();event.stopPropagation();showCardInfo(this)" data-title="音高辨認 (找錯音)" data-desc="根據題目的譜例，從演奏片段中找出譜例上不相符的音高。">▸</button>
       </a>
 
-      <a href="pitch-stack-trainer.html" class="menu-card active-feature">
+      <a href="pitch-stack-trainer.html" class="menu-card active-feature practice-card">
         <span class="menu-badge badge-ready">開始練習</span>
+        <span class="menu-new">New!</span>
         <div>
           <div class="menu-card-num">08</div>
           <h3 class="menu-card-title">音堆練習</h3>
-          <p class="menu-card-desc">聆聽同時彈出的音堆，把裡面的每一個音高寫到五線譜上。</p>
+          <p class="menu-card-desc">播放隨機的音堆，將所有的正確音高填入譜例中。</p>
         </div>
-        <span class="menu-new">New!</span>
+        <button type="button" class="menu-info-btn" aria-label="說明" onclick="event.preventDefault();event.stopPropagation();showCardInfo(this)" data-title="音堆練習" data-desc="播放隨機的音堆，將所有的正確音高填入譜例中。">▸</button>
       </a>
 
       <!-- 模擬測驗（全寬、置於贊助卡上方） -->
@@ -334,7 +379,7 @@
     </div>    <p class="footer-note">還沒加入主畫面？<a class="footer-link" href="https://youtu.be/fF4-J2NGAnw?t=27" target="_blank" rel="noopener">▸ 看看怎麼加入</a>，開啟體驗會更接近原生 App。</p>
 
     <div class="report-wrap"><a class="report-btn" href="https://forms.gle/EdacP17KLz1VBpyE8" target="_blank" rel="noopener">🐞 回報問題或建議</a></div>
-    <p class="app-version"><button type="button" class="ver-btn" id="appVersion" onclick="showChangelog()">音樂聽力練習 v.85　·　更新日誌 ▸</button></p>
+    <p class="app-version"><button type="button" class="ver-btn" id="appVersion" onclick="showChangelog()">音樂聽力練習 v.86　·　更新日誌 ▸</button></p>
   </div>
 
   <!-- 錯題本總覽 -->
@@ -432,6 +477,15 @@
 </div>
 
 <!-- 作者主頁彈窗（Portaly 主頁 / YouTube 頻道，可擴充） -->
+<div class="donate-modal" id="cardInfoModal" onclick="if(event.target===this) closeCardInfo()">
+  <div class="donate-box">
+    <div class="dico">🎵</div>
+    <h3 id="cardInfoTitle">項目說明</h3>
+    <p id="cardInfoDesc"></p>
+    <button class="donate-dismiss" onclick="closeCardInfo()">關閉</button>
+  </div>
+</div>
+
 <div class="donate-modal" id="authorModal" onclick="if(event.target===this) closeAuthor()">
   <div class="donate-box">
     <div class="dico">🎼</div>
@@ -447,6 +501,11 @@
   </div>
 </div>
 
+<script>
+/* 視窗實際高度寫進 --app-vh：手機工具列收合時 100vh 會變，用這個值才不會讓固定定位的元素跳動 */
+(function(){ function setVH(){ document.documentElement.style.setProperty('--app-vh', window.innerHeight*0.01+'px'); }
+  setVH(); window.addEventListener('resize', setVH); window.addEventListener('orientationchange', setVH); })();
+</script>
 <script>
 /* 從練習頁返回時帶 #menu：直接顯示選單、跳過封面（封面只在首次啟動出現）。此段趁早執行，避免閃到封面。 */
 /* 錯題本相關的錨點要等下面的渲染函式定義好才能處理，這裡先記下來、順便把封面收起來避免閃爍 */
@@ -536,6 +595,7 @@ var SPONSORS = [
   { name: '董○秀' },
   { name: 'Tong' },
   { name: '漫曼' },
+  { name: 'A. J.' },
   // { name: '王小明' },   ← 要新增就複製這一行、拿掉前面的「//」、把名字改掉
 ];
 
@@ -559,7 +619,7 @@ window.CHANGELOG = [
   { v: 'v.69', items: ['譜例最後一小節改為終止線', '大譜表的小節線與終止線改為貫穿上下譜表'] },
   { v: 'v.70', items: ['新增「更新日誌」，可查看歷次更新內容', '修正贊助彈窗在手機上捲動時上緣圓角被裁切的問題'] },
   { v: 'v.71', items: ['修正彈窗開啟時會捲動到背景頁面的問題'] },
-  { v: 'v.74', items: ['新增「音高辨認 (找錯音)」預告，功能即將推出'] },
+  { v: 'v.74', items: ['新增「音高辨認（找錯音）」預告，功能即將推出'] },
   { v: 'v.75', items: ['錯題本每個練習最多保留最近 50 筆，避免長期累積影響儲存'] },
   { v: 'v.77', items: ['Portaly 小額贊助正式開放'] },
   { v: 'v.78', items: ['選單頁教學連結更新為完整操作教學影片', '節奏、單旋律、兩聲部的解答頁與錯題本，現在兩張譜例會左右同步捲動', '取消錯題本的「重新作答訂正」，改為完整保留原始錯誤以利檢討'] }
@@ -571,7 +631,8 @@ window.CHANGELOG = [
 ,
   { v: 'v.83', items: ['新增「模擬考錯題本」：交卷後會完整保留考卷（最多 20 份），可一張一張回顧複習', '優化錯題本，現在有兩個入口：錯題本目錄（練習）、模擬考錯題本目錄', '各練習的解答頁新增「本項錯題本」與「錯題本目錄」按鈕', '優化模擬考分數顯示，看起來更加直觀'] },
   { v: 'v.84', items: ['錯題本改為由舊到新排列，進入時自動顯示最新一筆，並新增「返回設定頁」', '譜例寬度改為依音符密度自動調整，解答頁上下兩張譜等寬，捲軸同步時拍子對得齊', '統一各解答頁的按鈕排列與音符框選範圍', '修正模擬考錯題本中，音程與和絃會顯示到不相關內容的問題', '修正「錯題本目錄」點進去顯示空白、以及找錯音解答頁在手機無法上下捲動的問題', '作答時關閉手機的左滑返回手勢，避免捲動譜例時誤觸而離開頁面', '修正找錯音設定頁拖動播放速度時，上方數字不會跟著變的問題'] },
-  { v: 'v.85', items: ['全新推出「08 音堆練習」：聆聽同時彈出的音堆，將每一個正確音高寫到五線譜上', '特別優化音堆練習的播放音量，現在和聲的音高會聽得更清楚，低音不會再將高音蓋過去'] }
+  { v: 'v.85', items: ['全新推出「08 音堆練習」：聆聽同時彈出的音堆，將每一個正確音高寫到五線譜上', '特別優化音堆練習的播放音量，現在和聲的音高會聽得更清楚，低音不會再將高音蓋過去'] },
+  { v: 'v.86', items: ['主目錄介面優化：現在八個練習項目一目了然', '透過手機操作時，各練習項目的說明改由卡片右下角的 ▸ 開啟，版面更清爽', '修正音堆練習中，中央 C 等加線與音符沒有對齊的問題'] }
 ];
 
 function showChangelog(){
@@ -618,6 +679,15 @@ function renderSponsors(){
 function showDonate(){ showPanel(''); var m=document.getElementById('donateModal'); if(m) m.classList.add('open'); syncBodyLock(); }
 function closeDonate(){ var m=document.getElementById('donateModal'); if(m) m.classList.remove('open'); syncBodyLock(); }
 function showAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.add('open'); syncBodyLock(); }
+/* 目錄卡片的說明彈窗：卡片本身是連結，(i) 按鈕已在 onclick 攔掉預設行為 */
+function showCardInfo(btn){
+  document.getElementById('cardInfoTitle').textContent = btn.getAttribute('data-title') || '項目說明';
+  document.getElementById('cardInfoDesc').textContent  = btn.getAttribute('data-desc') || '';
+  var m = document.getElementById('cardInfoModal'); if(m) m.classList.add('open'); syncBodyLock();
+}
+function closeCardInfo(){
+  var m = document.getElementById('cardInfoModal'); if(m) m.classList.remove('open'); syncBodyLock();
+}
 function closeAuthor(){ var m=document.getElementById('authorModal'); if(m) m.classList.remove('open'); syncBodyLock(); }
 function _fallbackCopy(t){ try{ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }catch(_){} }
 function copyText(e, text){
@@ -629,7 +699,7 @@ function copyText(e, text){
     else { _fallbackCopy(num); done(); }
   }catch(_){ _fallbackCopy(num); done(); }
 }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeDonate(); closeAuthor(); closeChangelog(); } });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeDonate(); closeAuthor(); closeChangelog(); closeCardInfo(); } });
 /* 贊助者名單：有人才顯示入口按鈕 */
 (function(){
   try{
