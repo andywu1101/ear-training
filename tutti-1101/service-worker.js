@@ -26,6 +26,7 @@ const STATIC_ASSETS = [
   './audio-export.js',
   './sheet-export.js',
   './export-menu.js',
+  './lame.min.js',
   './acoustic_grand_piano-mp3.js',
   './salamander-piano-mp3.js',
   './icon-192.png',
