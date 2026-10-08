@@ -73,6 +73,8 @@
   .level-tab.active{ background: var(--accent); border-color: var(--accent); color: var(--panel); }
   .custom-panel{ margin-bottom: 24px; padding: 18px; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; }
   .custom-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 8px; margin-top: 10px; }
+  .custom-panel.readonly .custom-item{ cursor:default; opacity:0.92; }
+  .custom-panel.readonly .custom-item input{ cursor:default; }
   .custom-item{ display:flex; align-items:center; gap: 8px; padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: 8px; font-size: 13.5px; color: var(--ink); cursor:pointer; transition: border-color 0.12s ease; touch-action: manipulation; }
   .custom-item:hover{ border-color: var(--accent-line); }
   .custom-item input{ cursor:pointer; accent-color: var(--accent); width: 18px; height: 18px; }
@@ -354,7 +356,6 @@
         <div class="dictation-progress" id="int-dictDots"></div>
         <div class="play-area" style="border-bottom:none; padding-bottom: 8px; margin-bottom: 8px;">
           <button class="play-btn" id="int-dictPlayBtn" disabled>▶ 播放整段和聲音程</button>
-          <div class="play-caption" id="int-dictCaption">音色載入中，請稍候</div>
         </div>
         <p class="dictation-hint">點擊選中欲作答的題號格子，接著點擊下方選項即可填入答案，系統會自動跳至下一題！若要修改，可點擊格子內的選項清除，或直接點選新題號。</p>
         <div class="dictation-slots" id="int-dictSlots"></div>
@@ -692,9 +693,242 @@ function updateStaffHeader(pageId){
 
   function ensureAudio(){
     if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if(audioCtx.state === 'suspended') audioCtx.resume();
+    if(audioCtx.state !== 'running') audioCtx.resume();
     return audioCtx;
   }
+  /* ⚠ iOS 切到背景再回來之後沒有聲音（v.97 系列，每一層都經過實機驗證；詳見開發者手冊）
+     這個問題有四層，缺一層都修不好：
+       ① resume() 是非同步的：還沒恢復就排程，音符會被凍住
+          → 每個排程函式開頭先過 audioReady() 閘門
+       ② 頁尾開聲音通道的 unlock 原本每次開頁只跑一次，回來後通道打不開
+          → 回到前景後重新啟用（見頁尾），閘門也會在手勢裡再呼叫一次
+       ③ 被凍住的音符會在恢復時一起湧出來（聽起來像迴音）
+          → 回來時實測時間沒在走，就取消凍住的音符；換 context 時舊的會被關閉
+       ④ 最底層：Safari 讓取樣率相同的 AudioContext 共用同一個發聲裝置，
+          背景回來後這個裝置卡住，state 仍說 running、時間卻不動——連新建的 context 也一樣
+          → 備用 context 改用「不同的取樣率」，拿到全新的裝置（makeSpareCtx）
+     另外聲音經由媒體元素播出並設定 MediaSession（原理見 piano-engine.js），
+     動態島與鎖定畫面才會穩定顯示 App 圖示。
+
+     背景行為：
+       • 練習模式：切出去繼續播完（已宣告 audioSession = playback；音符在按下播放時就全部排好時間）
+       • 考試模式：維持切出去就停止並記為已播放（exam-common 的 guardVisibility，這裡不動）
+
+     閘門 audioReady 的規則：
+       平常 → 直接放行，不多等
+       媒體元素閒置暫停過 → 在這次點擊裡把它播回來（不顯示提示）
+       從背景回來或 context 沒在跑 → 在手勢裡重開通道、建備用 context，
+         最多觀察 AUDIO_PROBE_MAX 毫秒，任何一個的時間開始走就立刻播放
+     ⚠ 閘門要放在會改狀態的那幾行之前（isPlaying、replaysLeft、played…），
+       否則 retry 會被自己剛設下的旗標擋掉。音符的時間是在 retry 裡才算的。 */
+  try{
+    if(window.PianoEngine && window.PianoEngine.enableMediaOutput)
+      window.PianoEngine.enableMediaOutput({ title: '音程辨認', artist: '音樂聽力練習',
+        onStop: function(){ try{ window.stopAllPlayback(); }catch(e){} } });
+  }catch(e){}
+  function audioOut(c){ return (window.PianoEngine && window.PianoEngine.outputFor) ? window.PianoEngine.outputFor(c) : c.destination; }
+  function mediaNeeds(c){ return !!(window.PianoEngine && window.PianoEngine.mediaNeedsClaim && window.PianoEngine.mediaNeedsClaim(c)); }
+  function mediaClaim(c){ try{ if(window.PianoEngine && window.PianoEngine.claimMedia) window.PianoEngine.claimMedia(c); }catch(e){} }
+  function mediaSettled(c){ return !(window.PianoEngine && window.PianoEngine.mediaSettled) || window.PianoEngine.mediaSettled(c); }
+
+  var AUDIO_PROBE_MAX = 3000;     // 最多觀察多久（通道剛打開時硬體要暖機）
+  var AUDIO_PROBE_STEP = 100;
+  var AUDIO_MIN_ADV = 0.05;       // 時間至少要走 0.05 秒才算真的在跑
+  var AUDIO_WAIT_MS = 10000;      // soundfont 音色重新載入的上限
+  var audioPending = null;        // { retry, timer, spare }
+  var audioWasHidden = false;     // 切出去過
+  var audioSuspect = false;       // 下一次播放前要檢查
+
+  /* 提示：用獨立的浮動元素，不去動各頁自己的播放說明文字 */
+  var audioToastTimer = 0;
+  function audioToast(msg, autoHideMs){
+    var el = document.getElementById('audioWakeToast');
+    clearTimeout(audioToastTimer);
+    if(!msg){ if(el) el.style.display = 'none'; return; }
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'audioWakeToast';
+      el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:2000;'
+        + 'background:rgba(38,36,32,0.92);color:#fff;font-size:13.5px;line-height:1.4;'
+        + 'padding:9px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,0.3);'
+        + 'pointer-events:none;white-space:nowrap;';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = '';
+    if(autoHideMs) audioToastTimer = setTimeout(function(){ audioToast(null); }, autoHideMs);
+  }
+
+  function closeAudioCtx(c){
+    try{ if(c && window.PianoEngine && window.PianoEngine.releaseMedia) window.PianoEngine.releaseMedia(c); }catch(e){}
+    try{ if(c && c.close && c.state !== 'closed') c.close(); }catch(e){}
+  }
+  function cancelAudioWait(){
+    if(!audioPending) return;
+    clearTimeout(audioPending.timer);
+    if(audioPending.spare && audioPending.spare !== audioCtx) closeAudioCtx(audioPending.spare);
+    audioPending = null;
+    audioToast(null);
+  }
+  function fireAudioPending(){
+    if(!audioPending) return;
+    var fn = audioPending.retry;
+    clearTimeout(audioPending.timer);
+    audioPending = null;
+    if(typeof fn === 'function'){ try{ fn(); }catch(e){} }
+  }
+  /* 換到新的 context：舊的稍後再關（新的已確定在跑；關閉時凍住的音符一起消失） */
+  function switchAudioCtx(next){
+    var old = audioCtx;
+    audioCtx = next;
+    if(old && old !== next) setTimeout(function(){ closeAudioCtx(old); }, 1500);
+  }
+  /* soundfont 音色：只能在新的 context 上重新載入，等音色換好才播 */
+  function reloadThenFire(p){
+    var before = pianoInstrument, t0 = Date.now();
+    audioToast('🎹 重新載入音色…');
+    try{ if(typeof loadPiano === 'function') loadPiano(); }catch(e){}
+    (function wait(){
+      if(audioPending !== p) return;
+      if(pianoInstrument && pianoInstrument !== before){ audioToast(null); fireAudioPending(); return; }
+      if(Date.now() - t0 > AUDIO_WAIT_MS){
+        audioPending = null;
+        audioToast('⚠️ 音色載入失敗，請重新開啟 App', 4000);
+        return;
+      }
+      p.timer = setTimeout(wait, 100);
+    })();
+  }
+  /* ⚠ 備用 context 要用跟舊的「不同」的取樣率（v.97.9 實機驗證有效）。
+     Safari 會讓同一頁裡取樣率相同的 AudioContext 共用同一個底層發聲裝置；
+     切到背景時 iOS 停掉這個裝置，回來後沒有重新啟動。
+     實測（v.97.8）：媒體元素已經在播（動態島有顯示），但新舊 context 時間都不動——
+     新建的 context 接到同一個卡住的裝置上了。
+     換一個取樣率就會拿到全新的裝置。舊的 context 換過去後會被關閉，
+     卡住的裝置跟著釋放，下一次再換回另一個取樣率，兩個輪流用。
+     鋼琴取樣不必重新解碼：AudioBufferSourceNode 會自動轉換取樣率，音高不受影響。 */
+  function makeSpareCtx(old){
+    var C = window.AudioContext || window.webkitAudioContext;
+    var want = (old && Math.round(old.sampleRate) === 44100) ? 48000 : 44100;
+    try{ return new C({ sampleRate: want }); }catch(e){}
+    return new C();                         // 不支援指定取樣率的舊版：退回原本的做法
+  }
+
+  function audioReady(retry){
+    /* 正在檢查或重新載入中：換成最新的這次請求，等結果出來再播 */
+    if(audioPending){ audioPending.retry = retry; return false; }
+
+    var old;
+    try{ old = ensureAudio(); }catch(e){ return true; }   // 連建都失敗就照原本的路走
+    if(!old) return true;
+    if(old.state === 'running' && !audioSuspect && !mediaNeeds(old)) return true;   // 平常走這裡，不多等
+
+    /* ---- 以下在使用者手勢裡同步執行 ---- */
+    var wasSuspect = audioSuspect;
+    /* 只是媒體元素閒置暫停過（平常重播）→ 在手勢裡把它播回來就好，不必建備用 context、也不顯示提示 */
+    var needSpare = audioSuspect || old.state !== 'running';
+    audioSuspect = false;
+    if(needSpare){ try{ if(typeof window.__audioUnlock === 'function') window.__audioUnlock(); }catch(e){} }   // 重開聲音通道
+    try{ if(old.state !== 'running') old.resume(); }catch(e){}
+    mediaClaim(old);                        // ⚠ 必須在點擊的同一個呼叫堆疊裡
+    var spare = null;
+    if(needSpare){
+      try{
+        spare = makeSpareCtx(old);
+        if(spare.state !== 'running') spare.resume();
+        mediaClaim(spare);
+      }catch(e){ spare = null; }
+    }
+
+    var p = audioPending = { retry: retry, timer: 0, spare: spare };
+    var o0 = old.currentTime, s0 = spare ? spare.currentTime : 0, began = Date.now();
+    if(needSpare) audioToast('🔊 正在恢復聲音…');
+
+    function rebindTo(c){
+      return !!(window.PianoEngine && window.PianoEngine.rebind && pianoInstrument && window.PianoEngine.rebind(pianoInstrument, c));
+    }
+    (function check(){
+      if(audioPending !== p) return;        // 被取消了（按停止／切頁），cancelAudioWait 已處理
+      var ms = Date.now() - began;
+      var oldAlive   = old.state === 'running' && (old.currentTime - o0) >= AUDIO_MIN_ADV && mediaSettled(old);
+      var spareAlive = !!spare && spare.state === 'running' && (spare.currentTime - s0) >= AUDIO_MIN_ADV && mediaSettled(spare);
+
+      if(wasSuspect && spareAlive && rebindTo(spare)){
+        p.spare = null; switchAudioCtx(spare);
+        audioToast('🔊 已重新連接音訊', 1200);
+        fireAudioPending(); return;
+      }
+      if(oldAlive){
+        closeAudioCtx(spare); p.spare = null;
+        audioToast(null);
+        fireAudioPending(); return;
+      }
+      if(spareAlive && rebindTo(spare)){
+        p.spare = null; switchAudioCtx(spare);
+        audioToast('🔊 已重新連接音訊', 1200);
+        fireAudioPending(); return;
+      }
+      if(spareAlive){
+        p.spare = null; switchAudioCtx(spare);
+        reloadThenFire(p); return;
+      }
+      if(ms >= AUDIO_PROBE_MAX){
+        closeAudioCtx(spare); p.spare = null;
+        audioPending = null;
+        audioSuspect = true;                // 下一次點擊再完整試一次
+        audioToast('🔊 請再點一下播放', 3000);
+        return;
+      }
+      try{ if(old.state !== 'running') old.resume(); }catch(e){}
+      try{ if(spare && spare.state !== 'running') spare.resume(); }catch(e){}
+      p.timer = setTimeout(check, AUDIO_PROBE_STEP);
+    })();
+    return false;
+  }
+
+  /* 使用者按停止／切頁／交卷 → 他已經放棄了，不要等一下突然響起來。
+     ⚠ 包在各頁原本的停止函式外面，所以所有既有的呼叫點都自動生效。 */
+  (function(){
+    var orig = window.stopAllPlayback;
+    if(typeof orig === 'function'){
+      window.stopAllPlayback = function(){ cancelAudioWait(); return orig.apply(this, arguments); };
+    }
+  })();
+
+  /* 切出去：練習模式讓它繼續播完，只取消「還在檢查中」的請求。
+     （考試模式由 exam-common 的 guardVisibility 自己停止） */
+  function sleepAudioOnLeave(){
+    audioWasHidden = true;
+    cancelAudioWait();
+  }
+  /* 回來：先假設通道可能斷了（這段時間內按播放會先檢查），
+     再實測時間有沒有在走——有就不打擾，沒有才停止並清掉凍住的音符。 */
+  function wakeAudioOnReturn(){
+    if(!audioWasHidden) return;
+    audioWasHidden = false;
+    audioSuspect = true;
+    var c = audioCtx;
+    if(!c) return;
+    try{ if(c.state !== 'running') c.resume(); }catch(e){}
+    var t0 = c.currentTime;
+    setTimeout(function(){
+      if(audioCtx !== c) return;            // 已經換過 context 了
+      var alive = c.state === 'running' && (c.currentTime - t0) >= AUDIO_MIN_ADV;
+      if(alive){ audioSuspect = false; return; }   // 背景播放還在走、或已正常播完
+      try{ if(typeof window.stopAllPlayback === 'function') window.stopAllPlayback(); }catch(e){}
+    }, 300);
+  }
+
+  /* iOS 只有在使用者手勢裡才一定允許喚醒音訊，所以每次點擊都順手叫一次 */
+  document.addEventListener('pointerdown', function(){
+    try{ ensureAudio(); }catch(e){}
+  }, true);
+
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden) sleepAudioOnLeave(); else wakeAudioOnReturn();
+  });
+  window.addEventListener('pagehide', sleepAudioOnLeave);
+  window.addEventListener('pageshow', wakeAudioOnReturn);
   /* 載入音色時的畫面提示。Salamander 要在瀏覽器解碼 30 個取樣，過程中顯示進度；
      萬一載入失敗，引擎會自動退回原本的音色，不讓使用者卡住。 */
   var PIANO_UI = {
@@ -733,7 +967,9 @@ function updateStaffHeader(pageId){
   }
 
   function playBlock(root, intervals, repeats){
-    if(!pianoInstrument) return 0; const ctx = audioCtx; let t = ctx.currentTime + 0.05;
+    if(!pianoInstrument) return 0;
+    if(!audioReady(function(){ playBlock(root, intervals, repeats); })) return 0;
+    const ctx = audioCtx; let t = ctx.currentTime + 0.05;
     for(let r = 0; r < repeats; r++){
       intervals.forEach(iv => pianoInstrument.play(root + iv, t, { duration: CHORD_HOLD_SEC, gain: gainFor(root + iv, intervals.length) }));
       t += CHORD_HOLD_SEC + CHORD_TRIPLE_GAP;
@@ -903,6 +1139,7 @@ function updateStaffHeader(pageId){
 
   function playAscendingHarmonic(root, intervals){
     if(!pianoInstrument || intervals.length < 2) return 0;
+    if(!audioReady(function(){ playAscendingHarmonic(root, intervals); })) return 0;
     const ctx = audioCtx; let t = ctx.currentTime + 0.05;
     pianoInstrument.play(root + intervals[0], t, { duration: 0.6, gain: gainFor(root + intervals[0], 1) }); t += 0.55;
     pianoInstrument.play(root + intervals[1], t, { duration: 0.6, gain: gainFor(root + intervals[1], 1) }); t += 0.65;
@@ -979,7 +1216,19 @@ function updateStaffHeader(pageId){
       });
       updateCustomVis(); updateStartBtn();
     }
-    function updateCustomVis(){ document.getElementById('int-customPanel').style.display = curLevel.id === CUSTOM_ID ? 'block' : 'none'; }
+    /* 面板永遠顯示：選「自訂」時可以勾選，選其他難度時唯讀列出該難度包含的項目，
+       讓使用者看得到每個難度的內容。 */
+    function updateCustomVis(){
+      const panel = document.getElementById('int-customPanel');
+      const isCustom = (curLevel.id === CUSTOM_ID);
+      panel.style.display = 'block';
+      panel.classList.toggle('readonly', !isCustom);
+      const lab = panel.querySelector('.switch-group-label');
+      if(lab) lab.textContent = isCustom ? '自訂內容（至少選 2 種）' : ('「' + curLevel.name + '」包含：');
+      const hint = document.getElementById('int-customHint');
+      if(hint) hint.style.display = isCustom ? '' : 'none';
+      renderCustom();
+    }
     function updateStartBtn(){
       const insufficient = curLevel.id === CUSTOM_ID && customPool.length < 2;
       const btn = document.getElementById('int-enterBtn'); btn.disabled = insufficient;
@@ -989,6 +1238,21 @@ function updateStaffHeader(pageId){
 
     function renderCustom(){
       const grid = document.getElementById('int-customGrid'); grid.innerHTML = '';
+      const isCustom = (curLevel.id === CUSTOM_ID);
+      /* 非自訂難度：顯示該難度的 pool，而且不可點 */
+      const shown = isCustom ? customPool : curLevel.pool;
+
+      if(!isCustom){
+        ORDER.forEach(key => {
+          if(shown.indexOf(key) < 0) return;
+          const item = document.createElement('label'); item.className = 'custom-item on';
+          const cb = document.createElement('input'); cb.type = 'checkbox';
+          cb.checked = true; cb.disabled = true;
+          item.appendChild(cb); item.appendChild(document.createTextNode(QUALITIES[key].label));
+          grid.appendChild(item);
+        });
+        return;
+      }
 
       const allItem = document.createElement('label'); allItem.className = 'custom-item select-all';
       const allCb = document.createElement('input'); allCb.type = 'checkbox';
@@ -1393,8 +1657,10 @@ function updateStaffHeader(pageId){
           window.stopAllPlayback(); document.getElementById('int-testSummary').style.display='none'; document.getElementById('int-questionPanel').style.display='block';
           const v = document.getElementById('int-testReplaySelect').value; const max = v==='inf'?Infinity:parseInt(v,10); testSession={total:TEST_TOTAL,index:1,correct:0,maxReplays:max,replaysLeft:max,finished:false}; newTestQ();
         };
-        document.getElementById('int-dictPlayBtn').onclick = () => {
-          if(!pianoInstrument||!dictSession||dictSession.replaysLeft<=0) return; window.stopAllPlayback();
+        document.getElementById('int-dictPlayBtn').onclick = function dictPlay(){
+          if(!pianoInstrument||!dictSession||dictSession.replaysLeft<=0) return;
+          if(!audioReady(dictPlay)) return;
+          window.stopAllPlayback();
           if(dictSession.replaysLeft!==Infinity) dictSession.replaysLeft--; dictSession.hasPlayed = true;
           document.getElementById('int-dictBank').classList.remove('locked-pending'); document.getElementById('int-dictSlots').classList.remove('locked-pending');
           document.getElementById('int-dictSubmitBtn').disabled = false; updateDictCaption(); document.getElementById('int-dictPlayBtn').disabled = true;
@@ -1616,8 +1882,9 @@ function updateStaffHeader(pageId){
           intModule.updatePlayBtn = function(){ try{ _o(); }catch(e){} readyPlayBtn(); };
         }
 
-        pb.onclick = function(){
+        pb.onclick = function examPlay(){
           if(!pianoInstrument || sd.played) return;
+          if(!audioReady(examPlay)) return;
           window.stopAllPlayback();
           sd.played = true; EXm.markPlayed(KEY);      // 一按下就記已播放（切走也不能重聽）
           unlockAnswering(); lockPlayBtn();
@@ -1785,6 +2052,20 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
   }
   document.addEventListener("touchend",unlock,true);
   document.addEventListener("click",unlock,true);
+  /* ⚠ v.97.7：iOS 切到背景一段時間後會收回聲音通道，回來後必須在使用者手勢裡再開一次。
+     原本這段每次開頁只執行一次（done 旗標），回來之後就再也不會執行，
+     通道永遠打不開——連新建的 AudioContext 也一樣沒聲音。
+     所以回到前景時重新啟用，讓下一次碰觸畫面時再開一次通道。 */
+  function rearm(){
+    if(!done) return;
+    done=false;
+    document.addEventListener("touchend",unlock,true);
+    document.addEventListener("click",unlock,true);
+  }
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden) rearm(); });
+  window.addEventListener("pageshow",function(e){ if(e && e.persisted) rearm(); });
+  /* 播放閘門在手勢裡會呼叫這個：不管旗標，直接再開一次 */
+  window.__audioUnlock=function(){ done=false; unlock(); };
 })();
 </script>
 
