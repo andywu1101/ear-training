@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>音高辨認（找錯音） - 音樂聽力練習</title>
+<title>音高辨認 (找錯音) - 音樂聽力練習</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,11 +11,14 @@
 <meta name="apple-mobile-web-app-title" content="聽力訓練">
 <meta name="theme-color" content="#33415c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+TC:wght@400..800&display=swap" rel="stylesheet">
 <!-- 函式庫：本機優先，若本機檔案不存在則自動退回 CDN（確保永遠可用） -->
 <script src="soundfont-player.min.js"></script>
 <script>window.Soundfont||document.write('<script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"><\/script>');</script>
 <script src="piano-engine.js"></script>
+<script src="audio-export.js"></script>
+<script src="sheet-export.js"></script>
+<script src="export-menu.js"></script>
 <script src="vexflow-min.js"></script>
 <script>window.Vex||document.write('<script src="https://cdn.jsdelivr.net/npm/vexflow@3.0.9/releases/vexflow-min.js"><\/script>');</script>
 <style>
@@ -23,7 +26,7 @@
     --paper: #efeee6; --panel: #fbfaf6; --panel-border: #ddd8c9; --hairline: #e2ddce;
     --ink: #262420; --ink-soft: #75705f; --accent: #33415c; --accent-soft: rgba(51,65,92,0.08);
     --accent-line: rgba(51,65,92,0.35); --correct: #4b7a5b; --wrong: #a6493b; --wrong-soft: rgba(166,73,59,0.09); --radius: 16px;
-    --font-display: 'Fraunces', serif; --font-body: 'Inter', -apple-system, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+    --font-display: 'Fraunces', -apple-system, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; --font-body: 'Inter', -apple-system, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; --font-mono: 'JetBrains Mono', monospace;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -84,6 +87,7 @@
   .staff-scroll-container::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
 
   .unified-action-row { display: flex; gap: 8px; justify-content: center; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .exp-btn{ flex:0 0 auto; min-width:52px; padding-left:12px; padding-right:12px; }
   .action-btn, .play-btn { font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 999px; cursor: pointer; transition: all 0.2s; }
   .action-btn { border: 1px solid var(--ink-soft); background: transparent; color: var(--ink); }
   .play-btn, .btn-submit { background: var(--accent); color: var(--panel); border: none; }
@@ -247,7 +251,7 @@
       </div>
     </div>
 
-    <h1>音高辨認（找錯音）— 設定</h1>
+    <h1>音高辨認 (找錯音) — 設定</h1>
     <p class="subtitle">聆聽正確的演奏，並在題目的譜例上找出印錯的音高。節奏永遠正確，只有音高會錯。</p>
 
     <div class="switch-row">
@@ -350,7 +354,7 @@
     </div>
 
     <button class="start-big-btn" id="pe-enterBtn">🎯 確認設定，開始找錯音 →</button>
-    <button class="review-entry-btn" onclick="showPage('pe-review')">📕 錯題本（<span id="pe-reviewCount">0</span> 題）</button>
+    <button class="review-entry-btn" onclick="showPage('pe-review')">📕 錯題本 (<span id="pe-reviewCount">0</span> 題)</button>
   </div>
 
   <!-- ================= 作答頁 ================= -->
@@ -370,7 +374,7 @@
 
       <div class="unified-action-row">
         <button class="play-btn" id="pe-playBtn" disabled>▶ 播放題目</button>
-        <button class="action-btn" id="pe-tuningBtn" title="播放標準音 A（2 秒）">🎵 標準音 A</button>
+        <button class="action-btn" id="pe-tuningBtn" title="播放標準音 A (2 秒)">🎵 標準音 A</button>
         <button class="action-btn" id="pe-clearBtn">🗑️ 清除圈選</button>
         <button class="action-btn btn-submit" id="pe-submitBtn">✔ 提交作答</button>
         <button class="action-btn btn-submit" id="pe-nextBtn" style="display:none;">下一題 →</button>
@@ -400,12 +404,13 @@
     <div class="unified-action-row" style="margin-bottom:14px;">
       <button class="play-btn" id="pe-ansPlayCorrect">🎧 聽正確演奏</button>
       <button class="action-btn" id="pe-ansPlayHeard" style="color:var(--wrong); border-color:var(--wrong);">🎼 聽譜例上寫的</button>
-      <button class="action-btn" id="pe-ansTuning" style="display:none;" title="播放標準音 A（2 秒）">🎵 標準音 A</button>
+      <button class="action-btn" id="pe-ansTuning" style="display:none;" title="播放標準音 A (2 秒)">🎵 標準音 A</button>
+      <button class="action-btn exp-btn" id="pe-ansExport" title="導出">⬇️</button>
     </div>
 
-    <div class="review-label">題目譜例（含錯音）：綠色＝你找到的　｜　紅色＝漏掉的　｜　紅色虛線框＝圈錯的位置；音符上方標示正確的音高。</div>
+    <div class="review-label">題目譜例 (含錯音)：綠色＝你找到的　｜　紅色＝漏掉的　｜　紅色虛線框＝圈錯的位置；音符上方標示正確的音高。</div>
     <div class="review-staff"><div id="pe-ansScoreStaff"></div></div>
-    <div class="review-label" style="margin-top:8px;">正確演奏（藍色為對應的正確音）：</div>
+    <div class="review-label" style="margin-top:8px;">正確演奏 (綠色為對應的正確音)：</div>
     <div class="review-staff"><div id="pe-ansCorrectStaff"></div></div>
 
     <div class="pe-dbg" id="pe-ansDetail" style="margin-top:12px;"></div>
@@ -453,19 +458,19 @@
 <div class="help-modal" id="pe-helpModal" onclick="if(event.target===this) closeHelp('pe-helpModal')">
   <div class="help-box">
     <button class="help-close" onclick="closeHelp('pe-helpModal')" aria-label="關閉">×</button>
-    <h2>音高辨認（找錯音）— 玩法說明</h2>
+    <h2>音高辨認 (找錯音) — 玩法說明</h2>
     <p class="help-lead">聆聽旋律，並在題目的譜例上找出錯誤的音高。</p>
     <h3>玩法</h3>
     <p>播放的是<b>正確的演奏</b>，但譜例上有幾個音的<b>音高印錯了</b>。<b>節奏永遠正確</b>，只有音高會錯。你的任務是聽出哪幾個音跟聽到的不一樣，把譜上那幾個錯音圈起來。</p>
     <h3>設定</h3>
-    <p>可選<b>練習模式</b>（播放次數不限）或<b>測驗模式</b>（限制次數）；譜號、拍號、小節數、速度可自訂。<b>有調性</b>模式會顯示調號、旋律有和聲進行並收在主音上，可再指定調號範圍與大小調；<b>無調性</b>則全部使用臨時記號。<b>錯音數量</b>會隨小節數調整上限。</p>
+    <p>可選<b>練習模式</b> (播放次數不限)或<b>測驗模式</b> (限制次數)；譜號、拍號、小節數、速度可自訂。<b>有調性</b>模式會顯示調號、旋律有和聲進行並收在主音上，可再指定調號範圍與大小調；<b>無調性</b>則全部使用臨時記號。<b>錯音數量</b>會隨小節數調整上限。</p>
     <h3>作答</h3>
-    <p>按「<b>播放題目</b>」聆聽正確的演奏（先給預備拍）。<b>點一下</b>音符即可圈選，<b>再點一次</b>取消。譜例下方會顯示本題的錯音個數與你已圈選的數量。「<b>🎵 標準音 A</b>」隨時可按，不佔播放次數。</p>
+    <p>按「<b>播放題目</b>」聆聽正確的演奏 (先給預備拍)。<b>點一下</b>音符即可圈選，<b>再點一次</b>取消。譜例下方會顯示本題的錯音個數與你已圈選的數量。「<b>🎵 標準音 A</b>」隨時可按，不佔播放次數。</p>
     <h3>計分</h3>
-    <p>找到一個錯音得 1 分，<b>圈錯一個扣 1 分</b>（單題不會低於 0 分），漏掉的不計分。所以不要全部圈起來碰運氣。</p>
+    <p>找到一個錯音得 1 分，<b>圈錯一個扣 1 分</b> (單題不會低於 0 分)，漏掉的不計分。所以不要全部圈起來碰運氣。</p>
     <div class="help-common">
       <h3>錯題本</h3>
-      <p>沒有全部找出來的題目會自動收進「錯題本」，存在本機瀏覽器（重整或關閉都不會消失），可重播對照。每個練習最多保留最近 50 筆。</p>
+      <p>沒有全部找出來的題目會自動收進「錯題本」，存在本機瀏覽器 (重整或關閉都不會消失)，可重播對照。每個練習最多保留最近 50 筆。</p>
       <h3>回報問題</h3>
       <p style="margin-top:2px;"><a href="https://forms.gle/EdacP17KLz1VBpyE8" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none;border-bottom:1px dashed #ddd8c9;">🐞 回報問題或建議</a></p>
     </div>
@@ -1501,7 +1506,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
        否則 retry 會被自己剛設下的旗標擋掉。音符的時間是在 retry 裡才算的。 */
   try{
     if(window.PianoEngine && window.PianoEngine.enableMediaOutput)
-      window.PianoEngine.enableMediaOutput({ title: '音高辨認（找錯音）', artist: '音樂聽力練習',
+      window.PianoEngine.enableMediaOutput({ title: '音高辨認 (找錯音)', artist: '音樂聽力練習',
         onStop: function(){ try{ window.peStopAll(); }catch(e){} } });
   }catch(e){}
   function audioOut(c){ return (window.PianoEngine && window.PianoEngine.outputFor) ? window.PianoEngine.outputFor(c) : c.destination; }
@@ -2053,12 +2058,12 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
     },
 
     /* ---------- 提交與計分 ---------- */
-    submit(){
+    submit(confirmed){
       if(this.submitted) return;
       const need = this.errorGroups.length;
-      if(this.selected.size !== need){
+      if(this.selected.size !== need && confirmed !== true){   // （v.98.8：改用自訂確認框，iPhone 的系統提示框會讓播放中的聲音跳針；確定後再呼叫一次本函式並帶 true）
         const msg = '你圈選了 ' + this.selected.size + ' 個，本題有 ' + need + ' 個錯音。\n未圈選的會算作漏掉，確定提交嗎？';
-        if(!window.confirm(msg)) return;
+        appConfirm(msg, () => this.submit(true)); return;
       }
       window.peStopAll();
       this.submitted = true;
@@ -2193,11 +2198,31 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
       });
     },
 
-    // 下方：正確演奏的譜例，對應位置用主色藍標出（與上方的綠／紅區隔）
+    // 下方：正確演奏的譜例，改正後的音用綠色音符＋綠框標出（v.98：原本是藍色、沒有框）。
+    // 綠框的大小與位置和上方的紅框相同；導出的「正確譜例」也是這個樣子。
     drawCorrectStaff(containerId, d){
+      const GREEN = '#4b7a5b';
       const marks = {};
-      d.errorGroups.forEach(g => { marks[d.groups[g].members[0]] = '#33415c'; });
-      drawStaff(containerId, d.seq, d.correctPitch, d.cfg, marks);
+      d.errorGroups.forEach(g => { marks[d.groups[g].members[0]] = GREEN; });
+      const notes = drawStaff(containerId, d.seq, d.correctPitch, d.cfg, marks);
+      const host = document.getElementById(containerId);
+      if(!host || !notes || !notes.length) return;
+      host.style.position = 'relative';
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:absolute; inset:0; pointer-events:none;';
+      host.appendChild(overlay);
+      d.errorGroups.forEach(g => {
+        const fn = notes[d.groups[g].members[0]]; if(!fn) return;
+        const stave = fn.getStave(); if(!stave) return;
+        const nx = (typeof fn.getAbsoluteX === 'function') ? fn.getAbsoluteX() : stave.getX();
+        const box = document.createElement('div');
+        box.style.cssText = 'position:absolute; border-radius:7px; border:1.5px solid var(--correct); background:rgba(75,122,91,0.10);';
+        box.style.left = (nx - 10) + 'px';
+        box.style.top = (stave.getYForLine(0) - 22) + 'px';
+        box.style.width = '26px';
+        box.style.height = '90px';
+        overlay.appendChild(box);
+      });
     },
 
     answerDetail(d){
@@ -2406,7 +2431,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
         const left = maxPlays - used;
         if(self.isPlaying || self._examTuning){ pb.textContent = '🔊 播放中...'; pb.disabled = true; return; }
         pb.disabled = !pianoInst || left <= 0;
-        pb.textContent = left > 0 ? ('▶ 播放題目（剩餘 ' + left + ' 次）') : '▶ 已用完播放次數';
+        pb.textContent = left > 0 ? ('▶ 播放題目 (剩餘 ' + left + ' 次)') : '▶ 已用完播放次數';
         EXm.buildHeader(host, KEY, headText());
       }
       this.updatePlayBtn = function(){ refreshPlayBtn(); };
@@ -2434,7 +2459,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
         if(firstTime){
           // 考試模式第一次播放前給標準音 A440（2 秒），再進預備拍
           self._examTuning = true; refreshPlayBtn();
-          document.getElementById('pe-playCaption').textContent = '🎵 標準音 A＝440Hz（2 秒）…';
+          document.getElementById('pe-playCaption').textContent = '🎵 標準音 A＝440Hz (2 秒)…';
           pianoInst.play(69, ensureAudio().currentTime + 0.05, { duration: 2.0, gain: 3.5 });
           pendingTimers.push(setTimeout(runSeq, 2600));
         } else {
@@ -2514,8 +2539,9 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
           + '<div class="unified-action-row" style="margin:8px 0 12px;">'
           + '<button class="play-btn pe-rv-correct">🎧 聽正確演奏</button>'
           + '<button class="action-btn pe-rv-heard" style="color:var(--wrong); border-color:var(--wrong);">🎼 聽譜例上寫的</button>'
+          + '<button class="action-btn exp-btn pe-rv-export" title="導出">⬇️</button>'
           + '</div>'
-          + '<div class="review-label">題目譜例（含錯音）：綠＝你找到的　｜　紅＝漏掉的　｜　虛線框＝圈錯的；音符上方為正確的音高。</div>'
+          + '<div class="review-label">題目譜例 (含錯音)：綠＝你找到的　｜　紅＝漏掉的　｜　虛線框＝圈錯的；音符上方為正確的音高。</div>'
           + '<div class="review-staff"><div id="pe-rv-top-' + uid + '"></div></div>'
           + '<div class="review-label" style="margin-top:8px;">正確演奏：</div>'
           + '<div class="review-staff"><div id="pe-rv-bot-' + uid + '"></div></div>'
@@ -2524,6 +2550,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
 
         box.querySelector('.pe-rv-correct').onclick = () => this.playStatic(withReviewBpm(item), false);
         box.querySelector('.pe-rv-heard').onclick = () => this.playStatic(withReviewBpm(item), true);
+        box.querySelector('.pe-rv-export').onclick = (ev) => this.openExport(withReviewBpm(item), ev.currentTarget);   // 速度用錯題本的拉桿
 
         setTimeout(() => {
           this.drawAnswerSingle('pe-rv-top-' + uid, item);
@@ -2589,13 +2616,13 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
       const b = document.getElementById('pe-playBtn');
       if(!b) return;
       const noLeft = (this.replaysLeft <= 0);
-      b.disabled = !pianoInst || this.isPlaying || noLeft;
+      b.disabled = !pianoInst || this.isPlaying || noLeft || PianoEngine.isLocked();   // v.98.8：標準音或淡出中也不能按
       b.textContent = this.isPlaying ? '⏸ 播放中…' : (noLeft ? '播放次數已用完' : '▶ 播放題目');
       const c = document.getElementById('pe-clearBtn'); if(c) c.disabled = this.submitted;
     },
 
     play(){
-      if(!pianoInst || this.isPlaying) return;
+      if(!pianoInst || this.isPlaying || PianoEngine.isLocked()) return;
       if(this.replaysLeft <= 0) return;
       const __self = this;
       if(!audioReady(function(){ __self.play(); })) return;
@@ -2635,6 +2662,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
         noteIdx += lens.length;
       });
 
+      PianoEngine.holdUntil(ctx, time);
       this.isPlaying = true; this.updatePlayBtn(); this.updateHint();
       document.getElementById('pe-playCaption').textContent = '播放中…';
       pendingTimers.push(setTimeout(() => {
@@ -2643,12 +2671,150 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
       }, (time - ctx.currentTime) * 1000 + 150));
     },
 
+    /* ===== 導出（v.98，贊助者版）=====
+       三種：題目音檔（正確演奏）、題目譜例（含錯音、無標記）、正確譜例（正確的旋律，改正後的音綠色＋綠框）。
+       d 的欄位與錯題本的一筆相同：seq, correctPitch, errPitch, errorGroups, groups, cfg, bpm, meter, meterType。
+       ⚠ 譜例要另外畫一份乾淨的，不要抓畫面上那張（畫面上有使用者的圈選標記）。 */
+    exportData(){
+      return { seq: this.seq, correctPitch: this.correctPitch, errPitch: this.errPitch,
+        errorGroups: this.errorGroups, groups: this.info.groups, errorIdx: this.errorIdx,
+        cfg: this.staffCfg(), bpm: this.bpm, meter: this.meter, meterType: this.meterType };
+    },
+
+    openExport(d, btn){
+      if(!window.ExportMenu || !d) return;
+      const self = this;
+      ExportMenu.open({ subtitle: '這一題',
+        audioLabel: '🎵 下載題目音檔', sheetLabel: '🖼️ 下載題目譜例', sheet2Label: '🖼️ 下載正確譜例',
+        onAudio:  function(){ self.exportAudio(d, btn); },
+        onSheet:  function(){ self.exportSheet(d, false, btn); },
+        onSheet2: function(){ self.exportSheet(d, true, btn); } });
+    },
+
+    /* 音檔：標準音 A 2 秒 → 間隔 1 秒 → 預備拍 → 正確的演奏（比照單旋律） */
+    exportEvents(d){
+      const TUNING_SEC = 2.0, GAP_SEC = 1.0;
+      const secPerUnit = 60 / d.bpm;
+      const numerator = parseInt(d.meter.split('/')[0], 10);
+      const secPer16th = d.meterType === 'simple' ? secPerUnit / 4 : secPerUnit / 2;
+      const ev = [{ midi: 69, time: 0, duration: TUNING_SEC, gain: 3.5 }];
+      let t = TUNING_SEC + GAP_SEC;
+      for(let i = 0; i < numerator; i++){
+        const strong = (d.meterType === 'simple') ? (i === 0) : (i % 3 === 0);
+        ev.push({ type: 'click', time: t + i * secPerUnit, freq: strong ? 1000 : 700, gain: 0.2 });
+      }
+      t += numerator * secPerUnit;
+      let noteIdx = 0;
+      d.seq.forEach(id => {
+        const block = ALL_BLOCKS[id];
+        const lens = block.lengths; const tn = block.tieNext || [];
+        let i = 0;
+        while(i < lens.length){
+          let total = lens[i]; let tied = tn[i]; let next = i + 1;
+          while(tied && next < lens.length){ total += lens[next]; tied = tn[next]; next++; }
+          const p = d.correctPitch[noteIdx + i];   // 正確的演奏
+          if(p) ev.push({ midi: midiOf(p), time: t, duration: total * secPer16th * 0.9, gain: gainFor(midiOf(p), 1) });
+          t += total * secPer16th; i = next;
+        }
+        noteIdx += lens.length;
+      });
+      return ev;
+    },
+
+    /* 離屏畫一份譜。
+       withAnswer＝false：題目譜例，含錯音、全黑、不標示（可以直接當考題）。
+       withAnswer＝true ：正確譜例，畫正確的旋律，改正後的音用綠色音符＋綠框（同解答頁下方）。 */
+    exportShot(d, withAnswer){
+      this._shotSeq = (this._shotSeq || 0) + 1;
+      const id = '__peShot' + this._shotSeq;
+      const holder = document.createElement('div');
+      holder.id = id;
+      holder.style.cssText = 'position:absolute; left:-9999px; top:0;';
+      document.body.appendChild(holder);
+      const GREEN = '#4b7a5b';
+      const marks = {};
+      if(withAnswer) d.errorGroups.forEach(g => { marks[d.groups[g].members[0]] = GREEN; });
+      let notes = [];
+      try{ notes = drawStaff(id, d.seq, withAnswer ? d.correctPitch : d.errPitch, d.cfg, marks) || []; }catch(e){}
+      const out = { holder: holder, svg: holder.querySelector('svg'), overlays: [], titleX: 5 };
+      const first = notes.filter(Boolean)[0];
+      if(!out.svg || !first) return out;
+
+      // 標題的第一個字對齊譜號的左緣
+      const st = first.getStave();
+      if(st){
+        out.titleX = st.getX();
+        try{
+          const clef = st.getModifiers().filter(m => m.getCategory && m.getCategory() === 'clefs')[0];
+          if(clef && typeof clef.getX === 'function' && clef.getX() > 0) out.titleX = clef.getX();
+        }catch(e){}
+      }
+
+      if(withAnswer){
+        const NS = 'http://www.w3.org/2000/svg';
+        d.errorGroups.forEach(g => {
+          const fn = notes[d.groups[g].members[0]]; if(!fn) return;
+          const stave = fn.getStave(); if(!stave) return;
+          const nx = (typeof fn.getAbsoluteX === 'function') ? fn.getAbsoluteX() : stave.getX();
+          /* 與解答頁的綠框相同（寬 26、高 90、圓角 7）。
+             ⚠ 用 path 而不是 rect：SheetExport 依 path 的座標決定裁切範圍，rect 不會被算進去，框的下緣會被裁掉。 */
+          const x = nx - 10, y = stave.getYForLine(0) - 22, w = 26, h = 90, k = 7;
+          const r = document.createElementNS(NS, 'path');
+          r.setAttribute('d', 'M ' + (x + k) + ' ' + y + ' L ' + (x + w - k) + ' ' + y + ' A ' + k + ' ' + k + ' 0 0 1 ' + (x + w) + ' ' + (y + k)
+            + ' L ' + (x + w) + ' ' + (y + h - k) + ' A ' + k + ' ' + k + ' 0 0 1 ' + (x + w - k) + ' ' + (y + h)
+            + ' L ' + (x + k) + ' ' + (y + h) + ' A ' + k + ' ' + k + ' 0 0 1 ' + x + ' ' + (y + h - k)
+            + ' L ' + x + ' ' + (y + k) + ' A ' + k + ' ' + k + ' 0 0 1 ' + (x + k) + ' ' + y + ' Z');
+          r.setAttribute('fill', 'rgba(75,122,91,0.10)');
+          r.setAttribute('stroke', GREEN); r.setAttribute('stroke-width', 1.5);
+          out.svg.insertBefore(r, out.svg.firstChild);   // 放在最底層，不蓋住音符
+        });
+      }
+      return out;
+    },
+
+    async exportSheet(d, withAnswer, btn){
+      if(!btn || btn.disabled) return;
+      btn.disabled = true; const old = btn.textContent;
+      const made = this.exportShot(d, withAnswer);
+      try{
+        if(!made.svg) throw new Error('沒有譜例');
+        const n = (d.errorGroups || []).length;
+        await SheetExport.exportSheets([{
+          svg: made.svg, centre: false,
+          title: withAnswer ? '正確譜例' : ('題目：共 ' + n + ' 個錯音'), titleX: made.titleX,
+          overlays: made.overlays
+        }], withAnswer ? '找錯音_正確' : '找錯音_題目', {
+          onStage: function(st){ btn.textContent = st === 'render' ? '⏳' : (st === 'encode' ? '🖼️' : '⬇️'); }
+        });
+        btn.textContent = '✓';
+      }catch(e){ btn.textContent = '✗'; }
+      finally{ made.holder.remove(); }
+      setTimeout(function(){ btn.textContent = old; btn.disabled = false; }, 1600);
+    },
+
+    async exportAudio(d, btn){
+      if(!btn || btn.disabled) return;
+      const ev = this.exportEvents(d);
+      if(!ev) return;
+      btn.disabled = true; const old = btn.textContent;
+      try{
+        await AudioExport.exportEvents(ev, '找錯音', {
+          onStage: function(st){ btn.textContent = st === 'render' ? '⏳' : (st === 'encode' ? '🎵' : '⬇️'); },
+          onProgress: function(pr){ btn.textContent = Math.round(pr * 100) + '%'; }
+        });
+        btn.textContent = '✓';
+      }catch(e){ btn.textContent = '✗'; }
+      setTimeout(function(){ btn.textContent = old; btn.disabled = false; }, 1600);
+    },
+
     playTuning(){
       if(!pianoInst) return;
       const __self = this;
       if(!audioReady(function(){ __self.playTuning(); })) return;
       const ctx = ensureAudio();
-      pianoInst.play(69, ctx.currentTime + 0.05, { duration: 2.0, gain: 3.5 });
+      const tA = ctx.currentTime + 0.05;
+      pianoInst.play(69, tA, { duration: 2.0, gain: 3.5 });
+      PianoEngine.holdUntil(ctx, tA + 2.0);
     }
   };
 
@@ -2661,7 +2827,12 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
     const _pp = new URLSearchParams(location.search);
     const paperId = _pp.get('paper'), paperSec = _pp.get('section');
     document.getElementById('pe-playBtn').onclick = () => peModule.play();
-    document.getElementById('pe-tuningBtn').onclick = () => peModule.playTuning();
+    document.getElementById('pe-tuningBtn').onclick = () => { if(!PianoEngine.isLocked()) peModule.playTuning(); };
+    /* v.98.8：有聲音在播（題目或標準音）時，同一畫面的播放類按鈕全部變灰，播完（或淡出完）才恢復。考試模式不套用 */
+    if(!examMode) PianoEngine.onLockChange(function(){
+      document.getElementById('pe-tuningBtn').disabled = PianoEngine.isLocked(); peModule.updatePlayBtn();
+    });
+    document.getElementById('pe-ansExport').onclick = function(){ peModule.openExport(peModule.exportData(), this); };
     document.getElementById('pe-clearBtn').onclick = () => peModule.clearPicks();
     document.getElementById('pe-submitBtn').onclick = () => peModule.submit();
     document.getElementById('pe-nextBtn').onclick = () => peModule.nextQuestion();
