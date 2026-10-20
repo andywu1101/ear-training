@@ -111,6 +111,7 @@
     out.connect(g); g.connect(fg); fg.connect(outputFor(ctx));
     node.__fg = fg; node.__t = t;
     markBusy(ctx, t + dur + RELEASE);
+    noteEnd(ctx, t + dur + RELEASE);
     node.start(t); node.stop(t + dur + RELEASE + 0.02);
 
     var self = this;
@@ -138,6 +139,7 @@
       } catch (e) {}
     });
     this.playing = [];
+    this.ctx.__noteEnd = 0;                 // 已經停掉，不算還沒播完（v.99.3）
     if (fade > 0) lockRelease(fade);
   };
 
@@ -261,7 +263,25 @@
      ＝ 媒體輸出對恢復聲音確實有幫助（解答了手冊 19.7 的疑問），必須與換取樣率一起保留。
      ⚠ 不要再關掉它。詳見手冊第二十部。 */
   var MEDIA_OUTPUT_ON = true;
-  var MEDIA_IDLE_SEC = 5;         // 最後一個音結束後多久暫停媒體元素（不要一直佔著「播放中」）
+  /* v.99：只有 iPhone／iPad 走媒體元素，電腦與安卓改回直接輸出。
+     原因：少數時候音高偏約 1.5 個半音（44.1k／48k 的比例），學校電腦、作者的電腦也遇過，
+     共通點是都經過媒體元素轉送；而電腦與安卓本來就沒有「切回來沒聲音」的問題，不需要它。
+     ⚠ iPad 的 Safari 預設自稱 Macintosh，要用「Mac＋觸控螢幕」認出來，否則 iPad 會被拿掉媒體元素。 */
+  function isIOSDevice() {
+    var n = global.navigator || {}, ua = n.userAgent || '';
+    return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && (n.maxTouchPoints || 0) > 1);
+  }
+  /* v.99：5 秒 → 60 秒。媒體元素每次「叫醒」都有機會取樣率沒對好（推論，見手冊第二十一部），
+     練習時一題接一題，60 秒內不暫停就幾乎不用重新叫醒。代價：播完後動態島多顯示最多約 60 秒。 */
+  var MEDIA_IDLE_SEC = 60;        // 最後一個音結束後多久暫停媒體元素（不要一直佔著「播放中」）
+  /* v.99：每個新的 context 第一次叫醒媒體元素，先讓它安靜跑 0.8 秒才放行第一個音。
+     實機（iPhone）遇過：剛打開頁面的第一次播放先偏低、不到 1 秒恢復，而媒體元素的時鐘比例仍是 1.0
+     → 推測是 iOS 開始出聲時底層切換取樣率的過渡，讓過渡期間只播到無聲。
+     v.99.2：從「這一頁的第一次」改成「每個新 context 的第一次」——切回來換了取樣率（備用 context）
+     等於換一個新的發聲裝置，第一次播放也一樣先暖機。同一個 context 閒置 60 秒後再叫醒則不等。
+     頁面的 audioReady 閘門會等 mediaSettled()，
+     最多等 3 秒（AUDIO_PROBE_MAX），0.8 秒在範圍內。效果待上線觀察（太少見，無法用測試證明）。 */
+  var MEDIA_FIRST_WARMUP_MS = 800;
   var MEDIA_CLAIM_TIMEOUT = 1500; // 媒體元素多久沒播起來就當作失敗
   var MEDIA_MAX_FAILS = 2;        // 連續失敗幾次就整個停用，退回原本的做法
   var mediaOut = { enabled: false, meta: null, fails: 0 };
@@ -271,15 +291,36 @@
   }
   function enableMediaOutput(meta) {
     var C = global.AudioContext || global.webkitAudioContext;
-    mediaOut.enabled = MEDIA_OUTPUT_ON && !!(C && C.prototype && C.prototype.createMediaStreamDestination);
+    mediaOut.enabled = MEDIA_OUTPUT_ON && isIOSDevice() && !!(C && C.prototype && C.prototype.createMediaStreamDestination);
     mediaOut.meta = meta || null;
     return mediaOut.enabled;
+  }
+  /* v.99.3：離開練習頁（換頁、回選單、上一頁）時，把這一頁的媒體元素暫停。
+     ⚠ 原因：iOS 會把舊頁面整個暫存（上一頁快取），連同還開著的媒體元素（v.99 起閒置 60 秒才暫停）。
+       新頁面再開自己的媒體元素，iOS 同時有兩個播放器，背景重新協調時，剛出聲的那一小段音高會偏低
+       （作者實測：播單旋律 → 切到兩聲部 → 按標準音 A → 馬上播題目，預備拍偏低）。
+     只聽 pagehide：切到別的 App 觸發的是 visibilitychange，不會走到這裡，背景繼續播完不受影響。
+     暫停後 pause 事件會把出口切回 direct；回到這一頁時，下次播放照原本的流程重新要回媒體播放。 */
+  var allMO = [];
+  /* v.99.5：切到背景或鎖螢幕 → 標記所有媒體元素「回來後要重新要回」（見 claimMedia 的 stale） */
+  if (global.document && global.document.addEventListener) {
+    global.document.addEventListener('visibilitychange', function () {
+      if (global.document.hidden) allMO.forEach(function (mo) { mo.stale = true; });
+    });
+  }
+  if (global.addEventListener) {
+    global.addEventListener('pagehide', function () {
+      allMO.forEach(function (mo) {
+        try { if (mo.el && !mo.el.paused) mo.el.pause(); } catch (e) {}
+      });
+      setNowPlaying('none');
+    });
   }
   /* 總線：第一次用到時建立，先接 direct */
   function busOf(ctx) {
     if (ctx.__mo) return ctx.__mo;
     var mo = { bus: ctx.createGain(), dest: null, el: null, route: 'direct',
-               state: 'idle', busyUntil: 0, idleTimer: 0 };
+               state: 'idle', busyUntil: 0, idleTimer: 0, warmed: false };   // warmed：這個 context 暖機過了沒（v.99.2）
     try {
       mo.dest = ctx.createMediaStreamDestination();
       mo.el = document.createElement('audio');
@@ -288,23 +329,41 @@
       /* iOS 自己把媒體元素暫停時（例如被別的 App 搶走），出口立刻切回 direct，
          否則之後的聲音會送進一個暫停中的元素，什麼都聽不到 */
       mo.el.addEventListener('pause', function () {
-        if (mo.state !== 'claiming') routeTo(ctx, mo, 'direct');
+        if (mo.state !== 'claiming' && mo.el.paused) routeTo(ctx, mo, 'direct');   // v.99.5：事件晚到時已重新播起來就不動
       });
     } catch (e) { mo.dest = null; mo.el = null; }
     mo.bus.connect(ctx.destination);
     ctx.__mo = mo;
+    allMO.push(mo);
     return mo;
   }
   function routeTo(ctx, mo, which) {
     if (mo.route === which) return;
     try { mo.bus.disconnect(); } catch (e) {}
-    mo.bus.connect(which === 'media' ? mo.dest : ctx.destination);
+    /* v.99.5 正式做法：媒體元素「只佔通道」——照樣叫醒、照樣在播（讓 iOS 承認這是正在播放的 App：
+       切回來要得回聲音、動態島與鎖定畫面照常顯示），但播的是沒有任何輸入的無聲串流；
+       聲音本身一律直接接 destination，不經過媒體元素轉送。
+       ⚠ 原因：經過媒體元素轉送時，iPhone 偶爾會「暫時放慢播放速度」補緩衝——
+         實測標準音 A 之後馬上播題目，開頭偏低約 80 音分、0.3 秒後瞬間跳回（v.99.4 實驗證實，見手冊 21.7）。
+       除錯模式的「實驗：經過播放器」開關可以切回舊做法對照（viaPlayer）。
+       mo.route 仍叫 'media'：代表「媒體元素已要回、正在佔通道」，其他判斷照舊。 */
+    mo.viaPlayer = (which === 'media' && viaPlayer());   // 給除錯面板顯示「實際」接到哪裡
+    mo.bus.connect(mo.viaPlayer ? mo.dest : ctx.destination);
     mo.route = which;
   }
   /* 所有聲音的出口 */
   function outputFor(ctx) {
     if (!mediaOut.enabled || !isRealtime(ctx)) return ctx.destination;
     try { return busOf(ctx).bus; } catch (e) { return ctx.destination; }
+  }
+  /* v.99.3：記下這個 context 排定的最後一個音「在音訊時間上」何時結束。
+     頁面切回來時用它判斷「題目被打斷、還沒播完」（見各頁 wakeAudioOnReturn）。
+     與 markBusy 不同：markBusy 只給媒體元素的閒置判斷用，沒開媒體輸出時不會記。 */
+  function noteEnd(ctx, endTime) {
+    if (ctx && !(endTime <= ctx.__noteEnd)) ctx.__noteEnd = endTime;
+  }
+  function pendingAudio(ctx) {
+    return !!(ctx && ctx.__noteEnd && ctx.currentTime < ctx.__noteEnd);
   }
   function markBusy(ctx, endTime) {
     var mo = ctx && ctx.__mo;
@@ -337,7 +396,7 @@
     var mo = ctx.__mo;
     if (!mo) return true;
     if (!mo.el) return false;                       // 這台不支援媒體元素輸出，走 direct
-    return mo.state !== 'claiming' && (mo.route !== 'media' || mo.el.paused);
+    return mo.state !== 'claiming' && (mo.route !== 'media' || mo.el.paused || !!mo.stale);
   }
   function mediaSettled(ctx) {
     return !(ctx && ctx.__mo && ctx.__mo.state === 'claiming');
@@ -348,15 +407,27 @@
     var mo;
     try { mo = busOf(ctx); } catch (e) { return; }
     if (!mo.el || mo.state === 'claiming') return;
-    if (mo.route === 'media' && !mo.el.paused) return;
+    if (mo.route === 'media' && !mo.el.paused && !mo.stale) return;
     mo.state = 'claiming';
+    /* v.99.5：從背景／鎖螢幕回來（stale）而媒體元素看起來還在播：先停再播，重新向 iOS 登記「正在播放」。
+       媒體元素只播無聲時，iOS 鎖螢幕後可能把它從「正在播放」移除（動態島消失），但 paused 仍是 false，
+       不重新要回就一直回不來。state 已是 'claiming'，pause 事件不會把出口切回 direct。 */
+    mo.stale = false;
+    if (!mo.el.paused) { try { mo.el.pause(); } catch (e) {} }
     var done = false;
     function ok() {
       if (done) return; done = true;
-      mo.state = 'ready'; mediaOut.fails = 0;
       routeTo(ctx, mo, 'media');
       setNowPlaying('playing');
       startIdleWatch(ctx, mo);
+      measureWake(ctx, mo);
+      var ready = function () {
+        mo.state = 'ready'; mediaOut.fails = 0;
+        if (mo.el.paused) routeTo(ctx, mo, 'direct');   // 暖機期間被系統暫停：改走 direct，不要送進暫停中的元素
+      };
+      if (mo.warmed) { ready(); return; }
+      mo.warmed = true;
+      setTimeout(ready, MEDIA_FIRST_WARMUP_MS);   // 暖機期間 state 維持 'claiming'，閘門會等
     }
     function fail() {
       if (done) return; done = true;
@@ -400,7 +471,7 @@
   function rebind(inst, ctx) {
     if (!inst || !ctx || !(inst instanceof SalamanderPiano)) return false;
     try { inst.stop(0); } catch (e) {}    // 舊 context 上凍住的音符一併取消（立刻停止，不淡出）
-    inst.ctx = ctx;
+    inst.ctx = ctx; dbg.ctx = ctx;
     return true;
   }
 
@@ -414,6 +485,7 @@
       try {
         var inst = await buildSalamander(ctx, opts.onProgress);
         inst.__kit = 'salamander';
+        if (isRealtime(ctx)) { dbg.ctx = ctx; dbg.kit = 'Yamaha C5'; }
         return inst;
       } catch (e) {
         if (opts.onFallback) opts.onFallback(e);
@@ -421,16 +493,19 @@
     }
     var m = await buildMusyng(ctx);
     m.__kit = 'musyng';
+    if (isRealtime(ctx)) { dbg.ctx = ctx; dbg.kit = '標準音色'; }
     /* soundfont 音色的發聲在套件內部，這裡記下每個音的結束時間，閒置判斷才準 */
     var mPlay = m.play;
     m.play = function (midi, when, o) {
       var t = (when == null) ? ctx.currentTime : when;
       markBusy(ctx, t + ((o && o.duration) || 3.3) + RELEASE);
+      noteEnd(ctx, t + ((o && o.duration) || 3.3) + RELEASE);
       return mPlay.apply(this, arguments);
     };
     /* 標準音色停止時自帶 0.3 秒 release；播放鎖等它放完才解開 */
     var mStop = m.stop;
     m.stop = function () {
+      ctx.__noteEnd = 0;                    // 已經停掉，不算還沒播完（v.99.3）
       var r = mStop.apply(this, arguments);
       lockRelease(RELEASE);
       return r;
@@ -566,6 +641,93 @@
     return await ctx.startRendering();
   }
 
+  /* ---------- 除錯模式（v.99） ----------
+     開啟：練習頁網址加 ?debug=audio；關閉：?debug=off。
+     主畫面 App 沒有網址列 → 選單頁連點版本號 5 下也能開關（同一個 localStorage 鍵）。
+     面板只「看」，不改變任何播放行為。 */
+  var DEBUG_KEY = 'earTrainer.debug.audio';
+  /* v.99.5：實驗開關改成反向——預設已是「直接輸出」，開關打開才改回 v.99.4 以前的「經過播放器」做對照 */
+  var EXP_VIA_KEY = 'earTrainer.debug.expViaPlayer';
+  function viaPlayer() {
+    try { return localStorage.getItem(DEBUG_KEY) === '1' && localStorage.getItem(EXP_VIA_KEY) === '1'; }
+    catch (e) { return false; }
+  }
+  var dbg = { ctx: null, kit: '', wakes: 0, ratio: null, measuring: false };
+  /* 媒體元素叫醒後，比對它的時鐘與 context 的時鐘各走了多少（約 0.3 秒）。
+     正常＝1.000；取樣率對錯時推測會是 0.919（44.1k 當 48k）或 1.088（48k 當 44.1k）。
+     ⚠ 只量、不等：不影響第一個音出來的時間。量不到（媒體元素時鐘沒動）就記成 null。 */
+  function measureWake(ctx, mo) {
+    dbg.wakes++; dbg.ratio = null; dbg.measuring = true;
+    var e0, c0;
+    try { e0 = mo.el.currentTime; c0 = ctx.currentTime; } catch (e) { dbg.measuring = false; return; }
+    setTimeout(function () {
+      dbg.measuring = false;
+      try {
+        var de = mo.el.currentTime - e0, dc = ctx.currentTime - c0;
+        dbg.ratio = (de > 0 && dc > 0.1) ? de / dc : null;
+      } catch (e) {}
+    }, 300);
+  }
+  function debugOn() {
+    try {
+      var q = new URLSearchParams(global.location.search).get('debug');
+      if (q === 'audio') localStorage.setItem(DEBUG_KEY, '1');
+      else if (q === 'off') localStorage.removeItem(DEBUG_KEY);
+      return localStorage.getItem(DEBUG_KEY) === '1';
+    } catch (e) { return false; }
+  }
+  function debugText() {
+    var c = dbg.ctx, mo = c && c.__mo;
+    var route = (mediaOut.enabled && mo && mo.route === 'media')
+      ? (mo.viaPlayer ? '經過播放器（實驗）' : '直接（播放器只佔通道）') : '直接';
+    var el = !mediaOut.enabled ? '不使用' : (!mo || !mo.el) ? '未叫醒' : (mo.el.paused ? '暫停' : '播放中');
+    var ratio = dbg.measuring ? '量測中…' : (dbg.ratio == null ? (dbg.wakes ? '無法量測' : '—') : dbg.ratio.toFixed(3));
+    return '🔧 音訊除錯\n' +
+      '裝置　　' + (isIOSDevice() ? 'iOS' : '其他') + '\n' +
+      '輸出　　' + route + '\n' +
+      '取樣率　' + (c ? Math.round(c.sampleRate) : '—') + '\n' +
+      '狀態　　' + (c ? c.state : '—') + '\n' +
+      '播放器　' + el + '\n' +
+      '時鐘比例 ' + ratio + '\n' +
+      '叫醒次數 ' + dbg.wakes + '\n' +
+      '音色　　' + (dbg.kit || '—');
+  }
+  function startDebugPanel() {
+    if (!debugOn() || !global.document) return;
+    var show = function () {
+      if (document.getElementById('audioDebugPanel')) return;
+      var p = document.createElement('div'); p.id = 'audioDebugPanel';
+      p.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:3000;pointer-events:none;' +
+        'background:rgba(20,20,20,0.78);color:#fff;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;' +
+        'padding:6px 8px;border-radius:8px;';
+      var info = document.createElement('div'); info.style.whiteSpace = 'pre';
+      /* v.99.4：實驗開關（面板本身不擋點擊，只有這顆按鈕可以按）。設定記住，滑掉 App 重開也維持 */
+      var exp = document.createElement('button'); exp.type = 'button'; exp.id = 'audioExpDirectBtn';
+      exp.style.cssText = 'pointer-events:auto;margin-top:5px;font:11px ui-monospace,Menlo,Consolas,monospace;' +
+        'color:#fff;background:#555;border:1px solid #999;border-radius:6px;padding:3px 6px;';
+      exp.onclick = function () {
+        try {
+          if (localStorage.getItem(EXP_VIA_KEY) === '1') localStorage.removeItem(EXP_VIA_KEY);
+          else localStorage.setItem(EXP_VIA_KEY, '1');
+        } catch (e) {}
+        tick();
+      };
+      p.appendChild(info); p.appendChild(exp);
+      document.body.appendChild(p);
+      var tick = function () {
+        try {
+          info.textContent = debugText();
+          var on = viaPlayer();
+          exp.textContent = '實驗：經過播放器　' + (on ? '開' : '關');
+          exp.style.background = on ? '#2f6b45' : '#555';
+        } catch (e) {}
+      };
+      tick(); setInterval(tick, 500);
+    };
+    if (document.body) show(); else document.addEventListener('DOMContentLoaded', show);
+  }
+  startDebugPanel();
+
   global.PianoEngine = {
     load: load,
     rebind: rebind,
@@ -583,6 +745,7 @@
     params: SAL,
     STOP_FADE: STOP_FADE,
     holdUntil: holdUntil,
+    pendingAudio: pendingAudio,
     isLocked: isLocked,
     onLockChange: onLockChange
   };
