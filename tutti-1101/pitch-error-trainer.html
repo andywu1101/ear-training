@@ -64,6 +64,8 @@
   .select-box { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--panel-border); font-size: 14px; background: var(--panel); cursor: pointer; }
   .rv-speed{ background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:12px 16px; margin:18px 0 0; }
   .rv-speed-label{ font-size:13px; color:var(--ink-soft); margin-bottom:8px; }
+  /* v.106：.rv-speed 不是 flex，.bpm-slider 的 flex:1 無效，拉桿只有預設寬度，靠左一小段 → 改成滿寬 */
+  .rv-speed .bpm-slider{ display:block; width:100%; min-width:0; }
   .bpm-slider { flex: 1; min-width: 150px; accent-color: var(--accent); }
 
   .pattern-grid-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px; }
@@ -473,7 +475,7 @@
     <p class="subtitle">收錄沒有全部找出來的題目，重整或關閉後仍會保留。可對照譜例與正確演奏，並分別聆聽。</p>
     <div id="pe-reviewList"></div>
       <div class="rv-speed js-review-links">
-        <div class="rv-speed-label">🎵 播放速度　<span id="pe-rvBpmVal">80</span> BPM</div>
+        <div class="rv-speed-label">🎵 播放速度　♩／♪ = <span id="pe-rvBpmVal">80</span> BPM</div>
         <input type="range" id="pe-rvBpm" class="bpm-slider" min="40" max="160" value="80">
       </div>
       <div class="js-review-links" style="margin-top:20px;">
@@ -599,7 +601,7 @@ function _syncHelpLock(){
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.querySelectorAll('.help-modal.open').forEach(function(m){ m.classList.remove('open'); }); _syncHelpLock(); } });
 
 (function(){
-  const SIMPLE_ORDER = ['4', '2-2', '1-1-1-1', '2-1-1', '1-1-2', '1-2-1', '3-1', '1-3', '3tuplet'];
+  const SIMPLE_ORDER = ['8', '4', '2-2', '1-1-1-1', '2-1-1', '1-1-2', '1-2-1', '3-1', '1-3', '3tuplet', '6-2', '2-6'];
   const COMPOUND_ORDER = [
     '6', '4-2', '2-4', '4-1-1', '1-1-4', '2-2-2', '2-2-1-1', '2-1-1-2',
     '1-1-2-2', '2-1-1-1-1', '1-1-2-1-1', '1-1-1-1-2', '1-1-1-1-1-1', '3-1-1-1', '1-1-1-3', '1-3-1-1',
@@ -624,6 +626,13 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
   const ALL_BLOCKS = {};
   SIMPLE_ORDER.forEach(id => { ALL_BLOCKS[id] = { id, ...parsePatternId(id), type: 'simple', beats: 1 }; });
   COMPOUND_ORDER.forEach(id => { ALL_BLOCKS[id] = { id, ...parsePatternId(id), type: 'compound', beats: 1 }; });
+  /* v.106.1：兩拍節奏型（二分音符、附點四分＋八分、八分＋附點四分）。仍維持「一格一拍」：
+     節奏型放在第 i 格，第 i+1 格寫延續格 CONT（不含音符、不畫、不發聲），拍子編號因此不變；不跨小節線，4/4 只放第 1、3 拍 */
+  const TWO_BEAT = ['8', '6-2', '2-6'];
+  const CONT = 'cont';
+  ALL_BLOCKS[CONT] = { id: CONT, lengths: [], tieNext: [], isTuplet: false, type: 'simple', beats: 1 };
+  const isTwoBeat = id => TWO_BEAT.includes(id);
+  function twoBeatOK(i, bpb){ const p = i % bpb; return p + 1 < bpb && !(bpb === 4 && p % 2 === 1); }
 
   const VF = Vex.Flow;
 
@@ -694,6 +703,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
       else if(len===3) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'8', auto_stem: true }).addDot(0);
       else if(len===4) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'q', auto_stem: true });
       else if(len===6) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'q', auto_stem: true }).addDot(0);
+      else if(len===8) n1 = new VF.StaveNote({ clef: clef, keys:[getVexKey(pObj, clef)], duration:'h', auto_stem: true });   // v.106.1
 
       applyAccidental(n1, pObj, measureAccState);
 
@@ -1320,18 +1330,22 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
   function notesOfPattern(id){ return ALL_BLOCKS[id].lengths.length; }
 
   // 逐拍挑節奏型，並確保總音符數不超過額度（挑不到就用音符最少的那一型）
-  function genRhythm(totalBeats, pool, budget){
+  function genRhythm(totalBeats, pool, budget, bpb){
     const seq = []; let used = 0;
     for(let i = 0; i < totalBeats; i++){
+      if(seq[i] === CONT) continue;   // v.106.1：兩拍節奏型的延續格
       const left = totalBeats - i - 1;
-      const ok = pool.filter(id => used + notesOfPattern(id) + left <= budget);
+      const fit = id => !isTwoBeat(id) || (i + 1 < totalBeats && twoBeatOK(i, bpb));
+      const ok = pool.filter(id => fit(id) && used + notesOfPattern(id) + left - (isTwoBeat(id) ? 1 : 0) <= budget);
       let id;
       if(ok.length) id = pick(ok);
       else {
-        id = pool[0];
-        pool.forEach(x => { if(notesOfPattern(x) < notesOfPattern(id)) id = x; });
+        const fp = pool.filter(x => !isTwoBeat(x));
+        id = fp[0];
+        fp.forEach(x => { if(notesOfPattern(x) < notesOfPattern(id)) id = x; });
       }
-      seq.push(id); used += notesOfPattern(id);
+      seq[i] = id; used += notesOfPattern(id);
+      if(isTwoBeat(id)) seq[i + 1] = CONT;
     }
     return seq;
   }
@@ -1441,6 +1455,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
             else if(len === 2) n = new VF.StaveNote({ clef: cfg.clef, keys:[key], duration:'8', auto_stem:true });
             else if(len === 3) n = new VF.StaveNote({ clef: cfg.clef, keys:[key], duration:'8', auto_stem:true }).addDot(0);
             else if(len === 4) n = new VF.StaveNote({ clef: cfg.clef, keys:[key], duration:'q', auto_stem:true });
+            else if(len === 8) n = new VF.StaveNote({ clef: cfg.clef, keys:[key], duration:'h', auto_stem:true });   // v.106.1 二分音符
             else n = new VF.StaveNote({ clef: cfg.clef, keys:[key], duration:'q', auto_stem:true }).addDot(0);
             applyAccPE(n, pObj, state);
             const mk = marks[globalNoteIdx + k];
@@ -1873,7 +1888,9 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
 
     // 節奏型不再由使用者選擇：內部隨機使用該拍號的全部節奏型
     rhythmPool(){
-      return (this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER).slice();
+      const EXm = window.EXAM;
+      const exam = !!(EXm && EXm.isExamMode && EXm.isExamMode());
+      return (this.meterType === 'simple' ? SIMPLE_ORDER : COMPOUND_ORDER).filter(id => !(exam && isTwoBeat(id)));   // v.106.1：考試不含兩拍節奏型
     },
 
     /* ---------- 出題 ---------- */
@@ -1885,7 +1902,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
 
       let built = null;
       for(let attempt = 0; attempt < 400 && !built; attempt++){
-        const seq = genRhythm(totalBeats, pool, budget);
+        const seq = genRhythm(totalBeats, pool, budget, this.beatsPerBar);
         const info = analyseSeq(seq, this.beatsPerBar);
         if(info.groupCount < 3) continue;
 
@@ -2012,7 +2029,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
       const badge = document.getElementById('pe-statusBadge');
       badge.textContent = (this.key ? this.key.name : '無調性')
         + '｜' + (this.clef === 'treble' ? '高音' : '低音')
-        + '｜' + this.meter + '｜' + this.barsCount + '小節｜' + this.bpm + ' BPM'
+        + '｜' + this.meter + '｜' + this.barsCount + '小節｜' + (this.meterType === 'compound' ? '♪' : '♩') + ' = ' + this.bpm
         + '｜' + (this.mode === 'test' ? '測驗' : '練習');
       document.getElementById('pe-scoreNum').textContent = this.score.c + ' / ' + this.score.t;
 
@@ -2434,7 +2451,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
       hide.forEach(function(id){ const el = document.getElementById(id); if(el) el.style.display = 'none'; });
       const back = document.querySelector('#pagePEPractice .nav-back-btn'); if(back) back.style.display = 'none';
       const badge = document.getElementById('pe-statusBadge');
-      if(badge) badge.textContent = (this.clef === 'treble' ? '高音' : '低音') + '｜' + this.meter + '｜' + this.barsCount + ' 小節｜' + this.bpm + ' BPM';
+      if(badge) badge.textContent = (this.clef === 'treble' ? '高音' : '低音') + '｜' + this.meter + '｜' + this.barsCount + ' 小節｜' + (this.meterType === 'compound' ? '♪' : '♩') + ' = ' + this.bpm;
       const sb = document.querySelector('#pagePEPractice .score-box'); if(sb) sb.style.display = 'none';
 
       const host = document.getElementById('pagePEPractice');
@@ -2582,7 +2599,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document
         const box = document.createElement('div');
         box.className = 'review-item';
         box.innerHTML =
-          '<div class="review-label">' + (item.keyName || '無調性') + '｜' + item.meter + '｜' + item.barsCount + ' 小節｜' + item.bpm + ' BPM</div>'
+          '<div class="review-label">' + (item.keyName || '無調性') + '｜' + item.meter + '｜' + item.barsCount + ' 小節｜' + (item.meterType === 'compound' ? '♪' : '♩') + ' = ' + item.bpm + '</div>'
           + '<div class="unified-action-row" style="margin:8px 0 12px;">'
           + '<button class="play-btn pe-rv-correct">🎧 聽正確演奏</button>'
           + '<button class="action-btn pe-rv-heard" style="color:var(--wrong); border-color:var(--wrong);">🎼 聽譜例上寫的</button>'
