@@ -89,6 +89,10 @@
   button.back-cover{ font-family:inherit; cursor:pointer; touch-action:manipulation; }
   button.back-cover:hover, button.back-cover:active{ border-color:var(--accent); color:var(--accent); }
   .hdr #viewSeg{ margin-left:14px; }
+  /* v109：間距只在預覽時出現（電腦版在「匯出」左邊；手機在預覽頁上方那條） */
+  #densityD{ display:none; align-items:center; gap:6px; }
+  body.pvon #densityD{ display:inline-flex; }
+  .pv-dens-l{ font-size:13px; color:var(--ink-soft); }
   .ex-menu{ left:auto; right:0; min-width:220px; }
   .ex-menu button{ display:block; width:100%; text-align:left; border:none; background:none; padding:8px 10px; border-radius:8px; font-size:13.5px; color:var(--ink); }
   .ex-menu button:hover{ background:var(--panel); }
@@ -145,6 +149,8 @@
   .ib.pb-on{ background:var(--accent); color:#fff; }
   .it-sel{ font-size:12px; border:1px solid var(--panel-border); border-radius:6px; background:#fff; padding:2px 3px; color:var(--ink-soft); }
   .it-bpm{ display:flex; align-items:center; gap:2px; font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+  .it-seg{ border-radius:6px; flex:none; }
+  .it-seg button{ font-size:12px; padding:2px 7px; }   /* v109.1：四部和聲作答卷樣式（聽寫｜和聲作業） */
   .it-bpm input{ width:46px; flex:none; font-size:12px; padding:2px 3px; border:1px solid var(--panel-border); background:#fff; border-radius:6px; }
   .sc-in, .it-sc{ display:flex; align-items:center; gap:3px; font-size:12px; font-weight:400; color:var(--ink-soft); white-space:nowrap; }
   .sc-in input, .it-sc input{ width:38px; flex:none; font-size:12px; padding:2px 4px; border:1px solid var(--panel-border); background:#fff; border-radius:6px; text-align:right; }
@@ -162,6 +168,23 @@
   .tpl-sep{ height:1px; background:var(--panel-border); margin:5px 2px; }
   .tpl-tag{ font-size:11px; color:var(--ink-soft); margin-right:6px; }
   .it-note{ font-size:11.5px; color:var(--wrong); margin:-3px 0 6px 34px; }
+  /* v109.3：換頁線（題目列表裡兩題之間）——自動＝淡灰虛線，手動＝深色虛線＋「↺ 復原」；可拖動；空隙可「＋ 在這裡換頁」 */
+  .pg-gap{ position:relative; min-height:12px; margin:-6px 0 2px; display:flex; align-items:center; }
+  .pg-gap.drop{ background:rgba(51,65,92,0.08); border-radius:8px; }
+  .pg-gap.drop .pg-add{ opacity:1; }
+  .pg-add{ width:100%; border:0; background:none; font-size:11.5px; color:var(--accent); opacity:0; cursor:pointer; padding:2px 0; transition:opacity .15s; }
+  .pg-gap:hover .pg-add{ opacity:.85; }
+  @media (hover:none){ .pg-add{ opacity:.45; } }
+  .pg-line{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; position:relative; padding:5px 0; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .pg-line::before{ content:''; position:absolute; left:0; right:0; top:50%; border-top:2px dashed #b9b4a6; }
+  .pg-line.manual::before{ border-top-color:var(--accent); }
+  .pg-lab{ position:relative; background:var(--paper); padding:0 8px; font-size:12px; color:#8e887a; font-weight:600; }
+  .pg-line.manual .pg-lab{ color:var(--accent); }
+  .sec .pg-lab{ background:#fff; }
+  .pg-rv{ position:relative; font-size:11.5px; border:1px solid var(--panel-border); background:#fff; border-radius:999px; padding:1px 8px; color:var(--ink-soft); cursor:pointer; }
+  .pg-line.pg-src{ opacity:.35; }
+  .pg-ghost{ opacity:.9; }
+  .pg-ghost::before{ border-top-color:var(--accent) !important; }
 
   /* ---- 預覽畫面 ---- */
   .pv{ display:none; flex:1; min-height:0; overflow:auto; padding:20px 0 60px; }
@@ -182,6 +205,23 @@
   .ov.cellnum{ font-size:11px; }
   .ov.ans{ font-size:12.5px; }
   .ov.numeral{ font-size:14px; font-family:'Times New Roman', Times, serif; }
+  /* v109：數字低音（engrave.js 的 fbKeyHtml／fbHwHtml）。v109.2：數字加大到約 85%；只有一個數字或記號時寫在級數正右方 */
+  .ov.numeral{ white-space:nowrap; }
+  .fb-r{ position:relative; display:inline-block; }
+  .fb-x{ position:absolute; left:100%; top:-2px; margin-left:0; white-space:nowrap; }
+  .fb-x .fb-s{ margin-left:0.5px; }
+  .fb-lone, .fb-one{ display:inline-block; font-size:12px; margin-left:1px; position:relative; top:0; }
+  .fb-x .fb-lone, .fb-x .fb-one{ margin-left:0.5px; top:2px; }
+  .fb-oa{ font-size:11.5px; margin-left:0.5px; }
+  .fb-s{ display:inline-block; vertical-align:top; font-size:12px; line-height:11.5px; margin-left:1px; text-align:left; position:relative; top:-2px; }
+  .fb-row{ display:block; height:11.5px; }
+  .fb-d{ display:inline-block; position:relative; min-width:0.55em; text-align:center; }
+  .fb-a{ position:absolute; left:100%; top:0; margin-left:0.5px; font-size:11.5px; }
+  .fb-3{ font-size:11.5px; }
+  .fb-hw{ margin-left:0; top:0; }
+  .fb-plus{ font-size:0.6em; }
+  .fb-sec .fb-a{ position:static; margin-left:0.5px; }   /* 副屬和絃整串置中：記號要佔寬度，才不會壓到後面的 /V */
+  .fb-sec .fb-lone, .fb-sec .fb-one{ top:0; }
   .ov.keyname{ font-size:12.5px; }
   .keyline{ display:inline-block; width:3em; border-bottom:1.2px solid #000; margin-right:2px; height:0.95em; vertical-align:baseline; }
   .ov.errlabel{ font-size:10.5px; font-weight:700; color:#a6493b; }
@@ -201,6 +241,28 @@
   /* ---- 卡片 ---- */
   .mask{ position:fixed; inset:0; background:rgba(20,18,14,.45); display:none; align-items:center; justify-content:center; z-index:50; }
   .mask.on{ display:flex; }
+  /* v110：我的考卷 */
+  #confirmMask, #promptMask, #dlMask, #busyMask{ z-index:55; }   /* 從「我的考卷」裡跳出的確認、命名、下載、處理中要蓋在它上面 */
+  .papers-card{ width:min(620px, 94vw); display:flex; flex-direction:column; }
+  .pp-h{ display:flex; align-items:center; gap:10px; }
+  .pp-h h3{ margin:0; }
+  .pp-h .spacer{ flex:1; }
+  .pp-count{ font-size:13px; color:var(--ink-soft); }
+  .pp-list{ margin-top:12px; border:1px solid var(--panel-border); border-radius:12px; background:#fff; overflow:auto; max-height:52vh; }
+  .pp-row{ display:flex; align-items:center; gap:8px; padding:9px 12px; border-top:1px solid var(--hairline); }
+  .pp-row:first-child{ border-top:0; }
+  .pp-row.cur{ background:var(--accent-soft, rgba(51,65,92,.06)); }
+  .pp-info{ flex:1; min-width:0; }
+  .pp-name{ font-size:14.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pp-meta{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .pp-acts{ display:flex; gap:4px; flex:none; }
+  .pp-acts button{ border:1px solid var(--panel-border); background:#fff; border-radius:8px; padding:5px 8px; font-size:13px; }
+  .pp-acts .pp-open{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .pp-empty{ padding:22px 12px; text-align:center; color:var(--ink-soft); font-size:13.5px; }
+  .pp-note{ font-size:12.5px; color:var(--ink-soft); margin:12px 0 0; line-height:1.6; }
+  body.m .pp-list{ max-height:none; flex:1; }
+  body.m .pp-row{ flex-wrap:wrap; }
+  body.m .pp-acts{ width:100%; justify-content:flex-end; }
   .card{ background:var(--panel); border-radius:16px; padding:18px 20px; width:min(860px, 94vw); max-height:92vh; overflow:auto; box-shadow:0 10px 40px rgba(0,0,0,.25); }
   .card h3{ margin:0 0 10px; font-size:16px; }
   .card .pv-box{ background:#fff; border:1px solid var(--hairline); border-radius:10px; padding:10px 14px; font-family:var(--paper-font); overflow:auto; }
@@ -253,6 +315,7 @@
   body.m .tabs button{ flex:none; }
   body.m .right{ padding:12px 12px 40px; -webkit-overflow-scrolling:touch; }
   body.m .list-head{ flex-wrap:wrap; }
+  body.m .list-head{ gap:6px; } body.m .list-head .tb-btn{ padding:6px 9px; font-size:13px; }   /* v109.3：多了「換頁復原」也排得下一行 */
   body.m .sec{ padding:10px 10px; }
   body.m .it{ flex-wrap:wrap; row-gap:4px; padding:7px 8px; }
   body.m .it > input{ flex:1 1 calc(100% - 140px); font-size:15px; }
@@ -265,6 +328,8 @@
   body.m .pv{ padding:0 0 40px; touch-action:pan-x pan-y; -webkit-overflow-scrolling:touch; }
   body.m #mPvBar{ display:flex; gap:8px; align-items:center; padding:8px 10px; position:sticky; top:0; left:0; z-index:5; background:var(--paper); }
   body.m #mPvBar .seg button{ padding:8px 14px; font-size:14px; }
+  body.m #mPvBar #densityM button{ padding:8px 10px; }
+  @media (max-width:430px){ body.m #mPvBar{ gap:5px; padding:8px 8px; } body.m #mPvBar .seg button{ padding:7px 9px; font-size:13px; white-space:nowrap; } body.m #mPvBar #densityM button{ padding:7px 7px; } body.m #mPvBar #btnExportM{ padding:7px 8px; font-size:13px; white-space:nowrap; } }
   body.m .pv-hint{ font-size:12px; margin:0 12px 8px; text-align:left; }
   body.m .pages{ align-items:flex-start; padding:0 8px; gap:10px; }
   /* v108.1 手機：小節線的點擊範圍加寬（約一個手指寬）並一直顯示虛線框；已經換行的位置顏色較深 */
@@ -277,6 +342,33 @@
   body.m .card .pv-box{ padding:6px; }
   body.m .card .row .tb-btn{ padding:11px 14px; font-size:15px; }
   body.m .it.dragging{ opacity:.55; box-shadow:0 6px 18px rgba(0,0,0,.18); }
+
+  /* v110.2 題目卡片：第 1 行題號與名稱，設定（電腦一行、手機兩行），最後一行 🔄 🗑；控制項字級、高度統一 */
+  .it{ display:block; padding:10px 12px; }
+  .it-r1{ display:flex; align-items:center; gap:6px; }
+  .it-set{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; margin-top:8px; }
+  .it-r2, .it-r3{ display:contents; }
+  .it-r3:empty{ display:none; }
+  .it-grp, .it-bpm, .it-sc{ display:inline-flex; align-items:center; gap:6px; white-space:nowrap; font-size:13px; color:var(--ink-soft); flex:none; }
+  .it .it-sel, .it .it-bpm input, .it .it-sc input{ font-size:13px; height:28px; box-sizing:border-box; padding:0 6px; border:1px solid var(--panel-border); border-radius:7px; background:#fff; color:var(--ink); flex:none; }
+  .it .it-bpm input{ width:54px; text-align:center; }
+  .it .it-sc input{ width:50px; text-align:center; }
+  .it .it-seg{ height:28px; box-sizing:border-box; border-radius:7px; display:inline-flex; }
+  .it .it-seg button{ font-size:13px; height:26px; padding:0 10px; }
+  .it-acts{ display:flex; gap:8px; margin-top:8px; }
+  .it-acts .ib{ border:1px solid var(--panel-border); background:#fff; border-radius:7px; height:30px; padding:0 10px; font-size:15px; }
+  body.m .it{ padding:12px 14px; }
+  body.m .it-r1 > input{ flex:1; min-width:0; font-size:15px; font-weight:600; }
+  body.m .it-set{ display:block; margin-top:6px; }
+  body.m .it-r2, body.m .it-r3{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; margin-top:10px; }
+  body.m .it-grp, body.m .it-bpm, body.m .it-sc{ font-size:14px; }
+  body.m .it .it-sel, body.m .it .it-bpm input, body.m .it .it-sc input{ font-size:14px; height:32px; padding:0 8px; }
+  body.m .it .it-bpm input{ width:58px; }
+  body.m .it .it-sc input{ width:58px; }
+  body.m .it .it-seg{ height:32px; }
+  body.m .it .it-seg button{ font-size:14px; height:30px; padding:0 12px; }
+  body.m .it-acts{ margin-top:10px; }
+  body.m .it .it-acts .ib{ height:32px; font-size:17px; padding:0 10px; }
 
   #printArea{ display:none; }
   @page{ size:A4; margin:0; }
@@ -320,7 +412,9 @@
   <span class="brand" id="brandHome" role="button" tabindex="0" title="回到封面"><span class="back-cover">‹ 返回</span><img src="icon-192.png" alt="">音聽出考卷</span>
   <span class="seg d-only" id="viewSeg"><button data-v="edit" class="on">出題</button><button data-v="blank">預覽作答卷</button><button data-v="key">預覽解答</button></span>
   <span class="spacer"></span>
+  <button class="tb-btn d-only" id="btnPapers">📁 我的考卷</button>
   <span class="tpl-wrap"><button class="tb-btn" id="btnTpl">📋 套用模板 ▾</button><div class="tpl-menu" id="tplMenu"></div></span>
+  <span class="pv-dens d-only" id="densityD"><span class="pv-dens-l">間距</span><span class="seg density-seg"><button data-d="std">標準</button><button data-d="dense">濃縮</button><button data-d="tight">更緊</button></span></span>
   <span class="tpl-wrap d-only"><button class="tb-btn primary" id="btnExport">📤 匯出 ▾</button>
     <div class="tpl-menu ex-menu" id="exMenu">
       <button id="btnPdfBlank">📄 PDF 作答卷</button><button id="btnPdfKey">📄 PDF 解答</button>
@@ -329,8 +423,8 @@
       <div class="tpl-sep"></div>
       <button id="btnMp3">⬇️ 下載 mp3（壓縮檔）</button>
     </div></span>
-  <button class="tb-btn m-only" id="btnMore" aria-label="設定與匯出">⋯</button>
-  <span class="ver d-only">出題工具 v8</span>
+  <button class="tb-btn m-only" id="btnMore" aria-label="設定與匯出" title="設定與匯出">⚙️</button>
+  <span class="ver d-only">出題工具 v10</span>
 </div>
 
 <!-- 考卷設定卡片：電腦版放在右邊列表最上面，手機版放進「設定與匯出」頁（applyMode 搬動） -->
@@ -339,7 +433,6 @@
   <div class="set-grid">
     <label>標題</label><input type="text" id="hdTitle" placeholder="例：聽力模擬考試練習" class="span3">
     <label>署名</label><input type="text" id="hdAuthor"><label>上課日期</label><input type="text" id="hdDate" placeholder="YYYYMMDD">
-    <label>間距</label><span class="seg span3" id="density"><button data-d="std">標準</button><button data-d="dense">濃縮</button><button data-d="tight">更緊</button></span>
   </div>
 </div>
 
@@ -348,6 +441,12 @@
   <div class="mset-h"><button class="back-cover" id="mSetBack" type="button">‹ 返回</button><b>設定與匯出</b></div>
   <div class="mset-body">
     <div id="setSlotM"></div>
+    <div class="card-box">
+      <div class="cb-h">📁 我的考卷</div>
+      <div class="mset-btns">
+        <button class="tb-btn primary" id="mPapers">📁 開啟我的考卷</button>
+      </div>
+    </div>
     <div class="card-box">
       <div class="cb-h">📤 匯出</div>
       <div class="mset-btns">
@@ -362,7 +461,7 @@
         <button class="tb-btn" id="btnCoverM">🏠 回到封面</button>
       </div>
     </div>
-    <div class="ver" style="text-align:center;">出題工具 v8</div>
+    <div class="ver" style="text-align:center;">出題工具 v10</div>
   </div>
 </div>
 
@@ -378,7 +477,7 @@
     <div class="list-head">
       <span>題目列表</span><span class="total" id="totalScore"></span><span class="spacer"></span>
       <label style="display:flex;gap:4px;align-items:center;"><input type="checkbox" id="noPreviewTop"> 出題後直接加入</label>
-      <button class="tb-btn" id="btnClear">清空考卷</button>
+      <button class="tb-btn pb-reset" id="btnPbReset" title="把所有手動換頁都回到自動" style="display:none">↺ 換頁復原</button><button class="tb-btn" id="btnClear">清空考卷</button>
     </div>
     <div id="list"></div>
   </div>
@@ -386,7 +485,7 @@
 
 <div class="pv" id="pvView">
   <div id="mPvBar"><span class="seg" id="mPvSeg"><button data-v="blank">作答卷</button><button data-v="key">解答</button></span>
-    <span class="spacer"></span><span class="tpl-wrap"><button class="tb-btn" id="btnExportM">📤 匯出 ▾</button>
+    <span class="spacer"></span><span class="seg density-seg" id="densityM"><button data-d="std">標準</button><button data-d="dense">濃縮</button><button data-d="tight">更緊</button></span><span class="tpl-wrap"><button class="tb-btn" id="btnExportM">📤 匯出 ▾</button>
       <div class="tpl-menu ex-menu" id="mExMenu"><button id="mxPdfBlank">📄 PDF 作答卷</button><button id="mxPdfKey">📄 PDF 解答</button><button id="mxMp3">⬇️ 下載 mp3（壓縮檔）</button></div></span></div>
   <div class="pv-hint">節奏、單旋律、兩聲部、找錯音：點小節線（手機上是虛線框）可以「從這裡換行」，點行尾的（紅色框）可以「併回上一行」。紅字表示上一頁放不下而自動換頁。</div>
   <div class="pages" id="pvPages"></div>
@@ -440,6 +539,32 @@
     <h3>把「音聽出考卷」加入主畫面</h3>
     <div id="a2Body"></div>
     <div class="row"><button class="tb-btn primary" id="a2Install" style="display:none;">安裝</button><button class="tb-btn" id="a2No">關閉</button></div>
+  </div>
+</div>
+
+<!-- v110：我的考卷（存在瀏覽器的資料庫 IndexedDB，最多 50 張） -->
+<div class="mask" id="papersMask">
+  <div class="card papers-card">
+    <div class="pp-h"><h3>📁 我的考卷</h3><span class="pp-count" id="ppCount"></span><span class="spacer"></span><button class="tb-btn" id="ppClose">✕ 關閉</button></div>
+    <div class="row pp-top">
+      <button class="tb-btn primary" id="ppSave">💾 儲存目前考卷</button>
+      <button class="tb-btn" id="ppSaveAs" style="display:none;">另存新考卷</button>
+    </div>
+    <div class="pp-list" id="ppList"></div>
+    <div class="row pp-bottom">
+      <button class="tb-btn" id="ppExportAll">📦 全部匯出（備份）</button>
+      <button class="tb-btn" id="ppImport">📥 匯入</button>
+      <input type="file" id="ppFile" accept="application/json,.json" style="display:none;">
+    </div>
+    <p class="pp-note">考卷存在這個瀏覽器裡，清除瀏覽器資料就會不見。建議把「音聽出考卷」加入主畫面使用，並定期按「全部匯出」備份。匯入時會帶回所有考卷、模板與題目資料，mp3 可以照常匯出。</p>
+  </div>
+</div>
+
+<div class="mask" id="promptMask">
+  <div class="card small" style="width:min(420px,92vw);">
+    <h3 id="promptTitle">名稱</h3>
+    <input type="text" id="promptInput" style="width:100%;box-sizing:border-box;border:1px solid var(--panel-border);border-radius:8px;padding:7px 9px;font-size:14px;">
+    <div class="row"><button class="tb-btn primary" id="promptOk">確定</button><button class="tb-btn" id="promptNo">取消</button></div>
   </div>
 </div>
 

@@ -270,7 +270,24 @@
 
   /* ---------- 題目列表 ---------- */
   var autoBreakIds = {};
+  function grp(label, el, after, rowName) {
+    var g = document.createElement('label'); g.className = 'it-grp'; g.dataset.row = rowName;
+    g.appendChild(document.createTextNode(label)); g.appendChild(el); if (after) g.appendChild(document.createTextNode(after));
+    return g;
+  }
+  /* v110.2：重畫列表時記住捲動位置（清空的那一瞬間高度歸零，瀏覽器會把捲動拉回頂端） */
   function renderList() {
+    var keep = [], e = $('list');
+    while (e) { if (e.scrollHeight > e.clientHeight && e.scrollTop) keep.push([e, e.scrollTop]); e = e.parentElement; }
+    var wy = window.scrollY || 0, minH = $('list').offsetHeight;
+    $('list').style.minHeight = minH + 'px';   // 先撐住高度，重畫時不塌陷
+    try { renderListRaw(); } finally {
+      $('list').style.minHeight = '';
+      keep.forEach(function (p) { p[0].scrollTop = p[1]; });
+      if (wy && (window.scrollY || 0) !== wy) window.scrollTo(0, wy);
+    }
+  }
+  function renderListRaw() {
     var box = $('list'); box.innerHTML = '';
     var groups = ordered();
     var tot = paperTotal(); $('totalScore').textContent = tot == null ? '' : '總分：' + fmtScore(tot) + ' 分';
@@ -279,7 +296,10 @@
       box.innerHTML = '<div class="empty">' + (window.matchMedia('(max-width: 899px)').matches ? '在「出題」頁選擇題型' : '左邊選擇題型') + '、設定好之後按「➕ 出題」，題目就會依類型自動放進大題。<br>大題名稱、小題標題都可以直接點來修改；拖曳 ≡ 可以在同一個大題裡調整順序。</div>';
       return;
     }
+    var starts = pageStarts();
+    $('btnPbReset').style.display = paper.items.some(function (x) { return x.pageBreak; }) ? '' : 'none';
     groups.forEach(function (g, gi) {
+      if (gi) box.appendChild(pageGap(g.items[0].it, starts));
       var sec = document.createElement('div'); sec.className = 'sec';
       var hn = document.createElement('div'); hn.className = 'sec-name';
       hn.innerHTML = '<span>' + CN[gi] + '、</span>';
@@ -310,36 +330,73 @@
         info.textContent = it.layout === 'cells' ? (it.data.questions.length + ' 格') : (it.layout === 'grand' ? (it.answers && it.answers.key ? it.answers.key.replace('：', '') : '') : '');
         var rg = btn('🔄', '重抽', function () { regenItem(it); });
         var del = btn('🗑', '刪除', function () { ask('刪除第 ' + o.num + ' 題「' + it.title + '」？', function () { paper.items.splice(paper.items.indexOf(it), 1); save(); renderList(); }); });
-        var pb = btn('⤓', it.pageBreak ? '取消「從這題換頁」' : '從這題換頁', function () { it.pageBreak = !it.pageBreak; save(); renderList(); });
-        if (it.pageBreak) pb.classList.add('pb-on');
         var extra = [];
         /* 每行小節數（節奏、單旋律）：自動／1～4；點過小節線就是「自訂」 */
         if (it.layout === 'lines' && it.data.barsCount > 1) {
           var pl = document.createElement('select'); pl.className = 'it-sel'; pl.title = '每行小節數';
-          pl.innerHTML = '<option value="auto">每行 自動</option>' + [1, 2, 3, 4].map(function (v) { return '<option value="' + v + '">每行 ' + v + ' 小節</option>'; }).join('') +
-                         '<option value="custom" disabled>每行 自訂</option>';
+          pl.innerHTML = '<option value="auto">自動</option>' + [1, 2, 3, 4].map(function (v) { return '<option value="' + v + '">' + v + '</option>'; }).join('') +
+                         '<option value="custom" disabled>自訂</option>';
           pl.value = it.breaks ? 'custom' : (it.perLine ? String(it.perLine) : 'auto');
           pl.onchange = function () { it.breaks = null; it.perLine = pl.value === 'auto' ? null : parseInt(pl.value, 10); save(); renderPreview(); };
-          extra.push(pl);
+          extra.push(grp('每行小節數', pl, null, 'r2'));
         }
         /* mp3 速度（節奏、單旋律、四部和聲）：只影響音檔與預覽播放，譜例不變 */
         if (it.data.bpm) {
           var sp = document.createElement('label'); sp.className = 'it-bpm'; sp.title = 'mp3 速度（只影響音檔，譜例不變）';
           var sym = (it.data.meterType === 'compound') ? '♪' : '♩';
-          sp.innerHTML = '<span>' + sym + '=</span>';
+          sp.innerHTML = '<span>播放速度 ' + sym + '=</span>'; sp.dataset.row = 'r2';
           var bi = document.createElement('input'); bi.type = 'number'; bi.min = 40; bi.max = 160; bi.step = 1; bi.value = it.data.bpm;
           bi.onchange = function () { var v = Math.max(40, Math.min(160, parseInt(bi.value, 10) || it.data.bpm)); bi.value = v; it.data.bpm = v; save(); };
           sp.appendChild(bi); extra.push(sp);
+        }
+        /* v109.1：四部和聲的作答卷樣式（已出好的題目也能切換；只改作答卷顯示，和絃、音檔、解答不變；存模板時一起記住） */
+        if (it.type === 'fourpart') {
+          var hs = document.createElement('span'); hs.className = 'seg it-seg'; hs.title = '作答卷樣式';
+          [['0', '聽寫'], ['1', '和聲作業']].forEach(function (o2) {
+            var hb = document.createElement('button'); hb.type = 'button'; hb.textContent = o2[1];
+            var on = (o2[0] === '1') === !!it.data.hw; if (on) hb.classList.add('on');
+            hb.onclick = function () {
+              var v = o2[0] === '1'; if (!!it.data.hw === v) return;
+              it.data.hw = v; it.snapshot = Object.assign({}, it.snapshot || {}, { hw: v });
+              save(); renderList(); renderPreview();
+            };
+            hs.appendChild(hb);
+          });
+          hs.dataset.row = 'r3'; extra.push(hs);
+        }
+        /* v110.1：單旋律、兩聲部、找錯音的音色（每一題自己記；沒有記的舊題目＝鋼琴）。只影響播放與 mp3，譜例不變；存模板時一起記住 */
+        if (it.type === 'melody' || it.type === 'twopart' || it.type === 'pitcherr') {
+          var ts = document.createElement('span'); ts.className = 'seg it-seg'; ts.title = '音色（只影響播放與 mp3）';
+          [['piano', '鋼琴'], ['winds', '長笛／低音管']].forEach(function (o2) {
+            var tb = document.createElement('button'); tb.type = 'button'; tb.textContent = o2[1];
+            if ((it.data.timbre === 'winds' ? 'winds' : 'piano') === o2[0]) tb.classList.add('on');
+            tb.onclick = function () {
+              if ((it.data.timbre === 'winds' ? 'winds' : 'piano') === o2[0]) return;
+              stopPlayer();
+              it.data.timbre = o2[0]; it.snapshot = Object.assign({}, it.snapshot || {}, { timbre: o2[0] });
+              save();   // v110.2：只換這兩顆按鈕的樣子，不重畫列表（不會跳回頂端）
+              ts.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === tb); });
+            };
+            ts.appendChild(tb);
+          });
+          ts.dataset.row = 'r3'; extra.push(ts);
         }
         /* 小題配分：空白＝不印 */
         var isc = document.createElement('label'); isc.className = 'it-sc'; isc.title = '小題配分（空白＝不印）';
         var ii = document.createElement('input'); ii.type = 'text'; ii.inputMode = 'decimal'; ii.value = it.score != null ? fmtScore(it.score) : '';
         ii.onchange = function () { it.score = parseScore(ii.value); save(); renderList(); };
-        isc.appendChild(ii); isc.appendChild(document.createTextNode('分')); extra.push(isc);
-        /* v108 手機：▲▼ 移動（電腦版隱藏）＋觸控拖曳 ≡ */
-        var up = btn('▲', '往上移', function () { moveItem(it, -1); }); up.classList.add('mv');
-        var dn = btn('▼', '往下移', function () { moveItem(it, 1); }); dn.classList.add('mv');
-        [grip, num, ti, info].concat(extra, [up, dn, rg, pb, del]).forEach(function (x) { row.appendChild(x); });
+        isc.appendChild(document.createTextNode('配分')); isc.appendChild(ii); isc.appendChild(document.createTextNode('分')); isc.dataset.row = 'r3'; extra.push(isc);
+        /* v110.2 卡片排版：第 1 行題號與名稱；設定（手機分兩行：每行小節數＋播放速度／音色或作答卷樣式＋配分；電腦合成一行）；最後一行 🔄 🗑。
+           ▲▼ 拿掉（手機用 ≡ 拖曳） */
+        var r1 = document.createElement('div'); r1.className = 'it-r1';
+        [grip, num, ti, info].forEach(function (x) { r1.appendChild(x); });
+        var set = document.createElement('div'); set.className = 'it-set';
+        var r2 = document.createElement('div'), r3 = document.createElement('div'); r2.className = 'it-r2'; r3.className = 'it-r3';
+        extra.forEach(function (x) { (x.dataset.row === 'r2' ? r2 : r3).appendChild(x); });
+        if (r2.children.length) set.appendChild(r2);
+        set.appendChild(r3);
+        var acts = document.createElement('div'); acts.className = 'it-acts'; acts.appendChild(rg); acts.appendChild(del);
+        [r1, set, acts].forEach(function (x) { row.appendChild(x); });
         grip.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') return; e.preventDefault(); touchDrag(e, row, it, grip); });
         grip.onmousedown = function () { row.draggable = true; };
         row.ondragstart = function (e) { dragId = it.id; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; };
@@ -356,8 +413,8 @@
           paper.items.splice(paper.items.indexOf(it) + (before ? 0 : 1), 0, src);
           save(); renderList();
         };
+        if (o !== g.items[0]) sec.appendChild(pageGap(it, starts));
         sec.appendChild(row);
-        if (autoBreakIds[it.id]) { var nt = document.createElement('div'); nt.className = 'it-note'; nt.textContent = '上一頁放不下，自動從這題換頁'; sec.appendChild(nt); }
       });
       box.appendChild(sec);
     });
@@ -408,12 +465,80 @@
       busy(null); openCard(c, it.id);
     } catch (e) { busy(null); alert('重抽失敗：' + e.message); }
   }
+  $('btnPbReset').onclick = function () {
+    paper.items.forEach(function (x) { x.pageBreak = false; }); save(); renderList(); renderPreview(); flash('換頁已全部回到自動');
+  };
   $('btnClear').onclick = function () {
     if (!paper.items.length) return;
-    ask('清空整份考卷的題目？（標題與設定會保留）', function () { paper.items = []; save(); renderList(); });
+    ask('清空整份考卷的題目？（標題與設定會保留）', function () { paper.items = []; delete paper.savedId; save(); renderList(); });
   };
 
   /* ---------- A4 排版與分頁 ---------- */
+  /* ---------- v109.3 換頁線（題目列表）----------
+     每個換頁的位置（自動、手動）在兩題之間畫一條虛線「第 N 頁」；拖動線＝把換頁移到別的兩題之間（變成手動，存在 it.pageBreak），
+     手動的線可以「↺ 復原」回自動；兩題之間的空隙可以「＋ 在這裡換頁」。分頁以作答卷的排版計算。 */
+  function pageStarts() {
+    var out = {};
+    if (!paper.items.length) return out;
+    var keep = autoBreakIds; buildPages('blank', false); var auto = autoBreakIds; autoBreakIds = keep;
+    var n = 1;
+    ordered().forEach(function (g) { g.items.forEach(function (o) {
+      if (o.num > 1 && (auto[o.it.id] || o.it.pageBreak)) out[o.it.id] = { page: ++n, manual: !!o.it.pageBreak };
+    }); });
+    return out;
+  }
+  function pageGap(it, starts) {
+    var gap = document.createElement('div'); gap.className = 'pg-gap'; gap.dataset.id = it.id;
+    var st = starts[it.id];
+    if (st) {
+      var ln = document.createElement('div'); ln.className = 'pg-line' + (st.manual ? ' manual' : '');
+      ln.title = '拖動這條線，可以把換頁移到別的兩題之間';
+      ln.innerHTML = '<span class="pg-lab">第 ' + st.page + ' 頁' + (st.manual ? '' : '（自動）') + '</span>';
+      if (st.manual) {
+        var rv = document.createElement('button'); rv.type = 'button'; rv.className = 'pg-rv'; rv.textContent = '↺ 復原'; rv.title = '回到自動換頁';
+        rv.onclick = function (e) { e.stopPropagation(); it.pageBreak = false; save(); renderList(); renderPreview(); };
+        rv.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+        ln.appendChild(rv);
+      }
+      ln.addEventListener('pointerdown', function (e) { if (e.button) return; e.preventDefault(); dragLine(e, ln, it); });
+      gap.appendChild(ln);
+    } else {
+      var add = document.createElement('button'); add.type = 'button'; add.className = 'pg-add'; add.textContent = '＋ 在這裡換頁';
+      add.onclick = function () { it.pageBreak = true; save(); renderList(); renderPreview(); };
+      gap.appendChild(add);
+    }
+    return gap;
+  }
+  function dragLine(e, ln, it) {
+    var ghost = ln.cloneNode(true); ghost.classList.add('pg-ghost');
+    var r0 = ln.getBoundingClientRect();
+    ghost.style.cssText = 'position:fixed; left:' + r0.left + 'px; width:' + r0.width + 'px; top:' + r0.top + 'px; z-index:90; pointer-events:none;';
+    document.body.appendChild(ghost); ln.classList.add('pg-src');
+    var dy = e.clientY - r0.top, target = null;
+    function nearest(y) {
+      var best = null, bd = 1e9;
+      document.querySelectorAll('#list .pg-gap').forEach(function (g) { var r = g.getBoundingClientRect(), c = r.top + r.height / 2, dd = Math.abs(c - y); if (dd < bd) { bd = dd; best = g; } });
+      return best;
+    }
+    function move(ev) {
+      ghost.style.top = (ev.clientY - dy) + 'px';
+      var g = nearest(ev.clientY);
+      document.querySelectorAll('#list .pg-gap.drop').forEach(function (x) { x.classList.remove('drop'); });
+      if (g) g.classList.add('drop'); target = g;
+      /* 拖到列表上下緣時自動捲動 */
+      var sc = ln.closest('.right') || document.scrollingElement;
+      var rr = sc === document.scrollingElement ? { top: 0, bottom: innerHeight } : sc.getBoundingClientRect();
+      if (ev.clientY < rr.top + 40) sc.scrollTop -= 12; else if (ev.clientY > Math.min(rr.bottom, innerHeight) - 40) sc.scrollTop += 12;
+    }
+    function up() {
+      document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+      ghost.remove(); ln.classList.remove('pg-src');
+      var to = target ? byId(target.dataset.id) : null;
+      if (to && to !== it) { it.pageBreak = false; to.pageBreak = true; save(); renderList(); renderPreview(); }
+      else renderList();
+    }
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
+  }
   function buildPages(mode, interactive) {
     var d = Engrave.DENSITY[paper.density] || Engrave.DENSITY.dense;
     var MM = Engrave.MM, cw = Engrave.contentPx(d);
@@ -548,6 +673,7 @@
   function setView(v) {
     stopPlayer();
     view = v;
+    document.body.classList.toggle('pvon', v !== 'edit');
     document.querySelectorAll('#viewSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === v); });
     $('mainView').classList.toggle('off', v !== 'edit');
     $('pvView').classList.toggle('on', v !== 'edit');
@@ -675,6 +801,7 @@
       }
     } catch (e) { busy(null); alert('套用模板失敗：' + e.message + '\n原本的考卷沒有變動。'); return; }
     paper.items = out; paper.sectionNames = secNames; paper.sectionScores = secScores;
+    delete paper.savedId;   // v110：套用模板＝新的考卷，不再對應「我的考卷」裡的那一張
     save(); busy(null); setView('edit'); flash('✓ 已套用「' + name + '」，共 ' + out.length + ' 題');
   }
   /* 找錯音偶爾會出題失敗（頁面本來就會重抽），這裡最多試 8 次 */
@@ -764,7 +891,7 @@
   }
   function deliver(blob, name, kind, desc) {
     if (!IS_IOS) { download(blob, name); flash('✓ 已下載 ' + (desc || name)); return; }
-    $('dlTitle').textContent = kind === 'pdf' ? 'PDF 已完成' : 'mp3 壓縮檔已完成';
+    $('dlTitle').textContent = kind === 'pdf' ? 'PDF 已完成' : (kind === 'json' ? '考卷檔已完成' : 'mp3 壓縮檔已完成');
     $('dlText').textContent = name + '（' + (blob.size / 1048576).toFixed(1) + ' MB）。' +
       (kind === 'pdf' ? '按「開啟」會打開 PDF，從右上角的分享鈕可以存到「檔案」或傳 LINE。' : '按「分享／儲存」後選「儲存到檔案」，或傳給 LINE 等 App。');
     $('dlBtn').textContent = kind === 'pdf' ? '開啟' : '分享／儲存';
@@ -934,6 +1061,188 @@
   };
   $('a2No').onclick = function () { $('a2Mask').classList.remove('on'); };
 
+  /* ---------- 我的考卷（v110）----------
+     存在瀏覽器的資料庫（IndexedDB），不佔 localStorage（同網址的 App、伍線譜掃描共用那 5 MB）。最多 50 張，一張約 80 KB。
+     每筆：{ id, name, savedAt, count, paper }。paper 與 localStorage 的工作考卷同格式（不含 measures，會從 xml 重算）。
+     目前考卷記住它是從哪一張開啟／存的（paper.savedId），可以直接覆蓋儲存。
+     檔案：單張 { format:'cadenza-paper' }、全部 { format:'cadenza-backup', papers, templates }。mp3 不放進檔案：匯出時由題目資料重新產生。 */
+  var PDB = { name: 'earTrainer.maker', store: 'papers', cap: 50 };
+  function pdbOpen() {
+    return new Promise(function (res, rej) {
+      if (!window.indexedDB) { rej(new Error('這個瀏覽器不支援資料庫')); return; }
+      var r = indexedDB.open(PDB.name, 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore(PDB.store, { keyPath: 'id' }); };
+      r.onsuccess = function () { res(r.result); };
+      r.onerror = function () { rej(r.error); };
+    });
+  }
+  function pdbTx(mode, fn) {
+    return pdbOpen().then(function (db) {
+      return new Promise(function (res, rej) {
+        var t = db.transaction(PDB.store, mode), out, req = fn(t.objectStore(PDB.store));
+        if (req) req.onsuccess = function () { out = req.result; };
+        t.oncomplete = function () { db.close(); res(out); };
+        t.onerror = t.onabort = function () { db.close(); rej(t.error || new Error('資料庫寫入失敗')); };
+      });
+    });
+  }
+  function pAll() { return pdbTx('readonly', function (st) { return st.getAll(); }).then(function (a) { return (a || []).sort(function (x, y) { return y.savedAt - x.savedAt; }); }); }
+  function pPut(rec) { return pdbTx('readwrite', function (st) { return st.put(rec); }); }
+  function pDel(id) { return pdbTx('readwrite', function (st) { return st.delete(id); }); }
+  function newId() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function slimPaper(p) {
+    var o = JSON.parse(JSON.stringify(p, function (k, v) { return (k === 'measures' || k === 'shownBreaks') ? undefined : v; }));
+    delete o.savedId; delete o.savedName;
+    return o;
+  }
+  function uniqueName(name, taken) {
+    if (taken.indexOf(name) < 0) return name;
+    for (var n = 2; ; n++) { var c = name + '(' + n + ')'; if (taken.indexOf(c) < 0) return c; }
+  }
+  function fmtTime(ms) { var d = new Date(ms), p = function (x) { return String(x).padStart(2, '0'); }; return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+  function safeFile(s) { return String(s).replace(/[\\/:*?"<>|]/g, '_').slice(0, 60) || '考卷'; }
+  var pList = [];
+  function curRec() { return pList.filter(function (r) { return r.id === paper.savedId; })[0] || null; }
+  /* 目前考卷跟存檔的內容不同（或沒存過）＝開別張時要提醒 */
+  function paperDirty() {
+    if (!paper.items.length) return false;
+    var r = curRec(); if (!r) return true;
+    return JSON.stringify(slimPaper(paper)) !== JSON.stringify(r.paper);
+  }
+  function askName(title, def, ok) {
+    $('promptTitle').textContent = title; $('promptInput').value = def || ''; $('promptMask').classList.add('on');
+    setTimeout(function () { $('promptInput').focus(); $('promptInput').select(); }, 30);
+    $('promptOk').onclick = function () {
+      var v = $('promptInput').value.trim(); if (!v) { $('promptInput').focus(); return; }
+      $('promptMask').classList.remove('on'); ok(v);
+    };
+    $('promptNo').onclick = function () { $('promptMask').classList.remove('on'); };
+  }
+  $('promptInput').onkeydown = function (e) { if (e.key === 'Enter') $('promptOk').click(); };
+  function persistOnce() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} }
+
+  function renderPapers() {
+    var box = $('ppList'); box.innerHTML = '';
+    $('ppCount').textContent = '已存 ' + pList.length + '／' + PDB.cap + ' 張';
+    var r0 = curRec();
+    $('ppSave').textContent = r0 ? '💾 儲存（覆蓋「' + r0.name + '」）' : '💾 儲存目前考卷';
+    $('ppSaveAs').style.display = r0 ? '' : 'none';
+    if (!pList.length) { box.innerHTML = '<div class="pp-empty">還沒有存任何考卷</div>'; return; }
+    pList.forEach(function (r) {
+      var row = document.createElement('div'); row.className = 'pp-row' + (r.id === paper.savedId ? ' cur' : '');
+      var info = document.createElement('div'); info.className = 'pp-info';
+      var nm = document.createElement('div'); nm.className = 'pp-name'; nm.textContent = r.name + (r.id === paper.savedId ? '（目前）' : '');
+      var mt = document.createElement('div'); mt.className = 'pp-meta'; mt.textContent = r.count + ' 題 · ' + fmtTime(r.savedAt);
+      info.appendChild(nm); info.appendChild(mt); row.appendChild(info);
+      var acts = document.createElement('div'); acts.className = 'pp-acts';
+      [['開啟', 'pp-open', openRec], ['✏️ 改名', '', renameRec], ['⧉ 複製', '', dupRec], ['📤 匯出', '', exportRec], ['🗑', '', delRec]].forEach(function (a) {
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = a[0]; if (a[1]) b.className = a[1];
+        b.onclick = function () { a[2](r); }; acts.appendChild(b);
+      });
+      row.appendChild(acts); box.appendChild(row);
+    });
+  }
+  function refreshPapers() { return pAll().then(function (a) { pList = a; renderPapers(); }).catch(function (e) { alert('讀取我的考卷失敗：' + e.message); }); }
+  function openPapers() { closeTplMenu(); $('papersMask').classList.add('on'); refreshPapers(); }
+  $('btnPapers').onclick = openPapers;
+  $('mPapers').onclick = openPapers;
+  $('ppClose').onclick = function () { $('papersMask').classList.remove('on'); };
+
+  function saveNew(name) {
+    if (pList.length >= PDB.cap) { alert('已經存了 ' + PDB.cap + ' 張考卷，請先刪除不需要的考卷。'); return; }
+    var rec = { id: newId(), name: uniqueName(name, pList.map(function (r) { return r.name; })), savedAt: Date.now(), count: paper.items.length, paper: slimPaper(paper) };
+    pPut(rec).then(function () { paper.savedId = rec.id; save(); persistOnce(); flash('已儲存「' + rec.name + '」'); return refreshPapers(); })
+      .catch(function (e) { alert('儲存失敗：' + e.message); });
+  }
+  $('ppSave').onclick = function () {
+    if (!paper.items.length) { flash('還沒有題目'); return; }
+    var r = curRec();
+    if (r) {
+      var rec = { id: r.id, name: r.name, savedAt: Date.now(), count: paper.items.length, paper: slimPaper(paper) };
+      pPut(rec).then(function () { flash('已儲存「' + r.name + '」'); return refreshPapers(); }).catch(function (e) { alert('儲存失敗：' + e.message); });
+      return;
+    }
+    askName('儲存目前考卷', paper.header.title || ('考卷 ' + (paper.header.date || today())), saveNew);
+  };
+  $('ppSaveAs').onclick = function () {
+    if (!paper.items.length) { flash('還沒有題目'); return; }
+    var r = curRec(); askName('另存新考卷', r ? r.name : (paper.header.title || '考卷'), saveNew);
+  };
+  /* 開啟：換掉目前考卷（工作考卷照舊存在 localStorage，重新整理也還在） */
+  function useRec(r) {
+    stopPlayer();
+    var p = JSON.parse(JSON.stringify(r.paper));
+    localStorage.setItem(STORE, JSON.stringify(p));
+    paper = load(); paper.savedId = r.id; save();
+    bindHeader(); renderList(); if (view !== 'edit') renderPreview();
+    $('papersMask').classList.remove('on');
+    if (isM() && mtab === 'set') setMTab('list');   // 手機：從設定頁開的，開完回到列表看題目
+    flash('已開啟「' + r.name + '」');
+  }
+  function openRec(r) {
+    if (r.id === paper.savedId && !paperDirty()) { $('papersMask').classList.remove('on'); return; }
+    if (paperDirty()) ask('開啟「' + r.name + '」會取代目前的考卷，目前的考卷還沒儲存，確定嗎？', function () { useRec(r); });
+    else useRec(r);
+  }
+  function renameRec(r) {
+    askName('改名', r.name, function (v) {
+      if (v === r.name) return;
+      r.name = uniqueName(v, pList.filter(function (x) { return x !== r; }).map(function (x) { return x.name; }));
+      pPut(r).then(refreshPapers).catch(function (e) { alert('改名失敗：' + e.message); });
+    });
+  }
+  function dupRec(r) {
+    if (pList.length >= PDB.cap) { alert('已經存了 ' + PDB.cap + ' 張考卷，請先刪除不需要的考卷。'); return; }
+    var c = { id: newId(), name: uniqueName(r.name, pList.map(function (x) { return x.name; })), savedAt: Date.now(), count: r.count, paper: JSON.parse(JSON.stringify(r.paper)) };
+    pPut(c).then(function () { flash('已複製成「' + c.name + '」'); return refreshPapers(); }).catch(function (e) { alert('複製失敗：' + e.message); });
+  }
+  function delRec(r) {
+    ask('刪除考卷「' + r.name + '」？刪除後無法復原。', function () {
+      pDel(r.id).then(function () { if (paper.savedId === r.id) { delete paper.savedId; save(); } return refreshPapers(); })
+        .catch(function (e) { alert('刪除失敗：' + e.message); });
+    });
+  }
+  function jsonBlob(o) { return new Blob([JSON.stringify(o)], { type: 'application/json' }); }
+  function exportRec(r) {
+    deliver(jsonBlob({ format: 'cadenza-paper', ver: 1, name: r.name, savedAt: r.savedAt, paper: r.paper }), '考卷_' + safeFile(r.name) + '.json', 'json', '考卷「' + r.name + '」');
+  }
+  $('ppExportAll').onclick = function () {
+    var tpls = loadTpls();
+    if (!pList.length && !tpls.length) { flash('還沒有存任何考卷或模板'); return; }
+    deliver(jsonBlob({ format: 'cadenza-backup', ver: 1, exportedAt: Date.now(), papers: pList, templates: tpls }),
+            '音聽出考卷備份_' + today() + '.json', 'json', pList.length + ' 張考卷、' + tpls.length + ' 個模板');
+  };
+  $('ppImport').onclick = function () { $('ppFile').value = ''; $('ppFile').click(); };
+  $('ppFile').onchange = async function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    var o; try { o = JSON.parse(await f.text()); } catch (e) { alert('這個檔案不是音聽出考卷的考卷檔。'); return; }
+    var papers = [], tpls = [];
+    if (o && o.format === 'cadenza-paper' && o.paper) papers = [{ name: o.name || '匯入的考卷', savedAt: o.savedAt, paper: o.paper }];
+    else if (o && o.format === 'cadenza-backup') { papers = o.papers || []; tpls = o.templates || []; }
+    else { alert('這個檔案不是音聽出考卷的考卷檔。'); return; }
+    var names = pList.map(function (r) { return r.name; }), room = PDB.cap - pList.length, added = 0, skipped = 0;
+    try {
+      for (var i = 0; i < papers.length; i++) {
+        var p = papers[i];
+        if (!p || !p.paper || !Array.isArray(p.paper.items)) continue;
+        if (added >= room) { skipped++; continue; }
+        var nm = uniqueName(String(p.name || '匯入的考卷'), names); names.push(nm);   // 名稱重複：兩份都保留，新的加 (2)
+        await pPut({ id: newId(), name: nm, savedAt: p.savedAt || Date.now(), count: p.paper.items.length, paper: p.paper });
+        added++;
+      }
+    } catch (e) { alert('匯入失敗：' + e.message); }
+    var tAdded = 0;
+    if (tpls.length) {
+      var cur = loadTpls(), tn = cur.map(function (t) { return t.name; }).concat(BUILTIN.map(function (b) { return b.name; }));
+      tpls.forEach(function (t) { if (!t || !t.name) return; var c = JSON.parse(JSON.stringify(t)); c.name = uniqueName(t.name, tn); tn.push(c.name); cur.push(c); tAdded++; });
+      if (!saveTpls(cur)) tAdded = 0;
+    }
+    if (added) persistOnce();
+    await refreshPapers();
+    alert('已匯入 ' + added + ' 張考卷' + (tpls.length ? '、' + tAdded + ' 個模板' : '') + '。' +
+          (skipped ? '\n還有 ' + skipped + ' 張因為已滿 ' + PDB.cap + ' 張沒有匯入，請先刪除不需要的考卷再匯入一次。' : ''));
+  };
+
   /* ---------- 上方欄位 ---------- */
   function bindHeader() {
     [['hdTitle', 'title'], ['hdAuthor', 'author'], ['hdDate', 'date']].forEach(function (p) {
@@ -941,9 +1250,10 @@
       el.oninput = function () { paper.header[p[1]] = el.value; save(); };
       el.onchange = function () { renderPreview(); };
     });
-    document.querySelectorAll('#density button').forEach(function (b) {
+    /* v109：間距按鈕在預覽頁（電腦版頁首、手機預覽列各一組，同步） */
+    document.querySelectorAll('.density-seg button').forEach(function (b) {
       b.classList.toggle('on', b.dataset.d === paper.density);
-      b.onclick = function () { paper.density = b.dataset.d; save(); document.querySelectorAll('#density button').forEach(function (x) { x.classList.toggle('on', x === b); }); renderPreview(); };
+      b.onclick = function () { paper.density = b.dataset.d; save(); document.querySelectorAll('.density-seg button').forEach(function (x) { x.classList.toggle('on', x.dataset.d === paper.density); }); renderPreview(); };
     });
     $('noPreviewTop').checked = !!paper.noPreview;
   }
