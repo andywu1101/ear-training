@@ -14,7 +14,8 @@
     { id: 'twopart', label: '兩聲部', page: 'two-part-trainer.html', on: true },
     { id: 'pitcherr', label: '找錯音', page: 'pitch-error-trainer.html', on: true },
     { id: 'pitchstack', label: '音堆', page: 'pitch-stack-trainer.html', on: true },
-    { id: 'fourpart', label: '四部和聲', page: 'four-part-trainer.html', on: true }
+    { id: 'fourpart', label: '四部和聲', page: 'four-part-trainer.html', on: true },
+    { id: 'chorale', label: '聖詠和聲', page: 'chorale-trainer.html', on: true }   // v111
   ];
   /* 大題：順序固定（v106.8 起比照大學檔模擬考的順序與名稱） */
   var SECTIONS = [
@@ -23,7 +24,8 @@
     { id: 'rhythm', name: '節奏' }, { id: 'memRhythm', name: '記憶節奏' },
     { id: 'melody', name: '單旋律' }, { id: 'memMelody', name: '記憶旋律' },
     { id: 'twopart', name: '兩聲部' }, { id: 'memTwopart', name: '記憶兩聲部' },
-    { id: 'pitchstack', name: '音堆辨認' }, { id: 'fourpart', name: '四部和聲' }
+    { id: 'pitchstack', name: '音堆辨認' }, { id: 'fourpart', name: '四部和聲' },
+    { id: 'chorale', name: '聖詠和聲' }
   ];
   var CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 
@@ -44,7 +46,7 @@
     return p;
   }
   function save() {
-    var slim = JSON.parse(JSON.stringify(paper, function (k, v) { return (k === 'measures' || k === 'shownBreaks') ? undefined : v; }));
+    var slim = JSON.parse(JSON.stringify(paper, function (k, v) { return (k === 'measures' || k === 'shownBreaks' || k === 'chSvg') ? undefined : v; }));
     try { localStorage.setItem(STORE, JSON.stringify(slim)); } catch (e) {}
   }
   function secName(id) { return paper.sectionNames[id] || SECTIONS.filter(function (s) { return s.id === id; })[0].name; }
@@ -165,12 +167,30 @@
   function buildCandidate(w, type, data, snapshot, title) {
     var xml = w.__maker.musicxml(data);
     return { id: uid(), type: type, section: sectionOf(type, data), title: title, autoTitle: title, data: data, snapshot: snapshot,
-             xml: xml, answers: w.__maker.answers(data), layout: (type === 'interval' || type === 'chord') ? 'cells' : (type === 'fourpart' ? 'grand' : (type === 'pitchstack' ? 'stack' : 'lines')),
+             xml: xml, answers: w.__maker.answers(data), layout: (type === 'interval' || type === 'chord') ? 'cells' : (type === 'fourpart' ? 'grand' : (type === 'pitchstack' ? 'stack' : (type === 'chorale' ? 'chorale' : 'lines'))),
+             chSvg: w.__maker.paper ? w.__maker.paper(data) : undefined,   // v111 聖詠和聲：練習頁畫好的譜（作答卷／解答卷；不存進 localStorage，見 prepChorale）
              blankNotes: type === 'pitcherr',   // 找錯音：作答卷要印題目譜
              pageBreak: false, breaks: null };
   }
   /* 新題目的自動標題：依題目內容決定標題的題型（四部和聲、找錯音）用頁面給的；其他題型由設定決定，與原本相同 */
   function autoTitleOf(w, data, it) { return (w.__maker.titleOf ? w.__maker.titleOf(data) : null) || it.autoTitle || it.title; }
+  /* v111 聖詠和聲：譜例（SVG）一題約 0.4 MB，不存進 localStorage（整個網域共用 5 MB），只存題目資料；
+     重新開啟、載入「我的考卷」後，用到時再請練習頁重畫一次（記在 it.chSvg，只放記憶體） */
+  var chPending = null;
+  function prepChorale() {
+    var need = paper.items.filter(function (it) { return it.layout === 'chorale' && !it.chSvg; });
+    if (!need.length) return Promise.resolve();
+    if (chPending) return chPending;
+    chPending = waitFrame('chorale').then(function (w) {
+      need.forEach(function (it) { if (!it.chSvg) it.chSvg = w.__maker.paper(it.data); });
+      chPending = null;
+    }, function (e) { chPending = null; throw e; });
+    return chPending;
+  }
+  window.__makerNeedChorale = function () {   // engrave.js 畫到還沒有譜的聖詠和聲時呼叫（先畫同樣高度的空白，畫好再重排）
+    if (chPending) return;
+    prepChorale().then(function () { renderList(); renderPreview(); }, function (e) { flash('聖詠和聲譜例載入失敗：' + e.message); });
+  };
   function addItem(c) { paper.items.push(c); save(); renderList(); }
 
   /* ---------- 預覽卡片 ---------- */
@@ -223,7 +243,7 @@
     var c = card.cand;
     try {
       var w = await waitFrame(c.type);
-      var data = w.__maker.regen(c.snapshot);
+      var data = await w.__maker.regen(c.snapshot);   // 聖詠和聲的 regen 回傳 Promise
       var n = buildCandidate(w, c.type, data, c.snapshot, autoTitleOf(w, data, c));
       card.cand = n; drawCardScore(); resetCardAudio();
     } catch (e) { $('cardMsg').textContent = '重抽失敗：' + e.message; $('cardMsg').className = 'msg err'; }
@@ -327,7 +347,7 @@
         var ti = document.createElement('input'); ti.value = it.title; ti.title = it.title;   // 太長時滑過去看全文
         ti.onchange = function () { it.title = ti.value.trim() || it.title; ti.value = it.title; save(); };
         var info = document.createElement('span'); info.className = 'it-info';
-        info.textContent = it.layout === 'cells' ? (it.data.questions.length + ' 格') : (it.layout === 'grand' ? (it.answers && it.answers.key ? it.answers.key.replace('：', '') : '') : '');
+        info.textContent = it.layout === 'cells' ? (it.data.questions.length + ' 格') : ((it.layout === 'grand' || it.layout === 'chorale') ? (it.answers && it.answers.key ? it.answers.key.replace('：', '') : '') : '');
         var rg = btn('🔄', '重抽', function () { regenItem(it); });
         var del = btn('🗑', '刪除', function () { ask('刪除第 ' + o.num + ' 題「' + it.title + '」？', function () { paper.items.splice(paper.items.indexOf(it), 1); save(); renderList(); }); });
         var extra = [];
@@ -365,13 +385,17 @@
           hs.dataset.row = 'r3'; extra.push(hs);
         }
         /* v110.1：單旋律、兩聲部、找錯音的音色（每一題自己記；沒有記的舊題目＝鋼琴）。只影響播放與 mp3，譜例不變；存模板時一起記住 */
-        if (it.type === 'melody' || it.type === 'twopart' || it.type === 'pitcherr') {
+        /* v111：四部和聲、聖詠和聲的音色（鋼琴／管風琴），做法相同 */
+        var TIMBRES = (it.type === 'melody' || it.type === 'twopart' || it.type === 'pitcherr') ? [['piano', '鋼琴'], ['winds', '長笛／低音管']]
+                    : (it.type === 'fourpart' || it.type === 'chorale') ? [['piano', '鋼琴'], ['organ', '管風琴']] : null;
+        if (TIMBRES) {
+          var curT = function () { return TIMBRES.some(function (o3) { return o3[0] === it.data.timbre; }) ? it.data.timbre : 'piano'; };
           var ts = document.createElement('span'); ts.className = 'seg it-seg'; ts.title = '音色（只影響播放與 mp3）';
-          [['piano', '鋼琴'], ['winds', '長笛／低音管']].forEach(function (o2) {
+          TIMBRES.forEach(function (o2) {
             var tb = document.createElement('button'); tb.type = 'button'; tb.textContent = o2[1];
-            if ((it.data.timbre === 'winds' ? 'winds' : 'piano') === o2[0]) tb.classList.add('on');
+            if (curT() === o2[0]) tb.classList.add('on');
             tb.onclick = function () {
-              if ((it.data.timbre === 'winds' ? 'winds' : 'piano') === o2[0]) return;
+              if (curT() === o2[0]) return;
               stopPlayer();
               it.data.timbre = o2[0]; it.snapshot = Object.assign({}, it.snapshot || {}, { timbre: o2[0] });
               save();   // v110.2：只換這兩顆按鈕的樣子，不重畫列表（不會跳回頂端）
@@ -460,7 +484,7 @@
     busy('重抽中…');
     try {
       var w = await waitFrame(it.type);
-      var data = w.__maker.regen(it.snapshot);
+      var data = await w.__maker.regen(it.snapshot);
       var c = buildCandidate(w, it.type, data, it.snapshot, autoTitleOf(w, data, it));
       busy(null); openCard(c, it.id);
     } catch (e) { busy(null); alert('重抽失敗：' + e.message); }
@@ -692,8 +716,9 @@
   document.querySelectorAll('#viewSeg button').forEach(function (b) { b.onclick = function () { setView(b.dataset.v); }; });
 
   /* ---------- 列印成 PDF ---------- */
-  function doPrint(mode) {
+  async function doPrint(mode) {
     if (!paper.items.length) { flash('還沒有題目'); return; }
+    try { await prepChorale(); } catch (e) { flash('聖詠和聲譜例載入失敗：' + e.message); return; }
     var area = $('printArea'); area.innerHTML = '';
     buildPages(mode, false).forEach(function (p) { area.appendChild(p); });
     var old = document.title;
@@ -738,11 +763,64 @@
     } catch (e) { busy(null); alert('mp3 產生失敗：' + e.message); }
   };
 
+  /* ---------- 譜例影片打包（v111）----------
+     每一題一支 mp4：解答譜例（與 PDF 解答同一套畫法）＋與 mp3 相同的聲音；直式或橫式自動判斷。
+     製作影片的程式在 ../tutti-1101/video-export.js（贊助者版共用），第一次用到才載入。 */
+  function ensureVideoExport() {
+    if (window.VideoExport) return Promise.resolve();
+    window.VIDEO_EXPORT_BASE = '../tutti-1101/';
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script'); s.src = '../tutti-1101/video-export.js';
+      s.onload = function () { res(); }; s.onerror = function () { rej(new Error('影片模組載入失敗')); };
+      document.head.appendChild(s);
+    });
+  }
+  async function itemCanvas(o) {
+    var d = Engrave.DENSITY[paper.density] || Engrave.DENSITY.dense, cw = Engrave.contentPx(d);
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed; left:-30000px; top:0; box-sizing:content-box; width:' + cw + 'px; padding:40px; background:#fff; color:#000; font-family:var(--paper-font); pointer-events:none;';
+    var el = o.it.type === 'pitchstack'
+      ? Engrave.renderStackRow([o.it], [o.num], 'key', d)
+      : Engrave.renderItem(o.it, 'key', d, { item: o.num, cell: 1 }, null);
+    el.style.marginTop = '0px';
+    box.appendChild(el); document.body.appendChild(box);
+    try { await new Promise(function (r) { setTimeout(r, 60); }); return await MakerPdf.elementCanvas(box, 3); }
+    finally { box.remove(); }
+  }
+  $('btnVideo').onclick = async function () {
+    if (!paper.items.length) { flash('還沒有題目'); return; }
+    stopPlayer();
+    var list = []; ordered().forEach(function (g) { g.items.forEach(function (o) { list.push({ it: o.it, num: o.num, sec: secName(g.sec) }); }); });
+    var files = [], zipWin = null;
+    try {
+      busy('譜例影片：準備中…');
+      await ensureVideoExport();
+      if (!(await VideoExport.supported())) { busy(null); alert(VideoExport.NO_SUPPORT); return; }
+      await prepChorale();
+      for (var i = 0; i < list.length; i++) {
+        var o = list[i], label = '第 ' + (i + 1) + '／' + list.length + ' 題';
+        busy(label + '：產生聲音…');
+        var w = await waitFrame(o.it.type); zipWin = w;
+        var buf = await w.PianoEngine.renderOffline(w.__maker.events(o.it.data));
+        busy(label + '：畫譜例…');
+        var cv = await itemCanvas(o);
+        var blob = await VideoExport.make(cv, buf, { orient: 'auto', onProgress: function (p) { busy(label + '：製作影片 ' + Math.round(p * 100) + '%'); } });
+        cv.width = 0; cv.height = 0;
+        files.push({ name: o.num + '_' + safeName(o.sec) + '_' + safeName(o.it.title) + '.mp4', u8: new Uint8Array(await blob.arrayBuffer()) });
+      }
+      busy('打包中…');
+      var zip = zipWin.ExportMenu.makeZip(files, new Date());
+      files = null;
+      busy(null);
+      deliver(zip, '聽寫課堂練習影片_' + (paper.header.date || today()) + '.zip', 'video', list.length + ' 支影片');
+    } catch (e) { busy(null); alert('譜例影片產生失敗：' + (e && e.message || e)); }
+  };
+
   /* ---------- 模板（v106.8）----------
      內建：大學檔、高中檔，直接讀 App 的 exam-common.js（EXAM.PRESETS），每次套用重新隨機（拍號、譜號…）；
      自訂：存每一題的設定快照、標題、配分、換行、換頁、速度，以及大題名稱與配分；套用時重新出題。 */
   var TPL_STORE = 'earTrainer.maker.templates';
-  var BUILTIN = [{ id: 'standard', name: '大學檔' }, { id: 'highschool', name: '高中檔' }];
+  var BUILTIN = [{ id: 'standard', name: '考大學檔' }, { id: 'highschool', name: '考高中檔' }];
   var EXAM_TYPE = { pitcherr1: 'pitcherr', pitcherr2: 'pitcherr', interval: 'interval', chord: 'chord',
                     rhythm1: 'rhythm', rhythm2: 'rhythm', rhythm3: 'rhythm', melody1: 'melody', melody2: 'melody',
                     twopart: 'twopart', fourpart: 'fourpart' };
@@ -805,9 +883,9 @@
     save(); busy(null); setView('edit'); flash('✓ 已套用「' + name + '」，共 ' + out.length + ' 題');
   }
   /* 找錯音偶爾會出題失敗（頁面本來就會重抽），這裡最多試 8 次 */
-  function regenTry(w, snap) {
+  async function regenTry(w, snap) {
     var err;
-    for (var k = 0; k < 8; k++) { try { return w.__maker.regen(snap); } catch (e) { err = e; } }
+    for (var k = 0; k < 8; k++) { try { return await w.__maker.regen(snap); } catch (e) { err = e; } }
     throw err;
   }
   async function applyBuiltin(id) {
@@ -823,7 +901,7 @@
         if (!type) throw new Error('不認得的段落：' + key);
         var w = await waitFrame(type);
         var fe = w.__maker.fromExam(cfg[key] || {});
-        var data = regenTry(w, fe.snapshot);
+        var data = await regenTry(w, fe.snapshot);
         var title = fe.title || w.__maker.titleOf(data);
         return buildCandidate(w, type, data, fe.snapshot, title);
       };
@@ -835,7 +913,7 @@
     var jobs = t.items.map(function (s) {
       return async function () {
         var w = await waitFrame(s.type);
-        var data = regenTry(w, s.snapshot);
+        var data = await regenTry(w, s.snapshot);
         if (s.bpm && data.bpm) data.bpm = s.bpm;
         var auto = (w.__maker.titleOf ? w.__maker.titleOf(data) : null) || s.autoTitle || '';
         var c = buildCandidate(w, s.type, data, s.snapshot, s.title || auto);
@@ -891,7 +969,7 @@
   }
   function deliver(blob, name, kind, desc) {
     if (!IS_IOS) { download(blob, name); flash('✓ 已下載 ' + (desc || name)); return; }
-    $('dlTitle').textContent = kind === 'pdf' ? 'PDF 已完成' : (kind === 'json' ? '考卷檔已完成' : 'mp3 壓縮檔已完成');
+    $('dlTitle').textContent = kind === 'pdf' ? 'PDF 已完成' : (kind === 'json' ? '考卷檔已完成' : (kind === 'video' ? '影片壓縮檔已完成' : 'mp3 壓縮檔已完成'));
     $('dlText').textContent = name + '（' + (blob.size / 1048576).toFixed(1) + ' MB）。' +
       (kind === 'pdf' ? '按「開啟」會打開 PDF，從右上角的分享鈕可以存到「檔案」或傳 LINE。' : '按「分享／儲存」後選「儲存到檔案」，或傳給 LINE 等 App。');
     $('dlBtn').textContent = kind === 'pdf' ? '開啟' : '分享／儲存';
@@ -915,6 +993,7 @@
     if (!paper.items.length) { flash('還沒有題目'); return; }
     stopPlayer();
     busy('匯出 PDF：準備中…');
+    try { await prepChorale(); } catch (e) { busy(null); alert('聖詠和聲譜例載入失敗：' + e.message); return; }
     var area = document.createElement('div');
     area.style.cssText = 'position:fixed; left:-30000px; top:0; pointer-events:none;';
     document.body.appendChild(area);
@@ -940,6 +1019,7 @@
   $('mxPdfBlank').onclick = function () { exportPdf('blank'); };
   $('mxPdfKey').onclick = function () { exportPdf('key'); };
   $('mxMp3').onclick = function () { $('btnMp3').click(); };
+  $('mxVideo').onclick = function () { $('btnVideo').click(); };
 
   /* ---------- 手機版（v108，寬度小於 900px）---------- */
   var mq = window.matchMedia('(max-width: 899px)'), mtab = 'make', pvMode = 'blank', pvZoom = 1;
@@ -980,6 +1060,7 @@
   $('mPdfBlank').onclick = function () { exportPdf('blank'); };
   $('mPdfKey').onclick = function () { exportPdf('key'); };
   $('mMp3').onclick = function () { $('btnMp3').click(); };
+  $('mVideo').onclick = function () { $('btnVideo').click(); };
 
   /* ---------- 電腦版：左右分隔（v108）----------
      拖曳調整右邊列表的寬度，記在瀏覽器；雙擊恢復預設。左邊至少 420、右邊至少 480 */
@@ -1091,7 +1172,7 @@
   function pDel(id) { return pdbTx('readwrite', function (st) { return st.delete(id); }); }
   function newId() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function slimPaper(p) {
-    var o = JSON.parse(JSON.stringify(p, function (k, v) { return (k === 'measures' || k === 'shownBreaks') ? undefined : v; }));
+    var o = JSON.parse(JSON.stringify(p, function (k, v) { return (k === 'measures' || k === 'shownBreaks' || k === 'chSvg') ? undefined : v; }));
     delete o.savedId; delete o.savedName;
     return o;
   }
