@@ -652,8 +652,8 @@ function showPage(pageId) {
   if (window.tpStopAll) window.tpStopAll();
   document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
   if (pageId === 'tp-settings') { document.getElementById('pageTpSettings').classList.add('active'); if(window.tpModule) window.tpModule.refreshReviewCount(); }
-  else if (pageId === 'tp-practice') document.getElementById('pageTpPractice').classList.add('active');
-  else if (pageId === 'tp-answer') document.getElementById('pageTpAnswer').classList.add('active');
+  else if (pageId === 'tp-practice') { document.getElementById('pageTpPractice').classList.add('active'); resetStaffScroll(); const _bs = document.querySelector('#pageTpPractice .practice-bottom-scroll'); if(_bs) _bs.scrollTop = 0; }   // 頁面顯示後再歸零，譜例才會回到第一小節
+  else if (pageId === 'tp-answer') { const _ap = document.getElementById('pageTpAnswer'); _ap.classList.add('active'); _ap.scrollTop = 0; }   // 解答頁一律從頂端開始
   else if (pageId === 'tp-review') { document.getElementById('pageTpReview').classList.add('active'); if(window.tpModule) window.tpModule.renderReviewPage(); initReviewBpm(); }
 }
 
@@ -2901,6 +2901,8 @@ function showPage(pageId) {
       finally{ made.holder.remove(); }
     },
     answers: function(){ return []; },
+    /* v.112.3：出考卷的譜例影片——照本頁「下載譜例」的畫法畫正解譜（含跟隨用的拍點資訊） */
+    sheet: function(data){ return window.SheetExport.collectCanvas(btn => doExportSheet(data.seq.top, data.seq.bottom, data.pitch.top, data.pitch.bottom, data, data.tie.top, data.tie.bottom)); },
     events: function(data){ return buildExportEvents(data.seq.top, data.seq.bottom, data.pitch.top, data.pitch.bottom, data, data.tie.top, data.tie.bottom); }
   };
   if(MAKER_MODE){
